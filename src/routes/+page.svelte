@@ -90,9 +90,35 @@
    * Convert a blob to array of bytes
    */
   async function blobToBytes(blob: Blob): Promise<Uint8Array> {
-    return blob.bytes
-      ? await blob.bytes()
-      : new Uint8Array(await blob.arrayBuffer());
+    const t = await blob.text();
+    const a1 = await blob.bytes();
+    const a3 = new Uint8Array(await blob.arrayBuffer());
+    if (a1.byteLength === a3.byteLength) {
+      console.log("Same Length");
+      for (let i = 0; i < a1.byteLength; i++) {
+        if (a1.at(i) !== a3.at(i)) {
+          console.log(`Issue found at ${i}: a1=${a1[i]} while a3=${a3[i]}`);
+        }
+      }
+    }
+    // Simple path
+    if (blob.bytes) return blob.bytes();
+    return a3;
+
+    // Otherwise, do conversion ourselves
+    const reader = blob.stream().getReader();
+    const bytes: Uint8Array[] = [];
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      // Convert chunks to Uint8Array directly from stream
+      const chunk = new Uint8Array(value);
+      bytes.push(chunk);
+    }
+    // @ts-expect-error maybe works?
+    return new Uint8Array(bytes.flat());
   }
 
   function startRecording() {
