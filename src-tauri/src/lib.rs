@@ -38,6 +38,40 @@ fn transcribe(model_path: State<'_, ModelPath>, audio_data: Vec<u8>) -> String {
     // )
 }
 
+use webview2_com::Microsoft::Web::WebView2::Win32::{
+    ICoreWebView2Profile4, ICoreWebView2_13, COREWEBVIEW2_PERMISSION_KIND_MICROPHONE,
+    COREWEBVIEW2_PERMISSION_STATE_DEFAULT,
+};
+use windows::core::{Interface, PCWSTR};
+
+/// Reset microphone permissions
+///
+/// Adapted from <https://github.com/tauri-apps/tauri/issues/5042#issuecomment-2269455318>
+#[tauri::command]
+fn reset_permission(origin: &str, app: AppHandle) {
+    let webview = app.get_webview_window("main").unwrap();
+    let mut origin = origin.to_string();
+    origin.push('\0');
+    let origin = origin.encode_utf16().collect::<Vec<u16>>();
+    webview
+        .with_webview(move |webview| unsafe {
+            let core = webview.controller().CoreWebView2().unwrap();
+            let core = Interface::cast::<ICoreWebView2_13>(&core).unwrap();
+            let profile = core.Profile().unwrap();
+            let profile = Interface::cast::<ICoreWebView2Profile4>(&profile).unwrap();
+            let origin = PCWSTR::from_raw(origin.as_ptr());
+            profile
+                .SetPermissionState(
+                    COREWEBVIEW2_PERMISSION_KIND_MICROPHONE,
+                    origin,
+                    COREWEBVIEW2_PERMISSION_STATE_DEFAULT,
+                    None,
+                )
+                .unwrap();
+        })
+        .unwrap();
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -56,7 +90,11 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, transcribe])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            transcribe,
+            reset_permission
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

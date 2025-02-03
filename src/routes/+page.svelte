@@ -131,6 +131,11 @@
 <main class="container">
   <h1 class="text-3xl text-center">SuperMouse AI</h1>
   <div class="flex flex-col place-content-center">
+    <button
+      class="p-2 mx-32 my-2 bg-amber-500 rounded-sm"
+      onclick={getPermission}
+      disabled={audioRecorder !== null}>Ask Permission Agin</button
+    >
     <section id="audio-holder" class="mx-32 my-4 text-center">
       <button
         class="p-2 mx-32 my-2 rounded-sm {isRecording
