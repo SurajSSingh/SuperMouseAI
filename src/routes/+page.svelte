@@ -90,7 +90,9 @@
    * Convert a blob to array of bytes
    */
   async function blobToBytes(blob: Blob): Promise<Uint8Array> {
-    return await blob.bytes();
+    return blob.bytes
+      ? await blob.bytes()
+      : new Uint8Array(await blob.arrayBuffer());
   }
 
   function startRecording() {
