@@ -1,6 +1,11 @@
 use mutter::Model;
+use tauri::{path::BaseDirectory, Manager, State};
 // use rodio::Decoder;
 // use std::io::Cursor;
+
+/// "Global" App state
+struct ModelPath(String);
+
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -8,9 +13,9 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
-fn transcribe(audio_data: Vec<u8>) -> String {
-    let model =
-        Model::new("/Users/secondary/Downloads/ggml-small.en-q8_0.bin").expect("Valid Model Path");
+fn transcribe(model_path: State<'_, ModelPath>, audio_data: Vec<u8>) -> String {
+    println!("Loading from {}", model_path.inner().0);
+    let model = Model::new(&model_path.inner().0).expect("Valid Model Path");
     let translate = false;
     let individual_word_timestamps = false;
     let threads = Some(8);
@@ -35,6 +40,20 @@ fn transcribe(audio_data: Vec<u8>) -> String {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .setup(|app| {
+            let resource_path = app.path().resolve(
+                "resources/whisper-small.en-q8_0.bin",
+                BaseDirectory::Resource,
+            )?;
+            app.manage(ModelPath(
+                resource_path.as_os_str().to_string_lossy().to_string(),
+            ));
+            println!(
+                "{:?}",
+                resource_path.as_os_str().to_string_lossy().to_string()
+            );
+            Ok(())
+        })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![greet, transcribe])
         .run(tauri::generate_context!())

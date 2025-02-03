@@ -135,10 +135,10 @@
       <hr />
       <span>{recordingText}</span>
       <br />
-      <span class="text-xs"
+      <!-- <span class="text-xs"
         >{audioRecorder?.mimeType || "No Recorder"}: {currentURL ??
           "No URL"}</span
-      >
+      > -->
       <audio class="w-full" controls bind:this={audioElement}></audio>
     </section>
     <div class="mx-32 my-4 text-center rounded-md border-4 min-h-32">
