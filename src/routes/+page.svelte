@@ -39,8 +39,21 @@
   $effect(() => {
     // On-Mount
     // Get user permission to use mircophone
-    const getPermission = async () => {
-      if (navigator) {
+    getPermission();
+
+    return () => {
+      // Clean-up code
+      if (currentURL) {
+        window.URL.revokeObjectURL(currentURL);
+      }
+      audioElement.src = "";
+      audioRecorder = null;
+    };
+  });
+
+  async function getPermission() {
+    if (navigator) {
+      try {
         const audioStream = await navigator.mediaDevices.getUserMedia({
           audio: true,
           video: false,
@@ -58,21 +71,13 @@
           console.log("Stopping...");
           stopRecording();
         };
-      } else {
-        alert("No navigator");
+      } catch (error) {
+        alert(`Ran into an error: ${error}`);
       }
-    };
-    getPermission();
-
-    return () => {
-      // Clean-up code
-      if (currentURL) {
-        window.URL.revokeObjectURL(currentURL);
-      }
-      audioElement.src = "";
-      audioRecorder = null;
-    };
-  });
+    } else {
+      alert("Window has no navigator");
+    }
+  }
 
   /**
    * Convert a blob to array of bytes
