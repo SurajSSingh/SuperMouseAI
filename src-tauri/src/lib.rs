@@ -13,12 +13,13 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
+/// Take MP3 audio data and transcribe it with Whisper model
 fn transcribe(model_path: State<'_, ModelPath>, audio_data: Vec<u8>) -> String {
     println!("Loading from {}", model_path.inner().0);
     let model = Model::new(&model_path.inner().0).expect("Valid Model Path");
     let translate = false;
     let individual_word_timestamps = false;
-    let threads = Some(8);
+    let threads = None;
     // dbg!(audio_data.len());
     // println!("{:?}", audio_data.iter().take(100).collect::<Vec<_>>());
     // let input = Cursor::new(audio_data.clone());

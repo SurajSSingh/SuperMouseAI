@@ -74,6 +74,9 @@
     };
   });
 
+  /**
+   * Convert a blob to array of bytes
+   */
   async function blobToBytes(blob: Blob): Promise<Uint8Array> {
     return await blob.bytes();
   }
@@ -81,6 +84,7 @@
   function startRecording() {
     recordingState = "recording";
     blobChunks = [];
+    // Remove old URL to clear old audio cache
     if (currentURL) {
       window.URL.revokeObjectURL(currentURL);
     }
