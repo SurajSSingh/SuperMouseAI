@@ -51,6 +51,13 @@
     };
   });
 
+  async function resetPermission() {
+    // await invoke("reset_permission", { origin: window.origin });
+    await getPermission();
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    console.log("Devices: ", devices);
+  }
+
   async function getPermission() {
     if (navigator) {
       try {
@@ -132,17 +139,17 @@
   <h1 class="text-3xl text-center">SuperMouse AI</h1>
   <div class="flex flex-col place-content-center">
     <button
-      class="p-2 mx-32 my-2 bg-amber-500 rounded-sm"
-      onclick={getPermission}
+      class="p-2 mx-32 my-2 text-sm bg-amber-500 rounded-sm hover:bg-amber-600"
+      onclick={resetPermission}
       disabled={audioRecorder !== null}>Ask Permission Agin</button
     >
     <section id="audio-holder" class="mx-32 my-4 text-center">
       <button
         class="p-2 mx-32 my-2 rounded-sm {isRecording
-          ? 'bg-red-500'
+          ? 'bg-red-500 hover:bg-red-600'
           : isProcessing
-            ? 'bg-orange-800'
-            : 'bg-emerald-200'} "
+            ? 'bg-orange-800 hover:bg-orange-900'
+            : 'bg-emerald-200 hover:bg-emerald-600'}"
         onclick={toggleRecord}
         disabled={isProcessing}>{buttonText}</button
       >

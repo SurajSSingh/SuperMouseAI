@@ -1,5 +1,10 @@
 use mutter::Model;
-use tauri::{path::BaseDirectory, Manager, State};
+use tauri::{path::BaseDirectory, AppHandle, Manager, State};
+// use webview2_com::Microsoft::Web::WebView2::Win32::{
+//     ICoreWebView2Profile4, ICoreWebView2_13, COREWEBVIEW2_PERMISSION_KIND_MICROPHONE,
+//     COREWEBVIEW2_PERMISSION_STATE_DEFAULT,
+// };
+// use windows::core::{Interface, PCWSTR};
 // use rodio::Decoder;
 // use std::io::Cursor;
 
@@ -38,12 +43,6 @@ fn transcribe(model_path: State<'_, ModelPath>, audio_data: Vec<u8>) -> String {
     // )
 }
 
-use webview2_com::Microsoft::Web::WebView2::Win32::{
-    ICoreWebView2Profile4, ICoreWebView2_13, COREWEBVIEW2_PERMISSION_KIND_MICROPHONE,
-    COREWEBVIEW2_PERMISSION_STATE_DEFAULT,
-};
-use windows::core::{Interface, PCWSTR};
-
 /// Reset microphone permissions
 ///
 /// Adapted from <https://github.com/tauri-apps/tauri/issues/5042#issuecomment-2269455318>
@@ -55,19 +54,20 @@ fn reset_permission(origin: &str, app: AppHandle) {
     let origin = origin.encode_utf16().collect::<Vec<u16>>();
     webview
         .with_webview(move |webview| unsafe {
-            let core = webview.controller().CoreWebView2().unwrap();
-            let core = Interface::cast::<ICoreWebView2_13>(&core).unwrap();
-            let profile = core.Profile().unwrap();
-            let profile = Interface::cast::<ICoreWebView2Profile4>(&profile).unwrap();
-            let origin = PCWSTR::from_raw(origin.as_ptr());
-            profile
-                .SetPermissionState(
-                    COREWEBVIEW2_PERMISSION_KIND_MICROPHONE,
-                    origin,
-                    COREWEBVIEW2_PERMISSION_STATE_DEFAULT,
-                    None,
-                )
-                .unwrap();
+            // FIXME: `...controller().CoreWebView2()` not found
+            // let core = webview.controller().CoreWebView2().unwrap();
+            // let core = Interface::cast::<ICoreWebView2_13>(&core).unwrap();
+            // let profile = core.Profile().unwrap();
+            // let profile = Interface::cast::<ICoreWebView2Profile4>(&profile).unwrap();
+            // let origin = PCWSTR::from_raw(origin.as_ptr());
+            // profile
+            //     .SetPermissionState(
+            //         COREWEBVIEW2_PERMISSION_KIND_MICROPHONE,
+            //         origin,
+            //         COREWEBVIEW2_PERMISSION_STATE_DEFAULT,
+            //         None,
+            //     )
+            //     .unwrap();
         })
         .unwrap();
 }
