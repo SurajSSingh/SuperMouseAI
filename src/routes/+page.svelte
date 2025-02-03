@@ -10,13 +10,16 @@
     greetMsg = await invoke("greet", { name });
   }
 
+  let blobChunks: Blob[] = [];
+  let audioElement: HTMLAudioElement;
+
   // State
   let recordingState: null | "stopped" | "recording" | "processing" =
     $state(null);
   let audioRecorder: MediaRecorder | null = $state(null);
   let audioData = $state([]);
-  let blobChunks: Blob[] = [];
-  let audioElement: HTMLAudioElement;
+  let currentURL: string | undefined = $state();
+  let transcribedOutput = $state("");
 
   // Derived values
   const isRecording = $derived(recordingState === "recording");
@@ -27,6 +30,9 @@
       : isProcessing
         ? "Processing..."
         : "Start Recording",
+  );
+  const recordingText = $derived(
+    isRecording ? "RECORDING" : isProcessing ? "Processing File" : "Inactive",
   );
 
   // Effects
@@ -57,10 +63,27 @@
       }
     };
     getPermission();
+
+    return () => {
+      // Clean-up code
+      if (currentURL) {
+        window.URL.revokeObjectURL(currentURL);
+      }
+      audioElement.src = "";
+      audioRecorder = null;
+    };
   });
+
+  async function blobToBytes(blob: Blob): Promise<Uint8Array> {
+    return await blob.bytes();
+  }
 
   function startRecording() {
     recordingState = "recording";
+    blobChunks = [];
+    if (currentURL) {
+      window.URL.revokeObjectURL(currentURL);
+    }
     // audioRecorder?.start();
   }
 
@@ -71,13 +94,12 @@
 
   async function processData() {
     recordingState = "processing";
-
-    for await (const blob of blobChunks) {
-      // const data = new Blob(blob, {'type' : 'audio/ogg; codecs=opus' });
-      audioElement.src = window.URL.createObjectURL(blob);
-      break;
-    }
-    blobChunks = [];
+    const blob = new Blob(blobChunks, { type: "audio/mp3;" });
+    currentURL = window.URL.createObjectURL(blob);
+    audioElement.src = currentURL;
+    transcribedOutput = await invoke("transcribe", {
+      audioData: await blobToBytes(blob),
+    });
     recordingState = "stopped";
   }
 
@@ -101,15 +123,26 @@
   <h1 class="text-3xl text-center">SuperMouse AI</h1>
   <div class="flex flex-col place-content-center">
     <section id="audio-holder" class="mx-32 my-4 text-center">
-      <audio class="w-full" controls bind:this={audioElement}></audio>
       <button
-        class="bg-yellow-500 mx-64 my-2 p-2 rounded-sm"
+        class="p-2 mx-32 my-2 rounded-sm {isRecording
+          ? 'bg-red-500'
+          : isProcessing
+            ? 'bg-orange-800'
+            : 'bg-emerald-200'} "
         onclick={toggleRecord}
         disabled={isProcessing}>{buttonText}</button
       >
+      <hr />
+      <span>{recordingText}</span>
+      <br />
+      <span class="text-xs"
+        >{audioRecorder?.mimeType || "No Recorder"}: {currentURL ??
+          "No URL"}</span
+      >
+      <audio class="w-full" controls bind:this={audioElement}></audio>
     </section>
-    <div class="mx-32 my-4 text-center border-4 rounded-md min-h-32">
-      <output>This is where output goes</output>
+    <div class="mx-32 my-4 text-center rounded-md border-4 min-h-32">
+      <output>{transcribedOutput || "This is where output goes"}</output>
     </div>
   </div>
 </main>
