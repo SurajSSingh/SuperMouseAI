@@ -122,7 +122,7 @@
 
   async function processData() {
     recordingState = "processing";
-    const blob = new Blob(blobChunks, { type: "audio/mp3;" });
+    const blob = new Blob(blobChunks, { type: "audio/mpeg" });
     currentURL = window.URL.createObjectURL(blob);
     audioElement.src = currentURL;
     transcribedOutput = await invoke("transcribe", {
