@@ -62,10 +62,19 @@
     if (navigator) {
       try {
         const audioStream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
+          audio: {
+            autoGainControl: false,
+            noiseSuppression: true,
+            echoCancellation: true,
+          },
           video: false,
         });
-        audioRecorder = new MediaRecorder(audioStream);
+        console.log(audioStream);
+        audioRecorder = new MediaRecorder(audioStream, {
+          mimeType: "audio/mp4",
+        });
+        // audioRecorder = new MediaRecorder(audioStream);
+        console.log(audioRecorder);
         audioRecorder.ondataavailable = (blobEvent) => {
           blobChunks.push(blobEvent.data);
         };
@@ -90,19 +99,9 @@
    * Convert a blob to array of bytes
    */
   async function blobToBytes(blob: Blob): Promise<Uint8Array> {
-    // Simple path
-    // if (blob.bytes) return blob.bytes();
-
-    // Otherwise, do read stream and return first one
-    const reader = blob.stream().getReader();
-    const { done: beforeDone, value } = await reader.read();
-    const { done } = await reader.read();
-    if (beforeDone) {
-      console.warn("There is nothing in Blob!");
-      return new Uint8Array();
-    }
-    if (!done) console.warn("There is more data to read for Blob!");
-    return value!;
+    if (blob.bytes) return blob.bytes();
+    // Fallback to making bytes from array buffer
+    return new Uint8Array(await blob.arrayBuffer());
   }
 
   function startRecording() {
@@ -122,7 +121,11 @@
 
   async function processData() {
     recordingState = "processing";
-    const blob = new Blob(blobChunks, { type: "audio/mpeg" });
+    console.log(blobChunks.length);
+    const blob =
+      blobChunks.length === 1
+        ? blobChunks[0]!
+        : new Blob(blobChunks, { type: "audio/mp4" });
     currentURL = window.URL.createObjectURL(blob);
     audioElement.src = currentURL;
     transcribedOutput = await invoke("transcribe", {
@@ -132,7 +135,7 @@
   }
 
   function toggleRecord() {
-    // When no record or processing, do nothing
+    // When no recorder or is processing, do nothing
     if (!audioRecorder || isProcessing) {
       return;
     }
