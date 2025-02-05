@@ -128,9 +128,13 @@
         : new Blob(blobChunks, { type: "audio/mp4" });
     currentURL = window.URL.createObjectURL(blob);
     audioElement.src = currentURL;
-    transcribedOutput = await invoke("transcribe", {
-      audioData: await blobToBytes(blob),
-    });
+    try {
+      transcribedOutput = await invoke("transcribe", {
+        audioData: await blobToBytes(blob),
+      });
+    } catch (error) {
+      alert(`An error occured while transcribing: ${error}`);
+    }
     recordingState = "stopped";
   }
 
