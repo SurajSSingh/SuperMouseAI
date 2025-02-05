@@ -1,5 +1,5 @@
-use mutter::Model;
-use tauri::{path::BaseDirectory, AppHandle, Manager, State};
+use mutter::{Model, ModelError};
+use tauri::{path::BaseDirectory, Manager, State};
 // use webview2_com::Microsoft::Web::WebView2::Win32::{
 //     ICoreWebView2Profile4, ICoreWebView2_13, COREWEBVIEW2_PERMISSION_KIND_MICROPHONE,
 //     COREWEBVIEW2_PERMISSION_STATE_DEFAULT,
@@ -7,6 +7,9 @@ use tauri::{path::BaseDirectory, AppHandle, Manager, State};
 // use windows::core::{Interface, PCWSTR};
 // use rodio::Decoder;
 // use std::io::Cursor;
+
+mod mutter;
+mod transcript;
 
 /// "Global" App state
 struct AppState {
@@ -21,28 +24,28 @@ fn greet(name: &str) -> String {
 
 #[tauri::command]
 /// Take MP3 audio data and transcribe it with Whisper model
-fn transcribe(app_state: State<'_, AppState>, audio_data: Vec<u8>) -> String {
+fn transcribe(app_state: State<'_, AppState>, audio_data: Vec<u8>) -> Result<String, String> {
     let translate = false;
     let individual_word_timestamps = false;
     let threads = None;
-    // let sample = process_audio(audio_data);
+    // TODO: Possible thing to allow user to change
+    let initial_prompt = None;
+    let language = Some("en");
     let transcription = app_state
         .model
-        // TODO:
-        // Use this over regular transcribe because decoding panics;
-        // now manually creating sample
-        // .transcribe_pcm_s16le(&sample, translate, individual_word_timestamps, threads)
-        .transcribe_audio(&audio_data, translate, individual_word_timestamps, threads)
-        .unwrap();
-    transcription.as_text()
-}
-
-/// Process the audio to a format compatible with
-/// Whisper.cpp: WAV, 16-bit, 16kHz, mono.
-///
-/// Input audio can be MP3, WEBM, or WAV
-fn process_audio(audio_data: Vec<u8>) -> Vec<f32> {
-    todo!()
+        .transcribe_audio(
+            &audio_data,
+            translate,
+            individual_word_timestamps,
+            initial_prompt,
+            language,
+            threads,
+        )
+        .map_err(|err| match err {
+            ModelError::WhisperError(whisper_error) => whisper_error.to_string(),
+            ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
+        })?;
+    Ok(transcription.as_text())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
