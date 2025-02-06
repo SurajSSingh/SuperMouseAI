@@ -44,7 +44,11 @@
         : "Start Recording",
   );
   const recordingText = $derived(
-    isRecording ? "RECORDING" : isProcessing ? "Processing File" : "Inactive",
+    isRecording
+      ? "Microphone: RECORDING"
+      : isProcessing
+        ? "Processing File"
+        : "Microphone: Inactive",
   );
 
   let wavRecorderConnection: MessagePort | undefined;
@@ -98,7 +102,6 @@
         audioRecorder = new ExtendedMediaRecorder(audioStream, {
           mimeType: "audio/wav",
         });
-        // audioRecorder = new MediaRecorder(audioStream);
         console.log(audioRecorder);
         audioRecorder.ondataavailable = (blobEvent) => {
           blobChunks.push(blobEvent.data);
