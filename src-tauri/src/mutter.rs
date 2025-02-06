@@ -220,8 +220,7 @@ pub enum ModelError {
 pub fn decode(bytes: Vec<u8>) -> Result<Vec<f32>, ModelError> {
     let input = Cursor::new(bytes);
     // We know it is m4a by Mime type in browser (and we set it to be that as well)
-    let source =
-        Decoder::new_mp4(input, rodio::decoder::Mp4Type::M4a).map_err(ModelError::DecodingError)?;
+    let source = Decoder::new_wav(input).map_err(ModelError::DecodingError)?;
     let output_sample_rate = 16000;
     let channels = 1;
     // Resample to output sample rate and channels

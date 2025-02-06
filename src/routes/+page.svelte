@@ -1,5 +1,11 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
+  import {
+    MediaRecorder as ExtendedMediaRecorder,
+    register,
+    type IMediaRecorder,
+  } from "extendable-media-recorder";
+  import { connect } from "extendable-media-recorder-wav-encoder";
 
   let name = $state("");
   let greetMsg = $state("");
@@ -16,7 +22,8 @@
   // State
   let recordingState: null | "stopped" | "recording" | "processing" =
     $state(null);
-  let audioRecorder: MediaRecorder | null = $state(null);
+  // FIXME: Type should not be any
+  let audioRecorder: IMediaRecorder | null = $state(null);
   let audioData = $state([]);
   let currentURL: string | undefined = $state();
   let transcribedOutput = $state("");
@@ -39,7 +46,10 @@
   $effect(() => {
     // On-Mount
     // Get user permission to use mircophone
-    getPermission();
+    const setup = async () => {
+      await register(await connect());
+    };
+    setup().then(() => getPermission());
 
     return () => {
       // Clean-up code
@@ -70,8 +80,8 @@
           video: false,
         });
         console.log(audioStream);
-        audioRecorder = new MediaRecorder(audioStream, {
-          mimeType: "audio/mp4",
+        audioRecorder = new ExtendedMediaRecorder(audioStream, {
+          mimeType: "audio/wav",
         });
         // audioRecorder = new MediaRecorder(audioStream);
         console.log(audioRecorder);
@@ -125,7 +135,7 @@
     const blob =
       blobChunks.length === 1
         ? blobChunks[0]!
-        : new Blob(blobChunks, { type: "audio/mp4" });
+        : new Blob(blobChunks, { type: "audio/wav" });
     currentURL = window.URL.createObjectURL(blob);
     audioElement.src = currentURL;
     try {
@@ -175,10 +185,10 @@
       <hr />
       <span>{recordingText}</span>
       <br />
-      <!-- <span class="text-xs"
+      <span class="text-xs"
         >{audioRecorder?.mimeType || "No Recorder"}: {currentURL ??
           "No URL"}</span
-      > -->
+      >
       <audio class="w-full" controls bind:this={audioElement}></audio>
     </section>
     <div class="mx-32 my-4 text-center rounded-md border-4 min-h-32">
