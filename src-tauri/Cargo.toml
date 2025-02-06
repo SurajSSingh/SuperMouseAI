@@ -30,7 +30,9 @@ rodio = { version = "0.20.1" }
 strum = { version = "0.26.2", features = ["derive"] }
 ureq = "3.0.4"
 
-[target.'cfg(target_os = "windows")'.dependencies]
+[target.'cfg(all(target_os = "windows", not(feature="cuda")))'.dependencies]
+whisper-rs = { version = "0.13.2", features = [] }
+[target.'cfg(all(target_os = "windows", feature="cuda"))'.dependencies]
 whisper-rs = { version = "0.13.2", features = ["cuda"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
@@ -41,7 +43,7 @@ default = ["symphonia-all", "minimp3"]
 
 # simd = []
 # coreml = ["whisper-rs/coreml"]
-# cuda = ["whisper-rs/cuda"]
+cuda = []
 # metal = ["whisper-rs/metal"]
 
 symphonia-aac = ["rodio/symphonia-aac"]
