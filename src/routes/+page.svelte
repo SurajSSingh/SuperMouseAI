@@ -2,10 +2,15 @@
   import { invoke } from "@tauri-apps/api/core";
   import {
     MediaRecorder as ExtendedMediaRecorder,
-    register,
+    register as registerConnection,
+    deregister as deregisterConnection,
     type IMediaRecorder,
   } from "extendable-media-recorder";
   import { connect } from "extendable-media-recorder-wav-encoder";
+  import {
+    register as registerShortcut,
+    unregisterAll as unregisterAllShortcuts,
+  } from "@tauri-apps/plugin-global-shortcut";
 
   let name = $state("");
   let greetMsg = $state("");
@@ -42,22 +47,32 @@
     isRecording ? "RECORDING" : isProcessing ? "Processing File" : "Inactive",
   );
 
+  let wavRecorderConnection: MessagePort | undefined;
+
   // Effects
   $effect(() => {
     // On-Mount
-    // Get user permission to use mircophone
     const setup = async () => {
-      await register(await connect());
+      wavRecorderConnection = await connect();
+      await registerConnection(wavRecorderConnection);
+      await registerShortcut("CommandOrControl+Shift+R", (event) => {
+        if (event.state === "Released") {
+          toggleRecord();
+        }
+      });
     };
+    // Get user permission to use mircophone
     setup().then(() => getPermission());
 
-    return () => {
+    return async () => {
       // Clean-up code
       if (currentURL) {
         window.URL.revokeObjectURL(currentURL);
       }
       audioElement.src = "";
       audioRecorder = null;
+      if (wavRecorderConnection) deregisterConnection(wavRecorderConnection);
+      unregisterAllShortcuts();
     };
   });
 
@@ -145,6 +160,7 @@
     } catch (error) {
       alert(`An error occured while transcribing: ${error}`);
     }
+    copyToClipboard();
     recordingState = "stopped";
   }
 
@@ -160,6 +176,12 @@
     // Recording -> stop recording
     else {
       audioRecorder.stop();
+    }
+  }
+
+  function copyToClipboard() {
+    if (navigator?.clipboard) {
+      navigator.clipboard.writeText(transcribedOutput);
     }
   }
 </script>
@@ -185,14 +207,26 @@
       <hr />
       <span>{recordingText}</span>
       <br />
-      <span class="text-xs"
-        >{audioRecorder?.mimeType || "No Recorder"}: {currentURL ??
-          "No URL"}</span
-      >
+      <!-- <span class="text-xs"
+      >{audioRecorder?.mimeType || "No Recorder"}: {currentURL ??
+      "No URL"}</span
+      > -->
+      <h2 class="text-lg text-center">Audio Preview</h2>
       <audio class="w-full" controls bind:this={audioElement}></audio>
     </section>
     <div class="mx-32 my-4 text-center rounded-md border-4 min-h-32">
-      <output>{transcribedOutput || "This is where output goes"}</output>
+      {#if transcribedOutput}
+        <output>
+          {transcribedOutput}
+        </output>
+      {:else}
+        <em> This is where output goes </em>
+      {/if}
     </div>
+    <button
+      class="p-2 mx-32 my-2 rounded-sm bg-slate-100 hover:bg-slate-200"
+      onclick={copyToClipboard}
+      disabled={isProcessing || isRecording}>Copy to Clipboard</button
+    >
   </div>
 </main>

@@ -48,6 +48,10 @@ fn transcribe(app_state: State<'_, AppState>, audio_data: Vec<u8>) -> Result<Str
     Ok(transcription.as_text())
 }
 
+// TODO: Cannot register mouse click in hotkey directly using the plugin
+//       (see https://github.com/tauri-apps/global-hotkey/issues/50),
+//       consider: https://crabnebula.dev/blog/building-a-desktop-pet-with-tauri/
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
