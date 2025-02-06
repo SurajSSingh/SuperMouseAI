@@ -57,10 +57,9 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(|app| {
-            let resource_path = app.path().resolve(
-                "resources/whisper-small.en-q8_0.bin",
-                BaseDirectory::Resource,
-            )?;
+            let resource_path = app
+                .path()
+                .resolve("resources/whisper-model.bin", BaseDirectory::Resource)?;
             let model_path = resource_path
                 .into_os_string()
                 .into_string()
