@@ -47,3 +47,6 @@ symphonia-mp3 = ["rodio/symphonia-mp3"]
 symphonia-vorbis = ["rodio/symphonia-vorbis"]
 symphonia-wav = ["rodio/symphonia-wav"]
 minimp3 = ["rodio/minimp3"]
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-global-shortcut = "2"
