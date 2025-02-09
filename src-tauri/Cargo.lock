@@ -2463,6 +2463,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "mouce"
+version = "0.2.50"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe3ea1c7bd346cca28cd75d6ebc77b2475bf13c627170843b150e97dd3431122"
+dependencies = [
+ "glob",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "mp4parse"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4209,6 +4219,7 @@ version = "0.1.0"
 dependencies = [
  "audrey",
  "log",
+ "mouce",
  "num",
  "num_cpus",
  "rodio",
