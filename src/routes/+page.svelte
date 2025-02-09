@@ -11,6 +11,7 @@
     register as registerShortcut,
     unregisterAll as unregisterAllShortcuts,
   } from "@tauri-apps/plugin-global-shortcut";
+  import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
   let name = $state("");
   let greetMsg = $state("");
@@ -27,6 +28,7 @@
   // State
   let recordingState: null | "stopped" | "recording" | "processing" =
     $state(null);
+  let mouseClickCount = $state(0);
   // FIXME: Type should not be any
   let audioRecorder: IMediaRecorder | null = $state(null);
   let audioData = $state([]);
@@ -52,7 +54,7 @@
   );
 
   let wavRecorderConnection: MessagePort | undefined;
-
+  let clickEventUnlistener: UnlistenFn;
   // Effects
   $effect(() => {
     // On-Mount
@@ -64,12 +66,17 @@
           toggleRecord();
         }
       });
+      clickEventUnlistener = await listen("mouse_press", (e) => {
+        console.log(e);
+        mouseClickCount++;
+      });
     };
     // Get user permission to use mircophone
     setup().then(() => getPermission());
 
     return async () => {
       // Clean-up code
+      clickEventUnlistener();
       if (currentURL) {
         window.URL.revokeObjectURL(currentURL);
       }
@@ -216,6 +223,7 @@
       > -->
       <h2 class="text-lg text-center">Audio Preview</h2>
       <audio class="w-full" controls bind:this={audioElement}></audio>
+      <p>Mouse Clicks: {mouseClickCount}</p>
     </section>
     <div class="mx-32 my-4 text-center rounded-md border-4 min-h-32">
       {#if transcribedOutput}
