@@ -170,9 +170,13 @@
     currentURL = window.URL.createObjectURL(blob);
     audioElement.src = currentURL;
     try {
-      transcribedOutput = await invoke("transcribe", {
-        audioData: await blobToBytes(blob),
-      });
+      transcribedOutput = (
+        (await invoke("transcribe", {
+          audioData: await blobToBytes(blob),
+        })) as string
+      )
+        .trim()
+        .replaceAll("[BLANK_AUDIO]", "");
     } catch (error) {
       alert(`An error occured while transcribing: ${error}`);
     }
@@ -231,15 +235,11 @@
       <audio class="w-full" controls bind:this={audioElement}></audio>
       <p>Mouse Clicks: {mouseClickCount}</p>
     </section>
-    <div class="mx-32 my-4 text-center rounded-md border-4 min-h-32">
-      {#if transcribedOutput}
-        <output>
-          {transcribedOutput}
-        </output>
-      {:else}
-        <em> This is where output goes </em>
-      {/if}
-    </div>
+    <textarea
+      class="mx-32 my-4 text-center rounded-md border-4 min-h-32"
+      placeholder="This is where the output goes"
+      disabled={transcribedOutput === ""}>{transcribedOutput}</textarea
+    >
     <button
       class="p-2 mx-32 my-2 rounded-sm bg-slate-100 hover:bg-slate-200"
       onclick={copyToClipboard}
