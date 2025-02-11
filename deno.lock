@@ -8,6 +8,7 @@
     "npm:@tauri-apps/api@2": "2.2.0",
     "npm:@tauri-apps/cli@2": "2.2.7",
     "npm:@tauri-apps/plugin-global-shortcut@2": "2.2.0",
+    "npm:@tauri-apps/plugin-notification@~2.2.1": "2.2.1",
     "npm:@tauri-apps/plugin-opener@2": "2.2.5",
     "npm:extendable-media-recorder-wav-encoder@^7.0.123": "7.0.123",
     "npm:extendable-media-recorder@^9.2.19": "9.2.19",
@@ -354,6 +355,12 @@
     },
     "@tauri-apps/plugin-global-shortcut@2.2.0": {
       "integrity": "sha512-clI9Bg/BcxWXNDK+ij601o1qC2WxMEy8ovhGgEW5Ai17oPy0KK8uwzmc59KiVnOYKpBWHCUPqBxG+KBNUFXgzw==",
+      "dependencies": [
+        "@tauri-apps/api"
+      ]
+    },
+    "@tauri-apps/plugin-notification@2.2.1": {
+      "integrity": "sha512-QF8Zod6XDhxD6xkD5nU/BjbOpJ6+3gxGCrVULOdLpvMuMSN2Z2IdObV/qgnrEJk1UamUCF1ClQUqNCbk4zTJNQ==",
       "dependencies": [
         "@tauri-apps/api"
       ]
@@ -840,6 +847,7 @@
         "npm:@tauri-apps/api@2",
         "npm:@tauri-apps/cli@2",
         "npm:@tauri-apps/plugin-global-shortcut@2",
+        "npm:@tauri-apps/plugin-notification@~2.2.1",
         "npm:@tauri-apps/plugin-opener@2",
         "npm:extendable-media-recorder-wav-encoder@^7.0.123",
         "npm:extendable-media-recorder@^9.2.19",
