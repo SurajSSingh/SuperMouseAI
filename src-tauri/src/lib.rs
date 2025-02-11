@@ -1,5 +1,11 @@
+use mouce::{
+    common::{MouseButton, MouseEvent},
+    Mouse, MouseActions,
+};
 use mutter::{Model, ModelError};
-use tauri::{path::BaseDirectory, Manager, State};
+use serde::{Deserialize, Serialize};
+use tauri::{path::BaseDirectory, AppHandle, Emitter, Manager, State};
+use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut};
 // use webview2_com::Microsoft::Web::WebView2::Win32::{
 //     ICoreWebView2Profile4, ICoreWebView2_13, COREWEBVIEW2_PERMISSION_KIND_MICROPHONE,
 //     COREWEBVIEW2_PERMISSION_STATE_DEFAULT,
@@ -48,15 +54,64 @@ fn transcribe(app_state: State<'_, AppState>, audio_data: Vec<u8>) -> Result<Str
     Ok(transcription.as_text())
 }
 
-// TODO: Cannot register mouse click in hotkey directly using the plugin
-//       (see https://github.com/tauri-apps/global-hotkey/issues/50),
-//       consider: https://crabnebula.dev/blog/building-a-desktop-pet-with-tauri/
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+enum MouseButtonType {
+    Left,
+    Middle,
+    Right,
+}
+
+impl From<&MouseButton> for MouseButtonType {
+    fn from(mb: &MouseButton) -> Self {
+        match mb {
+            MouseButton::Left => MouseButtonType::Left,
+            MouseButton::Middle => MouseButtonType::Middle,
+            MouseButton::Right => MouseButtonType::Right,
+        }
+    }
+}
+
+/// Function to listen for any clicks from mouse
+///
+/// Adapted from https://github.com/crabnebula-dev/koi-pond/blob/main/src-tauri/src/lib.rs under MIT License
+fn listen_for_mouse_click(app_handle: AppHandle) {
+    let mut mouse_manager = Mouse::new();
+    mouse_manager
+        .hook(Box::new(move |e| match e {
+            MouseEvent::Press(button) => app_handle
+                .emit("mouse_press", MouseButtonType::from(button))
+                .expect("App Handle should emit press event with button playload"),
+            // MouseEvent::Release(mouse_button) => todo!(),
+            _ => (),
+        }))
+        .expect("Able to listen to mouse clicks!");
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let mod_key = Shortcut::new(Some(Modifiers::ALT), Code::Space);
+
     tauri::Builder::default()
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_shortcuts([
+                    // alt_left,
+                    // alt_right,
+                    // ctrl_left,
+                    // ctrl_right,
+                    // shift_left,
+                    // shift_right,
+                    mod_key,
+                ])
+                .expect("Shortcuts should be valid")
+                .with_handler(|app, _shortcut, event| {
+                    app.emit("mod_key_event", event.state)
+                        .expect("Keyboard should emit");
+                })
+                .build(),
+        )
         .setup(|app| {
+            //  Load the model
             let resource_path = app
                 .path()
                 .resolve("resources/whisper-model.bin", BaseDirectory::Resource)?;
@@ -66,6 +121,7 @@ pub fn run() {
                 .map_err(|os_str| format!("\"{:?}\" cannot be convered to string!", os_str))?;
             let model = Model::new(&model_path)?;
             app.manage(AppState { model });
+            listen_for_mouse_click(app.handle().clone());
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())

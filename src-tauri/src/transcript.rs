@@ -44,6 +44,7 @@ impl Transcript {
 
     /// Returns the transcript in VTT format.
     #[must_use]
+    #[allow(dead_code)] // For now because I don't use vtt feature
     pub fn as_vtt(&self) -> String {
         let vtt = self
             .utterances
@@ -63,6 +64,7 @@ impl Transcript {
 
     /// Returns the transcript in SRT format.
     #[must_use]
+    #[allow(dead_code)] // For now because I don't use srt feature
     pub fn as_srt(&self) -> String {
         self.utterances
             .iter()
@@ -85,6 +87,7 @@ impl Transcript {
 
 /// Timestamp is oddly given in number of seconds * 100, or number of milliseconds / 10.
 /// This function corrects it and formats it in the desired format.
+#[allow(dead_code)] // For now because I don't use format timestamp feature
 fn format_timestamp(num: i64, always_include_hours: bool, decimal_marker: &str) -> String {
     assert!(num >= 0, "non-negative timestamp expected");
     let mut milliseconds: i64 = num * 10;

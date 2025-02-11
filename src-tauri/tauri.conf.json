@@ -44,7 +44,7 @@
       },
       "files": {},
       "hardenedRuntime": true,
-      "minimumSystemVersion": "10.13",
+      "minimumSystemVersion": "14.6",
       "entitlements": "Entitlements.plist"
     },
     "icon": [

@@ -11,6 +11,7 @@
     register as registerShortcut,
     unregisterAll as unregisterAllShortcuts,
   } from "@tauri-apps/plugin-global-shortcut";
+  import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
   let name = $state("");
   let greetMsg = $state("");
@@ -27,6 +28,8 @@
   // State
   let recordingState: null | "stopped" | "recording" | "processing" =
     $state(null);
+  let mouseClickCount = $state(0);
+  let modKeyHeld = false;
   // FIXME: Type should not be any
   let audioRecorder: IMediaRecorder | null = $state(null);
   let audioData = $state([]);
@@ -52,7 +55,8 @@
   );
 
   let wavRecorderConnection: MessagePort | undefined;
-
+  let clickEventUnlistener: UnlistenFn;
+  let modEventUnlistener: UnlistenFn;
   // Effects
   $effect(() => {
     // On-Mount
@@ -64,12 +68,22 @@
           toggleRecord();
         }
       });
+      clickEventUnlistener = await listen("mouse_press", (e) => {
+        console.log(e);
+        if (modKeyHeld) {
+          toggleRecord();
+        }
+      });
+      modEventUnlistener = await listen("mod_key_event", (e) => {
+        modKeyHeld = e.payload === "Pressed";
+      });
     };
     // Get user permission to use mircophone
     setup().then(() => getPermission());
 
     return async () => {
       // Clean-up code
+      clickEventUnlistener();
       if (currentURL) {
         window.URL.revokeObjectURL(currentURL);
       }
@@ -149,7 +163,6 @@
 
   async function processData() {
     recordingState = "processing";
-    console.log(blobChunks.length);
     const blob =
       blobChunks.length === 1
         ? blobChunks[0]!
@@ -157,9 +170,13 @@
     currentURL = window.URL.createObjectURL(blob);
     audioElement.src = currentURL;
     try {
-      transcribedOutput = await invoke("transcribe", {
-        audioData: await blobToBytes(blob),
-      });
+      transcribedOutput = (
+        (await invoke("transcribe", {
+          audioData: await blobToBytes(blob),
+        })) as string
+      )
+        .trim()
+        .replaceAll("[BLANK_AUDIO]", "");
     } catch (error) {
       alert(`An error occured while transcribing: ${error}`);
     }
@@ -195,7 +212,7 @@
     <button
       class="p-2 mx-32 my-2 text-sm bg-amber-500 rounded-sm hover:bg-amber-600"
       onclick={resetPermission}
-      disabled={audioRecorder !== null}>Ask Permission Agin</button
+      disabled={audioRecorder !== null}>Ask Permission Again</button
     >
     <section id="audio-holder" class="mx-32 my-4 text-center">
       <button
@@ -216,16 +233,13 @@
       > -->
       <h2 class="text-lg text-center">Audio Preview</h2>
       <audio class="w-full" controls bind:this={audioElement}></audio>
+      <p>Mouse Clicks: {mouseClickCount}</p>
     </section>
-    <div class="mx-32 my-4 text-center rounded-md border-4 min-h-32">
-      {#if transcribedOutput}
-        <output>
-          {transcribedOutput}
-        </output>
-      {:else}
-        <em> This is where output goes </em>
-      {/if}
-    </div>
+    <textarea
+      class="mx-32 my-4 text-center rounded-md border-4 min-h-32"
+      placeholder="This is where the output goes"
+      disabled={transcribedOutput === ""}>{transcribedOutput}</textarea
+    >
     <button
       class="p-2 mx-32 my-2 rounded-sm bg-slate-100 hover:bg-slate-200"
       onclick={copyToClipboard}

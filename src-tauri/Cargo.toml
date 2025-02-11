@@ -1,6 +1,6 @@
 [package]
 name = "super-mouse-ai"
-version = "0.1.0"
+version = "0.2.0"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -29,6 +29,7 @@ num_cpus = "1.16.0"
 rodio = { version = "0.20.1" }
 strum = { version = "0.26.2", features = ["derive"] }
 ureq = "3.0.4"
+mouce = "0.2.50"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 # NOTE: CUDA feature separate feature flag
