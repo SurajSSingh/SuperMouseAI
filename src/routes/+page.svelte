@@ -29,6 +29,7 @@
   let recordingState: null | "stopped" | "recording" | "processing" =
     $state(null);
   let mouseClickCount = $state(0);
+  let modKeyHeld = false;
   // FIXME: Type should not be any
   let audioRecorder: IMediaRecorder | null = $state(null);
   let audioData = $state([]);
@@ -55,6 +56,7 @@
 
   let wavRecorderConnection: MessagePort | undefined;
   let clickEventUnlistener: UnlistenFn;
+  let modEventUnlistener: UnlistenFn;
   // Effects
   $effect(() => {
     // On-Mount
@@ -68,7 +70,12 @@
       });
       clickEventUnlistener = await listen("mouse_press", (e) => {
         console.log(e);
-        mouseClickCount++;
+        if (modKeyHeld) {
+          toggleRecord();
+        }
+      });
+      modEventUnlistener = await listen("mod_key_event", (e) => {
+        modKeyHeld = e.payload === "Pressed";
       });
     };
     // Get user permission to use mircophone
@@ -156,7 +163,6 @@
 
   async function processData() {
     recordingState = "processing";
-    console.log(blobChunks.length);
     const blob =
       blobChunks.length === 1
         ? blobChunks[0]!

@@ -5,6 +5,7 @@ use mouce::{
 use mutter::{Model, ModelError};
 use serde::{Deserialize, Serialize};
 use tauri::{path::BaseDirectory, AppHandle, Emitter, Manager, State};
+use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut};
 // use webview2_com::Microsoft::Web::WebView2::Win32::{
 //     ICoreWebView2Profile4, ICoreWebView2_13, COREWEBVIEW2_PERMISSION_KIND_MICROPHONE,
 //     COREWEBVIEW2_PERMISSION_STATE_DEFAULT,
@@ -88,9 +89,29 @@ fn listen_for_mouse_click(app_handle: AppHandle) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let mod_key = Shortcut::new(Some(Modifiers::ALT), Code::Space);
+
     tauri::Builder::default()
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        .setup(|app: &mut tauri::App| {
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_shortcuts([
+                    // alt_left,
+                    // alt_right,
+                    // ctrl_left,
+                    // ctrl_right,
+                    // shift_left,
+                    // shift_right,
+                    mod_key,
+                ])
+                .expect("Shortcuts should be valid")
+                .with_handler(|app, _shortcut, event| {
+                    app.emit("mod_key_event", event.state)
+                        .expect("Keyboard should emit");
+                })
+                .build(),
+        )
+        .setup(|app| {
+            //  Load the model
             let resource_path = app
                 .path()
                 .resolve("resources/whisper-model.bin", BaseDirectory::Resource)?;
