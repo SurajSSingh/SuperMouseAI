@@ -212,7 +212,7 @@
     <button
       class="p-2 mx-32 my-2 text-sm bg-amber-500 rounded-sm hover:bg-amber-600"
       onclick={resetPermission}
-      disabled={audioRecorder !== null}>Ask Permission Agin</button
+      disabled={audioRecorder !== null}>Ask Permission Again</button
     >
     <section id="audio-holder" class="mx-32 my-4 text-center">
       <button
