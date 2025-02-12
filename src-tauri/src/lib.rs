@@ -1,21 +1,14 @@
-use std::{collections::HashMap, fmt::format, fs::File, io::BufReader, path::PathBuf};
+use std::{collections::HashMap, fs::File, io::BufReader, path::PathBuf};
 
 use mouce::{
     common::{MouseButton, MouseEvent},
     Mouse, MouseActions,
 };
 use mutter::{Model, ModelError};
-use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink, Source};
+use rodio::{Decoder, OutputStream, Sink};
 use serde::{Deserialize, Serialize};
 use tauri::{path::BaseDirectory, AppHandle, Emitter, Manager, State};
 use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut};
-// use webview2_com::Microsoft::Web::WebView2::Win32::{
-//     ICoreWebView2Profile4, ICoreWebView2_13, COREWEBVIEW2_PERMISSION_KIND_MICROPHONE,
-//     COREWEBVIEW2_PERMISSION_STATE_DEFAULT,
-// };
-// use windows::core::{Interface, PCWSTR};
-// use rodio::Decoder;
-// use std::io::Cursor;
 
 mod mutter;
 mod transcript;
