@@ -12,6 +12,11 @@
     unregisterAll as unregisterAllShortcuts,
   } from "@tauri-apps/plugin-global-shortcut";
   import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+  import {
+    isPermissionGranted,
+    requestPermission,
+    sendNotification,
+  } from "@tauri-apps/plugin-notification";
 
   let name = $state("");
   let greetMsg = $state("");
@@ -30,11 +35,11 @@
     $state(null);
   let mouseClickCount = $state(0);
   let modKeyHeld = false;
-  // FIXME: Type should not be any
   let audioRecorder: IMediaRecorder | null = $state(null);
   let audioData = $state([]);
   let currentURL: string | undefined = $state();
   let transcribedOutput = $state("");
+  let permissionGranted = $state(false);
 
   // Derived values
   const isRecording = $derived(recordingState === "recording");
@@ -63,11 +68,11 @@
     const setup = async () => {
       wavRecorderConnection = await connect();
       await registerConnection(wavRecorderConnection);
-      await registerShortcut("CommandOrControl+Shift+R", (event) => {
-        if (event.state === "Released") {
-          toggleRecord();
-        }
-      });
+      // await registerShortcut("CommandOrControl+Shift+R", (event) => {
+      //   if (event.state === "Released") {
+      //     toggleRecord();
+      //   }
+      // });
       clickEventUnlistener = await listen("mouse_press", (e) => {
         console.log(e);
         if (modKeyHeld) {
@@ -77,6 +82,10 @@
       modEventUnlistener = await listen("mod_key_event", (e) => {
         modKeyHeld = e.payload === "Pressed";
       });
+      permissionGranted = await isPermissionGranted();
+      if (!permissionGranted) {
+        await getNotificationPermission();
+      }
     };
     // Get user permission to use mircophone
     setup().then(() => getPermission());
@@ -93,6 +102,26 @@
       unregisterAllShortcuts();
     };
   });
+
+  async function getNotificationPermission() {
+    const permission = await requestPermission();
+    permissionGranted = permission === "granted";
+    if (permissionGranted) {
+      sendNotification("Notification Test!");
+    }
+  }
+
+  function showNotification(message: string, subtitle = "") {
+    if (permissionGranted) {
+      sendNotification({
+        title: `SuperMouse AI${subtitle ? ": " + subtitle : ""}`,
+        body: message,
+      });
+    } else {
+      alert(`${subtitle ? subtitle + ": " : ""}${message}`);
+    }
+    // TODO: Play sound optionally
+  }
 
   async function resetPermission() {
     // await invoke("reset_permission", { origin: window.origin });
@@ -147,17 +176,17 @@
   }
 
   function startRecording() {
+    showNotification("Recording Started!");
     recordingState = "recording";
     blobChunks = [];
     // Remove old URL to clear old audio cache
     if (currentURL) {
       window.URL.revokeObjectURL(currentURL);
     }
-    // audioRecorder?.start();
   }
 
   function stopRecording() {
-    // audioRecorder?.stop();
+    showNotification("Recording Stopped");
     processData();
   }
 
@@ -177,6 +206,7 @@
       )
         .trim()
         .replaceAll("[BLANK_AUDIO]", "");
+      showNotification("Finished Transcription");
     } catch (error) {
       alert(`An error occured while transcribing: ${error}`);
     }
@@ -213,6 +243,11 @@
       class="p-2 mx-32 my-2 text-sm bg-amber-500 rounded-sm hover:bg-amber-600"
       onclick={resetPermission}
       disabled={audioRecorder !== null}>Ask Permission Again</button
+    >
+    <button
+      class="p-2 mx-32 my-2 text-sm bg-slate-300 rounded-sm hover:bg-amber-300"
+      onclick={getNotificationPermission}
+      disabled={permissionGranted}>Ask Notification Permission Again</button
     >
     <section id="audio-holder" class="mx-32 my-4 text-center">
       <button
