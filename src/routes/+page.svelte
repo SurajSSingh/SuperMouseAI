@@ -68,11 +68,11 @@
     const setup = async () => {
       wavRecorderConnection = await connect();
       await registerConnection(wavRecorderConnection);
-      // await registerShortcut("CommandOrControl+Shift+R", (event) => {
-      //   if (event.state === "Released") {
-      //     toggleRecord();
-      //   }
-      // });
+      await registerShortcut("CommandOrControl+Shift+R", (event) => {
+        if (event.state === "Released") {
+          toggleRecord();
+        }
+      });
       clickEventUnlistener = await listen("mouse_press", (e) => {
         console.log(e);
         if (modKeyHeld) {
