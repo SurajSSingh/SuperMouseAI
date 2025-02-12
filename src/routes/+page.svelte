@@ -74,7 +74,6 @@
         }
       });
       clickEventUnlistener = await listen("mouse_press", (e) => {
-        console.log(e);
         if (modKeyHeld) {
           toggleRecord();
         }
@@ -86,6 +85,9 @@
       if (!permissionGranted) {
         await getNotificationPermission();
       }
+      invoke("play_sound", { soundName: "default_alert" }).catch((err) =>
+        console.error(err),
+      );
     };
     // Get user permission to use mircophone
     setup().then(() => getPermission());
@@ -111,7 +113,11 @@
     }
   }
 
-  function showNotification(message: string, subtitle = "") {
+  function showNotification(
+    message: string,
+    subtitle = "",
+    sound = "default_alert",
+  ) {
     if (permissionGranted) {
       sendNotification({
         title: `SuperMouse AI${subtitle ? ": " + subtitle : ""}`,
@@ -120,7 +126,9 @@
     } else {
       alert(`${subtitle ? subtitle + ": " : ""}${message}`);
     }
-    // TODO: Play sound optionally
+    invoke("play_sound", { soundName: sound }).catch((err) =>
+      console.error(err),
+    );
   }
 
   async function resetPermission() {
@@ -176,7 +184,7 @@
   }
 
   function startRecording() {
-    showNotification("Recording Started!");
+    showNotification("Recording Started!", "", "start");
     recordingState = "recording";
     blobChunks = [];
     // Remove old URL to clear old audio cache
@@ -186,7 +194,7 @@
   }
 
   function stopRecording() {
-    showNotification("Recording Stopped");
+    showNotification("Recording Stopped", "", "stop");
     processData();
   }
 
@@ -206,7 +214,7 @@
       )
         .trim()
         .replaceAll("[BLANK_AUDIO]", "");
-      showNotification("Finished Transcription");
+      showNotification("Finished Transcription", "", "finish");
     } catch (error) {
       alert(`An error occured while transcribing: ${error}`);
     }
