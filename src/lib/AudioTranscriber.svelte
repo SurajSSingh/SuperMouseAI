@@ -33,5 +33,6 @@
 <textarea
     class="mx-32 my-4 text-center rounded-md border-4 min-h-32"
     placeholder="This is where the output goes"
-    disabled={transcribedOutput === ""}>{transcribedOutput}</textarea
->
+    bind:value={transcribedOutput}
+    disabled={transcribedOutput === ""}
+></textarea>
