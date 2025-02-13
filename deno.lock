@@ -11,6 +11,7 @@
     "npm:@tauri-apps/plugin-global-shortcut@2": "2.2.0",
     "npm:@tauri-apps/plugin-notification@~2.2.1": "2.2.1",
     "npm:@tauri-apps/plugin-opener@2": "2.2.5",
+    "npm:daisyui@^5.0.0-beta.8": "5.0.0-beta.8",
     "npm:extendable-media-recorder-wav-encoder@^7.0.123": "7.0.123",
     "npm:extendable-media-recorder@^9.2.19": "9.2.19",
     "npm:svelte-check@4": "4.1.4_svelte@5.19.6__acorn@8.14.0_typescript@5.6.3",
@@ -426,6 +427,9 @@
     },
     "cookie@0.6.0": {
       "integrity": "sha512-U71cyTamuh1CRNCfpGY6to28lxvNwPG4Guz/EVjgf3Jmzv0vlDp1atT9eS5dDjMYHucpHbWns6Lwf3BKz6svdw=="
+    },
+    "daisyui@5.0.0-beta.8": {
+      "integrity": "sha512-jSokqm5i+Pv1jG80wliNzMHjmcF+iMx5xRUpk0/QExVoVNyQNWeCsaWJQubPvUq7bt9nzSsQTR2uIZBoyIIoaA=="
     },
     "debug@4.4.0": {
       "integrity": "sha512-6WTZ/IxCY/T6BALoZHaE4ctp9xm+Z5kY/pzYaCHRFeyVhojxlrm+46y68HA6hr0TcwEssoxNiDEUJQjfPZ/RYA==",
@@ -857,6 +861,7 @@
         "npm:@tauri-apps/plugin-global-shortcut@2",
         "npm:@tauri-apps/plugin-notification@~2.2.1",
         "npm:@tauri-apps/plugin-opener@2",
+        "npm:daisyui@^5.0.0-beta.8",
         "npm:extendable-media-recorder-wav-encoder@^7.0.123",
         "npm:extendable-media-recorder@^9.2.19",
         "npm:svelte-check@4",
