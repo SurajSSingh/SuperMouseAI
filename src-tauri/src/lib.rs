@@ -135,6 +135,7 @@ pub fn run() {
     let mod_key = Shortcut::new(Some(Modifiers::ALT), Code::Space);
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()

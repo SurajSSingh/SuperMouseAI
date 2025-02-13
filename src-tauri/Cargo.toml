@@ -31,6 +31,7 @@ strum = { version = "0.26.2", features = ["derive"] }
 ureq = "3.0.4"
 mouce = "0.2.50"
 tauri-plugin-notification = "2"
+tauri-plugin-clipboard-manager = "2"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 # NOTE: CUDA feature separate feature flag

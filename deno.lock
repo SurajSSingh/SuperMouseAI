@@ -7,6 +7,7 @@
     "npm:@tailwindcss/vite@^4.0.1": "4.0.1_vite@6.0.11_lightningcss@1.29.1",
     "npm:@tauri-apps/api@2": "2.2.0",
     "npm:@tauri-apps/cli@2": "2.2.7",
+    "npm:@tauri-apps/plugin-clipboard-manager@~2.2.1": "2.2.1",
     "npm:@tauri-apps/plugin-global-shortcut@2": "2.2.0",
     "npm:@tauri-apps/plugin-notification@~2.2.1": "2.2.1",
     "npm:@tauri-apps/plugin-opener@2": "2.2.5",
@@ -351,6 +352,12 @@
         "@tauri-apps/cli-win32-arm64-msvc",
         "@tauri-apps/cli-win32-ia32-msvc",
         "@tauri-apps/cli-win32-x64-msvc"
+      ]
+    },
+    "@tauri-apps/plugin-clipboard-manager@2.2.1": {
+      "integrity": "sha512-+7YDULB9Bk4fejxYrVNBQcxs3KsjPA3A3r53wwn7K8zOQvxjNBSYBRx/FW1OUBPGzm8BrreJFBkPVzQZSF2R4A==",
+      "dependencies": [
+        "@tauri-apps/api"
       ]
     },
     "@tauri-apps/plugin-global-shortcut@2.2.0": {
@@ -846,6 +853,7 @@
         "npm:@tailwindcss/vite@^4.0.1",
         "npm:@tauri-apps/api@2",
         "npm:@tauri-apps/cli@2",
+        "npm:@tauri-apps/plugin-clipboard-manager@~2.2.1",
         "npm:@tauri-apps/plugin-global-shortcut@2",
         "npm:@tauri-apps/plugin-notification@~2.2.1",
         "npm:@tauri-apps/plugin-opener@2",
