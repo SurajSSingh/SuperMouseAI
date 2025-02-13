@@ -46,21 +46,25 @@ fn greet(name: &str) -> String {
 
 #[tauri::command]
 /// Take MP3 audio data and transcribe it with Whisper model
-fn transcribe(app_state: State<'_, AppState>, audio_data: Vec<u8>) -> Result<String, String> {
-    let translate = false;
-    let individual_word_timestamps = false;
-    let threads = None;
-    // TODO: Possible thing to allow user to change
-    let initial_prompt = None;
-    let language = Some("en");
+fn transcribe(
+    app_state: State<'_, AppState>,
+    audio_data: Vec<u8>,
+    translate: Option<bool>,
+    individual_word_timestamps: Option<bool>,
+    threads: Option<u16>,
+    initial_prompt: Option<String>,
+    language: Option<String>,
+) -> Result<String, String> {
+    let translate = translate.unwrap_or(false);
+    let individual_word_timestamps = individual_word_timestamps.unwrap_or(false);
     let transcription = app_state
         .model
         .transcribe_audio(
             &audio_data,
             translate,
             individual_word_timestamps,
-            initial_prompt,
-            language,
+            initial_prompt.as_deref(),
+            language.as_deref(),
             threads,
         )
         .map_err(|err| match err {
