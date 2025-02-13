@@ -53,7 +53,18 @@
     // Effects
     $effect(() => {
         // On-Mount
-        const setup = async () => {
+        setupRecorder();
+
+        return async () => {
+            // Clean-up code
+            audioRecorder = null;
+            audioStream = null;
+            if (wavRecorderConnection) deregister(wavRecorderConnection);
+        };
+    });
+
+    export async function setupRecorder() {
+        try {
             wavRecorderConnection = await connect();
             await register(wavRecorderConnection);
             audioStream = await navigator.mediaDevices.getUserMedia({
@@ -64,16 +75,10 @@
                 },
                 video: false,
             });
-        };
-        setup();
-
-        return async () => {
-            // Clean-up code
-            audioRecorder = null;
-            audioStream = null;
-            if (wavRecorderConnection) deregister(wavRecorderConnection);
-        };
-    });
+        } catch (error) {
+            onError?.(`Error on setting up recorder: ${error}`);
+        }
+    }
 
     function startRecording() {
         if (isProcessing) {
