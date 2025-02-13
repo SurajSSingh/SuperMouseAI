@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { type RecordingStates } from "../lib/types";
-  import MicRecorder from "../lib/MicRecorder.svelte";
-  import AudioTranscriber from "../lib/AudioTranscriber.svelte";
+  import { type RecordingStates } from "$lib/types";
+  import MicRecorder from "$lib/MicRecorder.svelte";
+  import AudioTranscriber from "$lib/AudioTranscriber.svelte";
   import { NotificationSystem } from "$lib/notificationSystem.svelte";
   import ShortcutSettings from "$lib/ShortcutSettings.svelte";
   import { writeText } from "@tauri-apps/plugin-clipboard-manager";
