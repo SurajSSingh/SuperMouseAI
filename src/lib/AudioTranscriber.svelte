@@ -1,6 +1,5 @@
 <script lang="ts">
     import { invoke } from "@tauri-apps/api/core";
-    import type { RecordingStates } from "./types";
     import { blobChunksToBytes } from "./utils";
 
     interface TranscriberProps {

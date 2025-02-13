@@ -129,7 +129,7 @@
         audioRecorder.stop();
     }
 
-    function toggleRecording() {
+    export function toggleRecording() {
         if (isRecording) {
             stopRecording();
         } else if (!isProcessing) {
