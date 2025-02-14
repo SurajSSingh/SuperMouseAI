@@ -143,9 +143,9 @@
     }
 </script>
 
-<section {id} class="mx-32 my-4 text-center">
+<section {id} class="mx-32 my-2 text-center">
     <button
-        class="p-2 mx-32 my-2 rounded-sm {isRecording
+        class="p-2 w-3/4 my-2 font-semibold rounded-sm {isRecording
             ? 'bg-red-500 hover:bg-red-600'
             : isProcessing
               ? 'bg-orange-800 hover:bg-orange-900'
