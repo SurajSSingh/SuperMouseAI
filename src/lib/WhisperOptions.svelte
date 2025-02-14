@@ -1,6 +1,6 @@
 <script lang="ts">
     interface WhisperOptionProps {
-        thread?: number;
+        threads?: number;
         translate?: boolean;
         individualWordTimestamps?: boolean;
         initialPrompt?: string;
@@ -8,7 +8,7 @@
     }
 
     let {
-        thread = $bindable(0),
+        threads = $bindable(0),
         translate = $bindable(),
         individualWordTimestamps = $bindable(),
         initialPrompt = $bindable(),
@@ -31,7 +31,7 @@
             name="threads"
             id="threads-option"
             min="0"
-            bind:value={thread}
+            bind:value={threads}
             class="p-1 rounded-sm border-1"
         />
         <p class="ml-48 text-sm">0 = Use all, otherwise, limited to number</p>
