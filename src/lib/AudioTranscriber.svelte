@@ -14,15 +14,26 @@
         onError,
     }: TranscriberProps = $props();
 
-    export async function processData(blobChunks: Blob[]) {
+    let workingChunks: Blob[] = [];
+
+    export async function processData(
+        blobChunks?: Blob[],
+        threads?: number,
+        initialPrompt?: string,
+    ) {
         try {
-            transcribedOutput = (
-                (await invoke("transcribe", {
-                    audioData: await blobChunksToBytes(blobChunks),
-                })) as string
-            )
-                .trim()
-                .replaceAll("[BLANK_AUDIO]", "");
+            workingChunks = blobChunks ?? workingChunks;
+            if (workingChunks.length > 0) {
+                transcribedOutput = (
+                    (await invoke("transcribe", {
+                        audioData: await blobChunksToBytes(workingChunks),
+                        threads,
+                        initialPrompt,
+                    })) as string
+                )
+                    .trim()
+                    .replaceAll("[BLANK_AUDIO]", "");
+            }
             onFinishProcessing?.(transcribedOutput);
         } catch (error) {
             onError?.(`An error occured while transcribing: ${error}`);
