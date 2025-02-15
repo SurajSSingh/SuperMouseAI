@@ -21,10 +21,12 @@
     "@tauri-apps/plugin-opener": "^2",
     "extendable-media-recorder": "^9.2.19",
     "extendable-media-recorder-wav-encoder": "^7.0.123",
+    "tailwind-variants": "^0.3.1",
     "tailwindcss": "^4.0.1"
   },
   "devDependencies": {
     "bits-ui": "^1.1.0",
+    "clsx": "^2.1.1",
     "daisyui": "^5.0.0-beta.8",
     "@sveltejs/adapter-static": "^3.0.6",
     "@sveltejs/kit": "^2.9.0",
@@ -32,6 +34,8 @@
     "@tauri-apps/cli": "^2",
     "svelte": "^5.0.0",
     "svelte-check": "^4.0.0",
+    "svelte-persisted-store": "^0.12.0",
+    "tailwind-merge": "^3.0.1",
     "typescript": "~5.6.2",
     "vite": "^6.0.3"
   }
