@@ -6,31 +6,37 @@
     } from "svelte/elements";
     import { type VariantProps, tv } from "tailwind-variants";
 
+    // Daisy UI Variants
+    const variant = {
+        neutral: "btn-neutral",
+        primary: "btn-primary",
+        secondary: "btn-secondary",
+        accent: "btn-accent",
+        info: "btn-info",
+        success: "btn-success",
+        warning: "btn-warning",
+        error: "btn-error",
+        link: "btn-link",
+        destructive: "btn-error",
+    };
+
+    const size = {
+        xs: "btn-xs",
+        sm: "btn-sm",
+        md: "btn-md",
+        lg: "btn-lg",
+        xl: "btn-xl",
+    };
+
     export const buttonVariants = tv({
         base: "ring-offset-background focus-visible:ring-ring inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         variants: {
-            variant: {
-                default:
-                    "bg-primary text-primary-foreground hover:bg-primary/90",
-                destructive:
-                    "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-                outline:
-                    "border-input bg-background hover:bg-accent hover:text-accent-foreground border",
-                secondary:
-                    "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-                ghost: "hover:bg-accent hover:text-accent-foreground",
-                link: "text-primary underline-offset-4 hover:underline",
-            },
-            size: {
-                default: "h-10 px-4 py-2",
-                sm: "h-9 rounded-md px-3",
-                lg: "h-11 rounded-md px-8",
-                icon: "h-10 w-10",
-            },
+            variant,
+            size,
         },
         defaultVariants: {
-            variant: "default",
-            size: "default",
+            variant: "neutral",
+            size: "md",
         },
     });
 
@@ -49,32 +55,29 @@
 
     let {
         class: className,
-        variant = "default",
-        size = "default",
+        variant = "neutral",
+        size = "md",
         ref = $bindable(null),
         href = undefined,
         type = "button",
         children,
         ...restProps
     }: ButtonProps = $props();
+
+    const isLink = $derived(Boolean(href));
 </script>
 
-{#if href}
-    <a
-        bind:this={ref}
-        class={cn(buttonVariants({ variant, size }), className)}
-        {href}
-        {...restProps}
-    >
-        {@render children?.()}
-    </a>
-{:else}
-    <button
-        bind:this={ref}
-        class={cn(buttonVariants({ variant, size }), className)}
-        {type}
-        {...restProps}
-    >
-        {@render children?.()}
-    </button>
-{/if}
+<svelte:element
+    this={isLink ? "a" : "button"}
+    bind:this={ref}
+    class={cn(
+        "btn",
+        buttonVariants({ size, variant: isLink ? "link" : variant }),
+        className,
+    )}
+    href={isLink ? href : null}
+    type={!isLink ? type : null}
+    {...restProps}
+>
+    {@render children?.()}
+</svelte:element>
