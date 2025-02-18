@@ -6,6 +6,7 @@
   import ShortcutSettings from "$lib/ShortcutSettings.svelte";
   import { writeText } from "@tauri-apps/plugin-clipboard-manager";
   import WhisperOptions from "$lib/WhisperOptions.svelte";
+  import Button from "$lib/components/ui/button/button.svelte";
 
   async function resetPermission() {
     // await invoke("reset_permission", { origin: window.origin });
@@ -34,20 +35,28 @@
     notifier.showNotification("Copied to clipboard!", "", "");
   }
 
+  $inspect(recordingState);
+
   function transcribe(chunks?: Blob[]) {
     recordingState = "processing";
-    audioTranscriber.processData(
-      chunks,
-      threads > 0 ? threads : undefined,
-      initialPrompt || undefined,
-    );
+    // Force a microtask to allow rendering before transcribing,
+    // fixes issue with "processing" state not updating during processing
+    new Promise((resolve) => requestAnimationFrame(resolve)).finally(() => {
+      audioTranscriber.processData(
+        chunks,
+        threads > 0 ? threads : undefined,
+        initialPrompt || undefined,
+      );
+    });
   }
+
   // Callback functions
   function onRecordingStart() {
     recordingState = "recording";
     notifier.showNotification("Recording Started!", "", "start");
   }
   function onRecordingEnd(chunks: Blob[]) {
+    recordingState = "processing";
     notifier.showNotification("Recording Stopped!", "", "stop");
     transcribe(chunks);
   }
@@ -65,18 +74,24 @@
   <h1 class="text-3xl text-center">SuperMouse AI</h1>
   <div class="flex flex-col place-content-center">
     <div class="grid grid-cols-2 mx-32 my-1">
-      <button
-        class="p-2 m-2 text-sm bg-amber-500 rounded-sm hover:bg-amber-600"
+      <Button
+        color="secondary"
+        size="sm"
+        class="m-2"
+        disabled={recordingState !== "stopped"}
         onclick={resetPermission}
       >
-        Ask Permission Again
-      </button>
-      <button
-        class="p-2 m-2 text-sm bg-amber-500 rounded-sm hover:bg-amber-600"
+        Ask Microphone (🎤) Permission Again
+      </Button>
+      <Button
+        color="secondary"
+        size="sm"
+        class="m-2"
         onclick={() => notifier.getPermissionToNotify(testNotify)}
         disabled={notifier.permissionGranted}
-        >Ask Notification Permission Again</button
       >
+        Ask Notification (🔔) Permission Again
+      </Button>
     </div>
     <WhisperOptions bind:threads bind:initialPrompt />
     <MicRecorder
@@ -90,22 +105,22 @@
       onToggleShortcutEvent={() => micRecorder?.toggleRecording()}
     />
     <div class="grid grid-cols-2 mx-32 my-1">
-      <button
-        class="p-2 m-2 rounded-sm bg-green-100 hover:bg-green-200"
+      <Button
+        color={recordingState === "processing" ? "neutral" : "warning"}
+        size="sm"
+        class="m-2"
         onclick={() => {
           notifier.showNotification("Re-transcribing data.", "", "stop");
           transcribe();
         }}
-        disabled={recordingState !== "stopped"}
+        disabled={recordingState !== "stopped"}>(✏️) Re-transcribe</Button
       >
-        Re-transcribe</button
-      >
-      <button
-        class="p-2 m-2 rounded-sm bg-green-100 hover:bg-green-200"
+      <Button
+        color="info"
+        size="sm"
+        class="m-2"
         onclick={copyToClipboard}
-        disabled={recordingState !== "stopped"}
-      >
-        Copy to Clipboard</button
+        disabled={recordingState !== "stopped"}>(📋) Copy to Clipboard</Button
       >
     </div>
     <AudioTranscriber
