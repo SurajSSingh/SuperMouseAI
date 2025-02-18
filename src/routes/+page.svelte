@@ -8,13 +8,8 @@
   import WhisperOptions from "$lib/WhisperOptions.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
   import ThemeDropdown from "$lib/components/ThemeDropdown.svelte";
-
-  async function resetPermission() {
-    // await invoke("reset_permission", { origin: window.origin });
-    await micRecorder.setupRecorder();
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    console.log("Devices: ", devices);
-  }
+  import Tab from "$lib/components/Tab.svelte";
+  import PermissionsPage from "$lib/PermissionsPage.svelte";
 
   const THEMES = [
     { value: "default", label: "System", isDefault: true },
@@ -86,36 +81,75 @@
   <ThemeDropdown themes={THEMES} class="fixed top-0" />
   <h1 class="text-3xl text-center">SuperMouse AI</h1>
   <div class="flex flex-col place-content-center">
-    <div class="grid grid-cols-2 mx-32 my-1">
-      <Button
-        color="secondary"
-        size="sm"
-        class="m-2"
-        disabled={recordingState !== "stopped"}
-        onclick={resetPermission}
+    <section class="tabs tabs-lift mx-32">
+      <Tab
+        value="tabs"
+        label="Permissions"
+        checked
+        class="bg-base-100 border-base-300 p-6"
       >
-        Ask Microphone (🎤) Permission Again
-      </Button>
-      <Button
-        color="secondary"
-        size="sm"
-        class="m-2"
-        onclick={() => notifier.getPermissionToNotify(testNotify)}
-        disabled={notifier.permissionGranted}
+        <PermissionsPage
+          {micRecorder}
+          {recordingState}
+          {notifier}
+          {testNotify}
+        />
+      </Tab>
+      <Tab
+        value="tabs"
+        label="Settings"
+        class="bg-base-100 border-base-300 p-6"
       >
-        Ask Notification (🔔) Permission Again
-      </Button>
-    </div>
-    <WhisperOptions bind:threads bind:initialPrompt />
+        <ShortcutSettings
+          onToggleShortcutEvent={() => micRecorder?.toggleRecording()}
+        />
+      </Tab>
+      <Tab
+        value="tabs"
+        label="Configuration"
+        class="bg-base-100 border-base-300 p-6"
+      >
+        <WhisperOptions bind:threads bind:initialPrompt />
+      </Tab>
+    </section>
+    <!-- <Tabs tabs={TABS} class="mx-32">
+      <TabsContent value={TABS[0].value} class="tab-content">
+        <div class="grid grid-cols-2 my-1">
+          <Button
+            color="secondary"
+            size="sm"
+            class="m-2"
+            disabled={recordingState !== "stopped"}
+            onclick={resetPermission}
+          >
+            Ask Microphone (🎤) Permission Again
+          </Button>
+          <Button
+            color="secondary"
+            size="sm"
+            class="m-2"
+            onclick={() => notifier.getPermissionToNotify(testNotify)}
+            disabled={notifier.permissionGranted}
+          >
+            Ask Notification (🔔) Permission Again
+          </Button>
+        </div>
+      </TabsContent>
+      <TabsContent value={TABS[1].value} class="tab-content">
+        <ShortcutSettings
+          onToggleShortcutEvent={() => micRecorder?.toggleRecording()}
+        />
+      </TabsContent>
+      <TabsContent value={TABS[2].value} class="tab-content">
+        <WhisperOptions bind:threads bind:initialPrompt />
+      </TabsContent>
+    </Tabs> -->
     <MicRecorder
       bind:this={micRecorder}
       {recordingState}
       {onRecordingStart}
       {onRecordingEnd}
       {onError}
-    />
-    <ShortcutSettings
-      onToggleShortcutEvent={() => micRecorder?.toggleRecording()}
     />
     <div class="grid grid-cols-2 mx-32 my-1">
       <Button
