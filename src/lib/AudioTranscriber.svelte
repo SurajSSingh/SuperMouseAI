@@ -1,6 +1,7 @@
 <script lang="ts">
     import { invoke } from "@tauri-apps/api/core";
     import { blobChunksToBytes } from "./utils";
+    import Textarea from "./components/ui/textarea/textarea.svelte";
 
     interface TranscriberProps {
         transcribedOutput: string;
@@ -14,7 +15,7 @@
         onError,
     }: TranscriberProps = $props();
 
-    let workingChunks: Blob[] = [];
+    let workingChunks: Blob[] = $state([]);
 
     export async function processData(
         blobChunks?: Blob[],
@@ -41,9 +42,14 @@
     }
 </script>
 
-<textarea
-    class="mx-32 my-4 text-center rounded-md border-4 min-h-32"
-    placeholder="This is where the output goes"
-    bind:value={transcribedOutput}
-    disabled={transcribedOutput === ""}
-></textarea>
+<fieldset class="fieldset mx-32 my-4">
+    <legend class="fieldset-legend">Transcription Output</legend>
+    <Textarea
+        color={transcribedOutput ? "success" : "warning"}
+        size="xl"
+        class="text-center rounded-md border-4 min-h-32 placeholder:text-xl placeholder:italic text-lg"
+        placeholder="Record voice to transcribe..."
+        bind:value={transcribedOutput}
+        disabled={workingChunks.length === 0}
+    />
+</fieldset>
