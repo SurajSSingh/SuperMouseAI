@@ -7,6 +7,7 @@
   import { writeText } from "@tauri-apps/plugin-clipboard-manager";
   import WhisperOptions from "$lib/WhisperOptions.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
+  import ThemeDropdown from "$lib/components/ThemeDropdown.svelte";
 
   async function resetPermission() {
     // await invoke("reset_permission", { origin: window.origin });
@@ -14,6 +15,12 @@
     const devices = await navigator.mediaDevices.enumerateDevices();
     console.log("Devices: ", devices);
   }
+
+  const THEMES = [
+    { value: "default", label: "System", isDefault: true },
+    { value: "bumblebeeLight", label: "Light" },
+    { value: "bumblebeeDark", label: "Dark" },
+  ];
 
   // Component Bindings
   let micRecorder: MicRecorder;
@@ -76,6 +83,7 @@
 </script>
 
 <main class="container">
+  <ThemeDropdown themes={THEMES} class="fixed top-0" />
   <h1 class="text-3xl text-center">SuperMouse AI</h1>
   <div class="flex flex-col place-content-center">
     <div class="grid grid-cols-2 mx-32 my-1">
