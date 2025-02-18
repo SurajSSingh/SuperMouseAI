@@ -43,3 +43,5 @@
         };
     });
 </script>
+
+<h2 class="text-md text-center">Configure Shortcuts</h2>
