@@ -27,7 +27,12 @@
   let initialPrompt = $state("");
 
   // Inner Variables
-  const notifier = new NotificationSystem(enableSound, testNotify);
+  const notifier = new NotificationSystem(
+    //v: This is required to ignore the
+    //   state_referenced_locally warning
+    (() => enableSound)(),
+    (() => testNotify)(),
+  );
 
   // Helper Functions
   function copyToClipboard() {
