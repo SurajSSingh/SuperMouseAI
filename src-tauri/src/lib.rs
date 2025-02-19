@@ -175,6 +175,42 @@ pub fn run() {
                 load_audio!(app, map, start_record, start);
                 load_audio!(app, map, stop_record, stop);
                 load_audio!(app, map, transcribed, finish);
+                {
+                    // TEMP: Add client sound paths, see reference
+                    //       Must be configurable after release
+                    let mut path_buf = PathBuf::new();
+                    path_buf.push(r"C:\");
+                    path_buf.push("MyFastPrograms");
+                    path_buf.push("Python");
+                    path_buf.push("virtuale");
+                    let mut start_path = path_buf.clone();
+                    let mut stop_path = path_buf.clone();
+                    let mut magic_path = path_buf;
+                    start_path.push("start_sound");
+                    stop_path.push("stop_sound");
+                    magic_path.push("magicsound");
+                    start_path.set_extension("wav");
+                    stop_path.set_extension("wav");
+                    magic_path.set_extension("wav");
+                    start_path
+                        .exists()
+                        .then(|| {
+                            map.insert("start".into(), start_path.clone());
+                        })
+                        .unwrap_or_else(|| println!("Start path found: {:?}", start_path));
+                    stop_path
+                        .exists()
+                        .then(|| {
+                            map.insert("stop".into(), stop_path.clone());
+                        })
+                        .unwrap_or_else(|| println!("Stop path found: {:?}", stop_path));
+                    magic_path
+                        .exists()
+                        .then(|| {
+                            map.insert("finish".into(), magic_path.clone());
+                        })
+                        .unwrap_or_else(|| println!("Magic path found: {:?}", magic_path));
+                }
                 map
             };
             app.manage(AppState { model, sound_map });
