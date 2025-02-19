@@ -8,6 +8,7 @@
     } from "extendable-media-recorder";
     import { connect } from "extendable-media-recorder-wav-encoder";
     import Button from "./components/ui/button/button.svelte";
+    import Loading from "./components/Loading.svelte";
 
     interface RecorderProps {
         id?: string;
@@ -157,6 +158,11 @@
         onclick={toggleRecording}
         disabled={isProcessing}>{buttonText}</Button
     >
-    <p class="mb-2">{recordingText}</p>
+    <p class="mb-2">
+        {#if isProcessing}
+            <Loading />
+        {/if}
+        {recordingText}
+    </p>
     <hr />
 </section>
