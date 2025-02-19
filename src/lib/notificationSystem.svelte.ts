@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import {
-    // isPermissionGranted,
+    isPermissionGranted,
     requestPermission,
     sendNotification,
 } from "@tauri-apps/plugin-notification";
@@ -13,6 +13,12 @@ export class NotificationSystem {
     get permissionGranted() {
         return this.#permissionGranted
     }
+
+    async checkPermissionGranted() {
+        this.#permissionGranted = await isPermissionGranted();
+        return this.#permissionGranted
+    }
+
     constructor(enableSound = true, testNotify = false) {
         this.#enabledSound = enableSound;
         this.getPermissionToNotify(testNotify);

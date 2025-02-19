@@ -20,13 +20,15 @@
     }: PermissionsPageProps = $props();
 
     let microphonePermission = $state(false);
+    let notificationPermission = $state(false);
 
     $effect(() => {
         const queryPermissions = async () => {
             microphonePermission =
                 // @ts-ignore 'microphone' should be querable for permissions
                 (await navigator.permissions.query({ name: "microphone" }))
-                    .state === "granted";
+                    .state !== "denied";
+            notificationPermission = await notifier.checkPermissionGranted();
         };
         queryPermissions();
     });
@@ -80,8 +82,8 @@
     )}
     {@render PermissionRow(
         "Notification",
-        notifier.permissionGranted,
-        notifier.permissionGranted,
+        notificationPermission,
+        notificationPermission,
         () => notifier.getPermissionToNotify(testNotify),
         "🔔",
     )}
