@@ -51,13 +51,13 @@
 </script>
 
 <script lang="ts">
-    interface Props {
+    interface LoadingProps {
         color?: LoadingColor;
         variant?: LoadingVariant;
         size?: LoadingSize;
     }
 
-    let { color, variant, size }: Props = $props();
+    let { color, variant, size }: LoadingProps = $props();
 </script>
 
 <span
