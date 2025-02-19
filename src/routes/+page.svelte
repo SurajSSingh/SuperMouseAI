@@ -82,6 +82,17 @@
   <h1 class="text-3xl text-center">SuperMouse AI</h1>
   <div class="flex flex-col place-content-center">
     <section class="tabs tabs-lift mx-32">
+      <Button
+        color="destructive"
+        variant="ghost"
+        shape="circle"
+        onclick={() =>
+          document.getElementsByName("tabs").forEach(
+            (tab) =>
+              // @ts-ignore: Every tab is a radio input
+              (tab.checked = false),
+          )}>X</Button
+      >
       <Tab
         value="tabs"
         label="Permissions"
@@ -112,38 +123,6 @@
         <WhisperOptions bind:threads bind:initialPrompt />
       </Tab>
     </section>
-    <!-- <Tabs tabs={TABS} class="mx-32">
-      <TabsContent value={TABS[0].value} class="tab-content">
-        <div class="grid grid-cols-2 my-1">
-          <Button
-            color="secondary"
-            size="sm"
-            class="m-2"
-            disabled={recordingState !== "stopped"}
-            onclick={resetPermission}
-          >
-            Ask Microphone (🎤) Permission Again
-          </Button>
-          <Button
-            color="secondary"
-            size="sm"
-            class="m-2"
-            onclick={() => notifier.getPermissionToNotify(testNotify)}
-            disabled={notifier.permissionGranted}
-          >
-            Ask Notification (🔔) Permission Again
-          </Button>
-        </div>
-      </TabsContent>
-      <TabsContent value={TABS[1].value} class="tab-content">
-        <ShortcutSettings
-          onToggleShortcutEvent={() => micRecorder?.toggleRecording()}
-        />
-      </TabsContent>
-      <TabsContent value={TABS[2].value} class="tab-content">
-        <WhisperOptions bind:threads bind:initialPrompt />
-      </TabsContent>
-    </Tabs> -->
     <MicRecorder
       bind:this={micRecorder}
       {recordingState}
