@@ -5,14 +5,14 @@
     import { NotificationSystem } from "./notificationSystem.svelte";
 
     interface PermissionsPageProps {
-        micRecorder: MicRecorder;
+        setupRecorder: () => Promise<void>;
         recordingState: RecordingStates;
         notifier: NotificationSystem;
         testNotify?: boolean;
     }
 
     let {
-        micRecorder,
+        setupRecorder,
         recordingState,
         notifier,
         testNotify = false,
@@ -20,7 +20,7 @@
 
     async function resetPermission() {
         // await invoke("reset_permission", { origin: window.origin });
-        await micRecorder.setupRecorder();
+        await setupRecorder();
         const devices = await navigator.mediaDevices.enumerateDevices();
         console.log("Devices: ", devices);
     }

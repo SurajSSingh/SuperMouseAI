@@ -89,7 +89,7 @@
         class="bg-base-100 border-base-300 p-6"
       >
         <PermissionsPage
-          {micRecorder}
+          setupRecorder={() => micRecorder.setupRecorder()}
           {recordingState}
           {notifier}
           {testNotify}
