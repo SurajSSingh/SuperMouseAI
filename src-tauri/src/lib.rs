@@ -141,25 +141,11 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_notification::init())
-        .plugin(
-            tauri_plugin_global_shortcut::Builder::new()
-                .with_shortcuts([
-                    // alt_left,
-                    // alt_right,
-                    // ctrl_left,
-                    // ctrl_right,
-                    // shift_left,
-                    // shift_right,
-                    mod_key,
-                ])
-                .expect("Shortcuts should be valid")
-                .with_handler(|app, _shortcut, event| {
-                    app.emit("mod_key_event", event.state)
-                        .expect("Keyboard should emit");
-                })
-                .build(),
-        )
         .setup(|app| {
+            // Initialize Shortcuts plugin
+            #[cfg(desktop)]
+            app.handle()
+                .plugin(tauri_plugin_global_shortcut::Builder::new().build())?;
             //  Load the model
             let resource_path = app
                 .path()

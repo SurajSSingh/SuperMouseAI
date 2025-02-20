@@ -113,6 +113,7 @@
       >
         <ShortcutSettings
           onToggleShortcutEvent={() => micRecorder?.toggleRecording()}
+          {notifier}
         />
       </Tab>
       <Tab

@@ -30,7 +30,7 @@ export class NotificationSystem {
             if (testNotify && this.#permissionGranted) {
                 sendNotification("Notification Test!");
             } else if (testNotify) {
-                alert("Notification not enabled!");
+                window.alert("Notification not enabled!");
             }
         })
     }
@@ -46,10 +46,24 @@ export class NotificationSystem {
                 body: message,
             });
         } else {
-            alert(`${subtitle ? subtitle + ": " : ""}${message}`);
+            window.alert(`${subtitle ? subtitle + ": " : ""}${message}`);
         }
         if (this.#enabledSound && sound) {
             console.log(`Playing: ${sound}`)
+            invoke("play_sound", { soundName: sound }).catch((err) =>
+                console.error(err),
+            );
+        }
+    }
+
+    showAlert(
+        message: string,
+        subtitle = "",
+        sound = "default_alert",
+    ) {
+        console.log(`Alert ${subtitle}: ${message}`)
+        alert(`${subtitle ? subtitle + ": " : ""}${message}`);
+        if (this.#enabledSound && sound) {
             invoke("play_sound", { soundName: sound }).catch((err) =>
                 console.error(err),
             );
