@@ -19,15 +19,23 @@
         testNotify = false,
     }: PermissionsPageProps = $props();
 
-    let microphonePermission = $state(false);
-    let notificationPermission = $state(false);
+    let explicitMicrophonePermission: PermissionState = $state(
+        "denied" as PermissionState,
+    );
+    let notificationPermission: boolean = $state(false);
+
+    const microphonePermission: boolean | null = $derived(
+        explicitMicrophonePermission === "prompt"
+            ? null
+            : explicitMicrophonePermission === "granted",
+    );
 
     $effect(() => {
         const queryPermissions = async () => {
-            microphonePermission =
+            explicitMicrophonePermission =
                 // @ts-ignore 'microphone' should be querable for permissions
                 (await navigator.permissions.query({ name: "microphone" }))
-                    .state !== "denied";
+                    .state;
             notificationPermission = await notifier.checkPermissionGranted();
         };
         queryPermissions();
@@ -43,7 +51,7 @@
 
 {#snippet PermissionRow(
     name: string,
-    status: boolean,
+    status: boolean | null,
     disabled: boolean,
     onclick: () => void,
     icon?: string,
@@ -51,13 +59,21 @@
     <div>
         <h3>
             <Status
-                color={status ? "success" : "error"}
+                color={status === null
+                    ? "warning"
+                    : status
+                      ? "success"
+                      : "error"}
                 size="lg"
                 class="mr-2"
             />{icon ? `${icon}: ` : ""}{name}
         </h3>
         <span class="pl-0 text-xs"
-            >Permission: {status ? "Granted" : "Denied"}</span
+            >Permission: {status === null
+                ? "Prompted (User)"
+                : status
+                  ? "Granted"
+                  : "Denied"}</span
         >
     </div>
     <Button
