@@ -4,6 +4,7 @@ import {
     requestPermission,
     sendNotification,
 } from "@tauri-apps/plugin-notification";
+import { toast } from "svelte-sonner";
 
 
 export class NotificationSystem {
@@ -62,7 +63,7 @@ export class NotificationSystem {
         sound = "default_alert",
     ) {
         console.log(`Alert ${subtitle}: ${message}`)
-        alert(`${subtitle ? subtitle + ": " : ""}${message}`);
+        toast(`${subtitle ? subtitle + ": " : ""}${message}`);
         if (this.#enabledSound && sound) {
             invoke("play_sound", { soundName: sound }).catch((err) =>
                 console.error(err),
