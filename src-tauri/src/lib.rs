@@ -180,19 +180,19 @@ pub fn run() {
                         .then(|| {
                             map.insert("start".into(), start_path.clone());
                         })
-                        .unwrap_or_else(|| println!("Start path found: {:?}", start_path));
+                        .unwrap_or_else(|| println!("No start path found: {:?}", start_path));
                     stop_path
                         .exists()
                         .then(|| {
                             map.insert("stop".into(), stop_path.clone());
                         })
-                        .unwrap_or_else(|| println!("Stop path found: {:?}", stop_path));
+                        .unwrap_or_else(|| println!("No stop path found: {:?}", stop_path));
                     magic_path
                         .exists()
                         .then(|| {
                             map.insert("finish".into(), magic_path.clone());
                         })
-                        .unwrap_or_else(|| println!("Magic path found: {:?}", magic_path));
+                        .unwrap_or_else(|| println!("No magic path found: {:?}", magic_path));
                 }
                 map
             };
