@@ -7,6 +7,8 @@
         type IMediaRecorder,
     } from "extendable-media-recorder";
     import { connect } from "extendable-media-recorder-wav-encoder";
+    import Button from "./components/ui/button/button.svelte";
+    import Loading from "./components/Loading.svelte";
 
     interface RecorderProps {
         id?: string;
@@ -18,7 +20,7 @@
 
     let {
         id = "audio-holder",
-        recordingState = $bindable("stopped"),
+        recordingState = "stopped",
         onRecordingStart,
         onRecordingEnd,
         onError,
@@ -46,7 +48,7 @@
         isRecording
             ? "(🎤🔴): Microphone RECORDING"
             : isProcessing
-              ? "(🗣️📝): Processing File"
+              ? "(🗣️📝): Processing Audio"
               : "(🎤⏹️): Microphone Inactive",
     );
 
@@ -144,15 +146,23 @@
 </script>
 
 <section {id} class="mx-32 my-2 text-center">
-    <button
-        class="p-2 w-3/4 my-2 font-semibold rounded-sm {isRecording
-            ? 'bg-red-500 hover:bg-red-600'
+    <Button
+        class="p-2 w-3/4 my-2 font-semibold rounded-sm"
+        color={isRecording
+            ? "destructive"
             : isProcessing
-              ? 'bg-orange-800 hover:bg-orange-900'
-              : 'bg-emerald-200 hover:bg-emerald-600'}"
+              ? "warning"
+              : "success"}
+        size="sm"
+        width="block"
         onclick={toggleRecording}
-        disabled={isProcessing}>{buttonText}</button
+        disabled={isProcessing}>{buttonText}</Button
     >
+    <p class="mb-2">
+        {#if isProcessing}
+            <Loading />
+        {/if}
+        {recordingText}
+    </p>
     <hr />
-    <span>{recordingText}</span>
 </section>

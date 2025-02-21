@@ -8,7 +8,6 @@ use mutter::{Model, ModelError};
 use rodio::{Decoder, OutputStream, Sink};
 use serde::{Deserialize, Serialize};
 use tauri::{path::BaseDirectory, AppHandle, Emitter, Manager, State};
-use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut};
 
 mod mutter;
 mod transcript;
@@ -136,30 +135,14 @@ fn listen_for_mouse_click(app_handle: AppHandle) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let mod_key = Shortcut::new(Some(Modifiers::ALT), Code::Space);
-
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_notification::init())
-        .plugin(
-            tauri_plugin_global_shortcut::Builder::new()
-                .with_shortcuts([
-                    // alt_left,
-                    // alt_right,
-                    // ctrl_left,
-                    // ctrl_right,
-                    // shift_left,
-                    // shift_right,
-                    mod_key,
-                ])
-                .expect("Shortcuts should be valid")
-                .with_handler(|app, _shortcut, event| {
-                    app.emit("mod_key_event", event.state)
-                        .expect("Keyboard should emit");
-                })
-                .build(),
-        )
         .setup(|app| {
+            // Initialize Shortcuts plugin
+            #[cfg(desktop)]
+            app.handle()
+                .plugin(tauri_plugin_global_shortcut::Builder::new().build())?;
             //  Load the model
             let resource_path = app
                 .path()
@@ -175,6 +158,42 @@ pub fn run() {
                 load_audio!(app, map, start_record, start);
                 load_audio!(app, map, stop_record, stop);
                 load_audio!(app, map, transcribed, finish);
+                {
+                    // TEMP: Add client sound paths, see reference
+                    //       Must be configurable after release
+                    let mut path_buf = PathBuf::new();
+                    path_buf.push(r"C:\");
+                    path_buf.push("MyFastPrograms");
+                    path_buf.push("Python");
+                    path_buf.push("virtuale");
+                    let mut start_path = path_buf.clone();
+                    let mut stop_path = path_buf.clone();
+                    let mut magic_path = path_buf;
+                    start_path.push("start_sound");
+                    stop_path.push("stop_sound");
+                    magic_path.push("magicsound");
+                    start_path.set_extension("wav");
+                    stop_path.set_extension("wav");
+                    magic_path.set_extension("wav");
+                    start_path
+                        .exists()
+                        .then(|| {
+                            map.insert("start".into(), start_path.clone());
+                        })
+                        .unwrap_or_else(|| println!("No start path found: {:?}", start_path));
+                    stop_path
+                        .exists()
+                        .then(|| {
+                            map.insert("stop".into(), stop_path.clone());
+                        })
+                        .unwrap_or_else(|| println!("No stop path found: {:?}", stop_path));
+                    magic_path
+                        .exists()
+                        .then(|| {
+                            map.insert("finish".into(), magic_path.clone());
+                        })
+                        .unwrap_or_else(|| println!("No magic path found: {:?}", magic_path));
+                }
                 map
             };
             app.manage(AppState { model, sound_map });

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Toaster } from "$lib/components/ui/sonner";
   import { type RecordingStates } from "$lib/types";
   import MicRecorder from "$lib/MicRecorder.svelte";
   import AudioTranscriber from "$lib/AudioTranscriber.svelte";
@@ -6,13 +7,21 @@
   import ShortcutSettings from "$lib/ShortcutSettings.svelte";
   import { writeText } from "@tauri-apps/plugin-clipboard-manager";
   import WhisperOptions from "$lib/WhisperOptions.svelte";
+  import Button from "$lib/components/ui/button/button.svelte";
+  import ThemeDropdown from "$lib/components/ThemeDropdown.svelte";
+  import Tab from "$lib/components/Tab.svelte";
+  import PermissionsPage from "$lib/PermissionsPage.svelte";
 
-  async function resetPermission() {
-    // await invoke("reset_permission", { origin: window.origin });
-    await micRecorder.setupRecorder();
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    console.log("Devices: ", devices);
-  }
+  const THEMES = [
+    {
+      value: "system",
+      label: "System",
+      isDefault: true,
+      kind: "system" as const,
+    },
+    { value: "light", label: "Light", kind: "light" as const },
+    { value: "dark", label: "Dark", kind: "dark" as const },
+  ];
 
   // Component Bindings
   let micRecorder: MicRecorder;
@@ -24,9 +33,15 @@
   let testNotify = $state(true);
   let threads = $state(0);
   let initialPrompt = $state("");
+  let theme: "system" | "light" | "dark" = $state("system");
 
   // Inner Variables
-  const notifier = new NotificationSystem(enableSound, testNotify);
+  const notifier = new NotificationSystem(
+    //v: This is required to ignore the
+    //   state_referenced_locally warning
+    (() => enableSound)(),
+    (() => testNotify)(),
+  );
 
   // Helper Functions
   function copyToClipboard() {
@@ -34,20 +49,28 @@
     notifier.showNotification("Copied to clipboard!", "", "");
   }
 
+  $inspect(recordingState);
+
   function transcribe(chunks?: Blob[]) {
     recordingState = "processing";
-    audioTranscriber.processData(
-      chunks,
-      threads > 0 ? threads : undefined,
-      initialPrompt || undefined,
-    );
+    // Force a microtask to allow rendering before transcribing,
+    // fixes issue with "processing" state not updating during processing
+    new Promise((resolve) => requestAnimationFrame(resolve)).finally(() => {
+      audioTranscriber.processData(
+        chunks,
+        threads > 0 ? threads : undefined,
+        initialPrompt || undefined,
+      );
+    });
   }
+
   // Callback functions
   function onRecordingStart() {
     recordingState = "recording";
     notifier.showNotification("Recording Started!", "", "start");
   }
   function onRecordingEnd(chunks: Blob[]) {
+    recordingState = "processing";
     notifier.showNotification("Recording Stopped!", "", "stop");
     transcribe(chunks);
   }
@@ -62,23 +85,53 @@
 </script>
 
 <main class="container">
+  <Toaster position="top-right" richColors closeButton {theme} />
+  <ThemeDropdown themes={THEMES} bind:current={theme} class="fixed top-0" />
   <h1 class="text-3xl text-center">SuperMouse AI</h1>
   <div class="flex flex-col place-content-center">
-    <div class="grid grid-cols-2 mx-32 my-1">
-      <button
-        class="p-2 m-2 text-sm bg-amber-500 rounded-sm hover:bg-amber-600"
-        onclick={resetPermission}
+    <section class="tabs tabs-lift mx-32">
+      <Button
+        color="destructive"
+        variant="ghost"
+        shape="circle"
+        onclick={() =>
+          document.getElementsByName("tabs").forEach(
+            (tab) =>
+              // @ts-ignore: Every tab is a radio input
+              (tab.checked = false),
+          )}>X</Button
       >
-        Ask Permission Again
-      </button>
-      <button
-        class="p-2 m-2 text-sm bg-amber-500 rounded-sm hover:bg-amber-600"
-        onclick={() => notifier.getPermissionToNotify(testNotify)}
-        disabled={notifier.permissionGranted}
-        >Ask Notification Permission Again</button
+      <Tab
+        value="tabs"
+        label="Permissions"
+        checked
+        class="bg-base-100 border-base-300 p-6"
       >
-    </div>
-    <WhisperOptions bind:threads bind:initialPrompt />
+        <PermissionsPage
+          setupRecorder={() => micRecorder.setupRecorder()}
+          {recordingState}
+          {notifier}
+          {testNotify}
+        />
+      </Tab>
+      <Tab
+        value="tabs"
+        label="Settings"
+        class="bg-base-100 border-base-300 p-6"
+      >
+        <ShortcutSettings
+          onToggleShortcutEvent={() => micRecorder?.toggleRecording()}
+          {notifier}
+        />
+      </Tab>
+      <Tab
+        value="tabs"
+        label="Configuration"
+        class="bg-base-100 border-base-300 p-6"
+      >
+        <WhisperOptions bind:threads bind:initialPrompt />
+      </Tab>
+    </section>
     <MicRecorder
       bind:this={micRecorder}
       {recordingState}
@@ -86,26 +139,23 @@
       {onRecordingEnd}
       {onError}
     />
-    <ShortcutSettings
-      onToggleShortcutEvent={() => micRecorder?.toggleRecording()}
-    />
     <div class="grid grid-cols-2 mx-32 my-1">
-      <button
-        class="p-2 m-2 rounded-sm bg-green-100 hover:bg-green-200"
+      <Button
+        color={recordingState === "processing" ? "neutral" : "warning"}
+        size="sm"
+        class="m-2"
         onclick={() => {
           notifier.showNotification("Re-transcribing data.", "", "stop");
           transcribe();
         }}
-        disabled={recordingState !== "stopped"}
+        disabled={recordingState !== "stopped"}>(✏️) Re-transcribe</Button
       >
-        Re-transcribe</button
-      >
-      <button
-        class="p-2 m-2 rounded-sm bg-green-100 hover:bg-green-200"
+      <Button
+        color="info"
+        size="sm"
+        class="m-2"
         onclick={copyToClipboard}
-        disabled={recordingState !== "stopped"}
-      >
-        Copy to Clipboard</button
+        disabled={recordingState !== "stopped"}>(📋) Copy to Clipboard</Button
       >
     </div>
     <AudioTranscriber

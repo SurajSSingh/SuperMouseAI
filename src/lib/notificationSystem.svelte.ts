@@ -1,9 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import {
-    // isPermissionGranted,
+    isPermissionGranted,
     requestPermission,
     sendNotification,
 } from "@tauri-apps/plugin-notification";
+import { toast } from "svelte-sonner";
 
 
 export class NotificationSystem {
@@ -13,6 +14,12 @@ export class NotificationSystem {
     get permissionGranted() {
         return this.#permissionGranted
     }
+
+    async checkPermissionGranted() {
+        this.#permissionGranted = await isPermissionGranted();
+        return this.#permissionGranted
+    }
+
     constructor(enableSound = true, testNotify = false) {
         this.#enabledSound = enableSound;
         this.getPermissionToNotify(testNotify);
@@ -24,7 +31,7 @@ export class NotificationSystem {
             if (testNotify && this.#permissionGranted) {
                 sendNotification("Notification Test!");
             } else if (testNotify) {
-                alert("Notification not enabled!");
+                window.alert("Notification not enabled!");
             }
         })
     }
@@ -40,10 +47,51 @@ export class NotificationSystem {
                 body: message,
             });
         } else {
-            alert(`${subtitle ? subtitle + ": " : ""}${message}`);
+            window.alert(`${subtitle ? subtitle + ": " : ""}${message}`);
         }
+        this.playSound(sound);
+    }
+
+    // TEMP
+    showSuccess(
+        message: string,
+        subtitle = "",
+        sound = "",
+        duration = 5000,
+    ) {
+        toast.success(subtitle || message, {
+            description: subtitle ? message : "",
+            duration
+        });
+        this.playSound(sound);
+    }
+
+    // TEMP
+    showError(
+        message: string,
+        subtitle = "",
+        sound = "default_alert",
+        duration = 5000,
+    ) {
+        toast.error(subtitle || message, {
+            description: subtitle ? message : "",
+            duration
+        });
+        this.playSound(sound);
+    }
+
+    showAlert(
+        message: string,
+        subtitle = "",
+        sound = "default_alert",
+    ) {
+        console.log(`Alert ${subtitle}: ${message}`)
+        toast(`${subtitle ? subtitle + ": " : ""}${message}`);
+        this.playSound(sound);
+    }
+
+    playSound(sound = "default_alert") {
         if (this.#enabledSound && sound) {
-            console.log(`Playing: ${sound}`)
             invoke("play_sound", { soundName: sound }).catch((err) =>
                 console.error(err),
             );
