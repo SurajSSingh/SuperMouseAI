@@ -49,7 +49,7 @@ export class NotificationSystem {
         } else {
             window.alert(`${subtitle ? subtitle + ": " : ""}${message}`);
         }
-        this.playSound();
+        this.playSound(sound);
     }
 
     // TEMP
