@@ -8,7 +8,6 @@ use mutter::{Model, ModelError};
 use rodio::{Decoder, OutputStream, Sink};
 use serde::{Deserialize, Serialize};
 use tauri::{path::BaseDirectory, AppHandle, Emitter, Manager, State};
-use tauri_plugin_global_shortcut::{Code, Modifiers, Shortcut};
 
 mod mutter;
 mod transcript;
@@ -136,8 +135,6 @@ fn listen_for_mouse_click(app_handle: AppHandle) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let mod_key = Shortcut::new(Some(Modifiers::ALT), Code::Space);
-
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_notification::init())
