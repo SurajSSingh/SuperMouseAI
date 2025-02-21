@@ -87,7 +87,7 @@
 <main class="container">
   <Toaster position="top-right" richColors closeButton {theme} />
   <ThemeDropdown themes={THEMES} bind:current={theme} class="fixed top-0" />
-  <h1 class="text-3xl text-center">SuperMouse AI: {theme}</h1>
+  <h1 class="text-3xl text-center">SuperMouse AI</h1>
   <div class="flex flex-col place-content-center">
     <section class="tabs tabs-lift mx-32">
       <Button
