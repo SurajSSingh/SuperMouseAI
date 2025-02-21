@@ -4,11 +4,17 @@
             value: string;
             label?: string;
             isDefault?: boolean;
+            kind?: "system" | "light" | "dark";
         }[];
         class?: string;
+        current?: "system" | "light" | "dark";
     }
 
-    let { themes, class: className }: ThemeSwitcherProps = $props();
+    let {
+        themes,
+        class: className,
+        current = $bindable("system"),
+    }: ThemeSwitcherProps = $props();
 </script>
 
 <div class={`dropdown ${className}`}>
@@ -37,6 +43,7 @@
                     aria-label={theme.label || theme.value}
                     value={theme.value}
                     checked={theme?.isDefault ?? false}
+                    bind:group={current}
                 />
             </li>
         {/each}

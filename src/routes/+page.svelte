@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Toaster } from "$lib/components/ui/sonner";
   import { type RecordingStates } from "$lib/types";
   import MicRecorder from "$lib/MicRecorder.svelte";
   import AudioTranscriber from "$lib/AudioTranscriber.svelte";
@@ -12,9 +13,14 @@
   import PermissionsPage from "$lib/PermissionsPage.svelte";
 
   const THEMES = [
-    { value: "default", label: "System", isDefault: true },
-    { value: "bumblebeeLight", label: "Light" },
-    { value: "bumblebeeDark", label: "Dark" },
+    {
+      value: "system",
+      label: "System",
+      isDefault: true,
+      kind: "system" as const,
+    },
+    { value: "light", label: "Light", kind: "light" as const },
+    { value: "dark", label: "Dark", kind: "dark" as const },
   ];
 
   // Component Bindings
@@ -27,6 +33,7 @@
   let testNotify = $state(true);
   let threads = $state(0);
   let initialPrompt = $state("");
+  let theme: "system" | "light" | "dark" = $state("system");
 
   // Inner Variables
   const notifier = new NotificationSystem(
@@ -78,8 +85,9 @@
 </script>
 
 <main class="container">
-  <ThemeDropdown themes={THEMES} class="fixed top-0" />
-  <h1 class="text-3xl text-center">SuperMouse AI</h1>
+  <Toaster position="top-right" richColors closeButton {theme} />
+  <ThemeDropdown themes={THEMES} bind:current={theme} class="fixed top-0" />
+  <h1 class="text-3xl text-center">SuperMouse AI: {theme}</h1>
   <div class="flex flex-col place-content-center">
     <section class="tabs tabs-lift mx-32">
       <Button
