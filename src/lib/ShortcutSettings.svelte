@@ -5,6 +5,7 @@
         unregister,
         unregisterAll,
         type ShortcutEvent,
+        type ShortcutHandler,
     } from "@tauri-apps/plugin-global-shortcut";
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
     import Button from "./components/ui/button/button.svelte";
@@ -17,6 +18,43 @@
 
     let { notifier, onToggleShortcutEvent }: ShortcutsProps = $props();
 
+    type ShowShortcutFn = <T>(shortcut: string, returns: T) => T;
+
+    const showShortcutFindingError: ShowShortcutFn = (
+        shortcut: string,
+        returns,
+    ) => {
+        notifier?.showAlert(
+            `Could not check if ${shortcut} is registered (check for spelling issues)`,
+        );
+        return returns;
+    };
+    const showShortcutRegistrationError: ShowShortcutFn = (
+        shortcut: string,
+        returns,
+    ) => {
+        notifier?.showAlert(
+            `Could not register the shortcut: ${shortcut} (may have spelling issues or already be registered)`,
+        );
+        return returns;
+    };
+    const showShortcutUnregistrationError: ShowShortcutFn = (
+        shortcut: string,
+        returns,
+    ) => {
+        notifier?.showAlert(
+            `Could not unregister the shortcut: ${shortcut} (may have spelling issues or already be unregistered)`,
+        );
+        return returns;
+    };
+    const showShortcutRegistrationSuccess: ShowShortcutFn = (
+        shortcut: string,
+        returns,
+    ) => {
+        notifier?.showAlert(`Shortcut ${shortcut} has been registered`);
+        return returns;
+    };
+
     let clickEventUnlistener: UnlistenFn | null = null;
 
     // States
@@ -27,11 +65,23 @@
     let previousKeyShortcut = $state("");
     let previousLMBShortcut = $state("");
 
+    // Semi-derived
+    // TODO: Refactor this to be entirely derived somehow
+    let hasHotKeyError = $state(false);
+    let hasMouseKeyError = $state(false);
+
+    // Derived
+    const hotkeyShortcutChanged = $derived(
+        keyboardShortcut !== previousKeyShortcut,
+    );
+    const mouseShortcutChanged = $derived(
+        leftMouseKeyShortcut !== previousLMBShortcut,
+    );
+
     async function setupShortcuts() {
         // Setup Mouse press event
-        console.log(clickEventUnlistener);
+        // console.log(clickEventUnlistener);
         if (clickEventUnlistener === null) {
-            console.log("Regis click");
             clickEventUnlistener = await listen("mouse_press", (_e) => {
                 console.log(_e);
                 if (modKeyHeld) {
@@ -40,12 +90,28 @@
             });
         }
         // Register Keyboard only shortcut
-        if (!(await isRegistered(keyboardShortcut))) {
-            await registerNewShortcutWithMouse(false);
+        if (hotkeyShortcutChanged || hasHotKeyError) {
+            const prev = previousKeyShortcut;
+            previousKeyShortcut = await registerNewShortcut(
+                keyboardShortcut,
+                hotkeyEvent,
+                previousKeyShortcut,
+            );
+            hasHotKeyError =
+                prev === previousKeyShortcut &&
+                previousKeyShortcut !== keyboardShortcut;
         }
         // Register Mouse+Keyboard shortcut
-        if (!(await isRegistered(leftMouseKeyShortcut))) {
-            await registerNewShortcutWithMouse(true);
+        if (mouseShortcutChanged || hasMouseKeyError) {
+            const prev = previousLMBShortcut;
+            previousLMBShortcut = await registerNewShortcut(
+                leftMouseKeyShortcut,
+                mouseKeyEvent,
+                previousLMBShortcut,
+            );
+            hasMouseKeyError =
+                prev === previousLMBShortcut &&
+                previousLMBShortcut !== leftMouseKeyShortcut;
         }
     }
 
@@ -65,72 +131,51 @@
         );
     }
 
-    async function registerNewShortcutWithMouse(useMouse: boolean) {
-        // TODO: Reduce nesting and make more modular (too much repeating common code)
-        if (useMouse) {
-            leftMouseKeyShortcut = leftMouseKeyShortcut.trim();
-            if (
-                await isRegistered(leftMouseKeyShortcut).catch(
-                    () =>
-                        `Could not check if ${leftMouseKeyShortcut} is registered (check for spelling issues)`,
-                )
-            ) {
-                previousLMBShortcut = leftMouseKeyShortcut;
-                return;
-            }
-            // Register new before unregistering old in case of error
-            await register(leftMouseKeyShortcut, mouseKeyEvent).catch((_err) =>
-                notifier?.showAlert(
-                    `Could not register the shortcut: ${leftMouseKeyShortcut} (may have spelling issues or already be registered)`,
-                ),
-            );
-            if (previousLMBShortcut) {
-                await unregister(previousLMBShortcut).then(
-                    () => {
-                        previousLMBShortcut = leftMouseKeyShortcut;
-                    },
-                    (_err) =>
-                        notifier?.showAlert(
-                            `Could not unregister the shortcut: ${previousLMBShortcut} (may have spelling issues or already be registered)`,
-                        ),
-                );
-            } else {
-                // Snapshot the current so if user changes, we can unregister
-                previousLMBShortcut = leftMouseKeyShortcut;
-            }
-        } else {
-            keyboardShortcut = keyboardShortcut.trim();
-            if (
-                await isRegistered(keyboardShortcut).catch(
-                    () =>
-                        `Could not check if ${keyboardShortcut} is registered (check for spelling issues)`,
-                )
-            ) {
-                previousKeyShortcut = keyboardShortcut;
-                return;
-            }
-            // Register new before unregistering old in case of error
-            await register(keyboardShortcut, hotkeyEvent).catch((_err) =>
-                notifier?.showAlert(
-                    `Could not register the shortcut: ${keyboardShortcut} (check for spelling issues)`,
-                ),
-            );
-
-            if (previousKeyShortcut) {
-                await unregister(previousKeyShortcut).then(
-                    () => {
-                        previousKeyShortcut = keyboardShortcut;
-                    },
-                    (_err) =>
-                        notifier?.showAlert(
-                            `Could not unregister the shortcut: ${previousKeyShortcut} (check for spelling issues)`,
-                        ),
-                );
-            } else {
-                // Snapshot the current so if user changes, we can unregister
-                previousKeyShortcut = keyboardShortcut;
-            }
+    /**
+     *
+     * @param shortcut new shortcut to register
+     * @param handler callback to run for shortcut
+     * @param previousShortcut optional previous shortcut to unregister
+     * @return previous shortcut
+     */
+    async function registerNewShortcut(
+        shortcut: string,
+        handler: ShortcutHandler,
+        previousShortcut?: string,
+    ): Promise<string> {
+        shortcut = shortcut.trim();
+        previousShortcut = previousShortcut ?? "";
+        if (
+            await isRegistered(shortcut).catch((_err) =>
+                // Default to skip registration on error,
+                // so it doesn't cause issues for shortcuts
+                showShortcutFindingError(shortcut, true),
+            )
+        ) {
+            return previousShortcut;
         }
+        return await register(shortcut, handler).then(
+            (_success) =>
+                (previousShortcut
+                    ? // Unregister when there is a previousShortcut
+                      unregister(previousShortcut)
+                    : // or just resolve immediately
+                      Promise.resolve()
+                ).then(
+                    (_success) =>
+                        showShortcutRegistrationSuccess(shortcut, shortcut),
+                    (_failure) =>
+                        // Show failure, but still return new shortcut,
+                        // since it has been registered
+                        showShortcutUnregistrationError(
+                            previousShortcut,
+                            shortcut,
+                        ),
+                ),
+            (_failure) =>
+                // Stop to show failure and return previous shortcut
+                showShortcutRegistrationError(shortcut, previousShortcut),
+        );
     }
 
     // Effect
@@ -156,7 +201,7 @@
         name="key-shortcut"
         id="key-shortcut"
         bind:value={keyboardShortcut}
-        class={`p-1 rounded-sm border-1 input ${keyboardShortcut !== previousKeyShortcut ? "input-warning" : "input-success"}`}
+        class={`p-1 rounded-sm border-1 input ${hasHotKeyError ? "input-error" : hotkeyShortcutChanged ? "input-warning" : "input-success"}`}
     />
     <p class="fieldset-label">
         When keys are pressed anywhere, it will toggle recording.
@@ -169,7 +214,7 @@
         name="mouse-shortcut"
         id="mouse-shortcut"
         bind:value={leftMouseKeyShortcut}
-        class={`p-1 rounded-sm border-1 input ${leftMouseKeyShortcut !== previousLMBShortcut ? "input-warning" : "input-success"}`}
+        class={`p-1 rounded-sm border-1 input ${hasMouseKeyError ? "input-error" : mouseShortcutChanged ? "input-warning" : "input-success"}`}
     />
     <p class="fieldset-label">
         When left mouse button is clicked with these keys held down, it will
@@ -177,12 +222,4 @@
     </p>
 </fieldset>
 
-<Button
-    onclick={() => {
-        if (leftMouseKeyShortcut !== previousLMBShortcut)
-            registerNewShortcutWithMouse(true);
-        if (keyboardShortcut !== previousKeyShortcut)
-            registerNewShortcutWithMouse(false);
-    }}
-    color="secondary">Register All</Button
->
+<Button onclick={setupShortcuts} color="secondary">Register All</Button>
