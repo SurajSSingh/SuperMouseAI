@@ -24,8 +24,9 @@
         shortcut: string,
         returns,
     ) => {
-        notifier?.showAlert(
+        notifier?.showError(
             `Could not check if ${shortcut} is registered (check for spelling issues)`,
+            "Shortcut Finding Error",
         );
         return returns;
     };
@@ -33,8 +34,9 @@
         shortcut: string,
         returns,
     ) => {
-        notifier?.showAlert(
+        notifier?.showError(
             `Could not register the shortcut: ${shortcut} (may have spelling issues or already be registered)`,
+            "Shortcut Registration Error",
         );
         return returns;
     };
@@ -42,8 +44,9 @@
         shortcut: string,
         returns,
     ) => {
-        notifier?.showAlert(
+        notifier?.showError(
             `Could not unregister the shortcut: ${shortcut} (may have spelling issues or already be unregistered)`,
+            "Shortcut Unregister Error",
         );
         return returns;
     };
@@ -51,7 +54,7 @@
         shortcut: string,
         returns,
     ) => {
-        notifier?.showAlert(`Shortcut ${shortcut} has been registered`);
+        notifier?.showSuccess(`Shortcut ${shortcut} has been registered`);
         return returns;
     };
 

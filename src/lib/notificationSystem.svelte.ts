@@ -49,12 +49,35 @@ export class NotificationSystem {
         } else {
             window.alert(`${subtitle ? subtitle + ": " : ""}${message}`);
         }
-        if (this.#enabledSound && sound) {
-            console.log(`Playing: ${sound}`)
-            invoke("play_sound", { soundName: sound }).catch((err) =>
-                console.error(err),
-            );
-        }
+        this.playSound();
+    }
+
+    // TEMP
+    showSuccess(
+        message: string,
+        subtitle = "",
+        sound = "",
+        duration = 5000,
+    ) {
+        toast.success(subtitle || message, {
+            description: subtitle ? message : "",
+            duration
+        });
+        this.playSound(sound);
+    }
+
+    // TEMP
+    showError(
+        message: string,
+        subtitle = "",
+        sound = "default_alert",
+        duration = 5000,
+    ) {
+        toast.error(subtitle || message, {
+            description: subtitle ? message : "",
+            duration
+        });
+        this.playSound(sound);
     }
 
     showAlert(
@@ -64,6 +87,10 @@ export class NotificationSystem {
     ) {
         console.log(`Alert ${subtitle}: ${message}`)
         toast(`${subtitle ? subtitle + ": " : ""}${message}`);
+        this.playSound(sound);
+    }
+
+    playSound(sound = "default_alert") {
         if (this.#enabledSound && sound) {
             invoke("play_sound", { soundName: sound }).catch((err) =>
                 console.error(err),
