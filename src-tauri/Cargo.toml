@@ -27,7 +27,7 @@ log = "0.4.21"
 num = "0.4.3"
 num_cpus = "1.16.0"
 rodio = { version = "0.20.1" }
-strum = { version = "0.26.2", features = ["derive"] }
+strum = { version = "0.27.1", features = ["derive"] }
 ureq = "3.0.4"
 mouce = "0.2.50"
 tauri-plugin-notification = "2"
