@@ -59,6 +59,7 @@
     };
 
     let clickEventUnlistener: UnlistenFn | null = null;
+    let modKeyEventUnlistener: UnlistenFn | null = null;
 
     // States
     let modKeyHeld = $state(false);
@@ -83,13 +84,18 @@
 
     async function setupShortcuts() {
         // Setup Mouse press event
-        // console.log(clickEventUnlistener);
         if (clickEventUnlistener === null) {
             clickEventUnlistener = await listen("mouse_press", (_e) => {
                 console.log(_e);
                 if (modKeyHeld) {
                     onToggleShortcutEvent?.();
                 }
+            });
+        }
+        // Mod Key Event
+        if (modKeyEventUnlistener === null) {
+            modKeyEventUnlistener = await listen("mod_key", (_p) => {
+                console.log(_p);
             });
         }
         // Register Keyboard only shortcut

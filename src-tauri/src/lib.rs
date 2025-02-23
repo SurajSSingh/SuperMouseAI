@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fs::File, io::BufReader, path::PathBuf};
 
+use device_query::DeviceQuery;
 use mouce::{
     common::{MouseButton, MouseEvent},
     Mouse, MouseActions,
@@ -30,6 +31,8 @@ macro_rules! load_audio {
         $map.insert(stringify!($mapName).into(), path);
     }};
 }
+
+const KEY_QUERY_MILLIS: u64 = 100;
 
 /// "Global" App state
 struct AppState {
@@ -133,6 +136,33 @@ fn listen_for_mouse_click(app_handle: AppHandle) {
         .expect("Able to listen to mouse clicks!");
 }
 
+/// Given a key, check if it matches one of the modifier keys.
+///
+/// Modifiers are: Alt, Control, Meta, Option, and Shift (both left and right).
+fn is_modkey(key: &device_query::Keycode) -> bool {
+    use device_query::Keycode as K;
+    matches!(
+        key,
+        K::Command
+            | K::LAlt
+            | K::LControl
+            | K::LMeta
+            | K::LOption
+            | K::LShift
+            | K::RAlt
+            | K::RControl
+            | K::RMeta
+            | K::ROption
+            | K::RShift
+    )
+}
+
+#[derive(Clone, Debug, Default, Serialize)]
+struct ModKeyEvent {
+    key: String,
+    is_pressed: bool,
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -198,6 +228,41 @@ pub fn run() {
             };
             app.manage(AppState { model, sound_map });
             listen_for_mouse_click(app.handle().clone());
+            let app_key_listener_handler = app.handle().clone();
+            // Listen for mod keys directly and emit when found
+            let _ = tauri::async_runtime::spawn_blocking(move || {
+                use device_query::{DeviceEvents, DeviceEventsHandler};
+                use std::time::Duration;
+
+                let device_state =
+                    DeviceEventsHandler::new(Duration::from_millis(KEY_QUERY_MILLIS))
+                        .expect("Failed to start event loop");
+                let app_handle_up = app_key_listener_handler.clone();
+                let app_handle_down = app_key_listener_handler.clone();
+                let _up_guard = device_state.on_key_up(move |key| {
+                    is_modkey(key).then(|| {
+                        app_handle_up.emit(
+                            "mod_key",
+                            ModKeyEvent {
+                                key: key.to_string(),
+                                is_pressed: false,
+                            },
+                        )
+                    });
+                });
+                let _down_guard = device_state.on_key_down(move |key| {
+                    is_modkey(key).then(|| {
+                        app_handle_down.emit(
+                            "mod_key",
+                            ModKeyEvent {
+                                key: key.to_string(),
+                                is_pressed: true,
+                            },
+                        )
+                    });
+                });
+                loop {}
+            });
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
