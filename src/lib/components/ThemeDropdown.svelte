@@ -17,7 +17,7 @@
     }: ThemeSwitcherProps = $props();
 </script>
 
-<div class={`dropdown ${className}`}>
+<div class={`dropdown z-10 ${className}`}>
     <div tabindex="0" role="button" class="btn m-1">
         Theme
         <svg
