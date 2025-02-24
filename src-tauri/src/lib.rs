@@ -1,6 +1,5 @@
 use std::{collections::HashMap, fs::File, io::BufReader, path::PathBuf};
 
-use device_query::DeviceQuery;
 use mouce::{
     common::{MouseButton, MouseEvent},
     Mouse, MouseActions,
