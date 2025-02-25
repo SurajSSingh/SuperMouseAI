@@ -34,6 +34,7 @@
   let threads = $state(0);
   let initialPrompt = $state("");
   let theme: "system" | "light" | "dark" = $state("system");
+  let ignoredWords = $state(["[BLANK_AUDIO]", "[NO_AUDIO]", "[SILENCE]"]);
 
   // Inner Variables
   const notifier = new NotificationSystem(
@@ -60,6 +61,7 @@
         chunks,
         threads > 0 ? threads : undefined,
         initialPrompt || undefined,
+        ignoredWords,
       );
     });
   }
@@ -129,7 +131,7 @@
         label="Configuration"
         class="bg-base-100 border-base-300 p-6"
       >
-        <WhisperOptions bind:threads bind:initialPrompt />
+        <WhisperOptions bind:threads bind:initialPrompt bind:ignoredWords />
       </Tab>
     </section>
     <MicRecorder

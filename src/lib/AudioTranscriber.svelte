@@ -21,6 +21,7 @@
         blobChunks?: Blob[],
         threads?: number,
         initialPrompt?: string,
+        wordsToIgnore: string[] = [],
     ) {
         try {
             workingChunks = blobChunks ?? workingChunks;
@@ -31,9 +32,10 @@
                         threads,
                         initialPrompt,
                     })) as string
-                )
-                    .trim()
-                    .replaceAll("[BLANK_AUDIO]", "");
+                ).trim();
+                for (const word of wordsToIgnore) {
+                    transcribedOutput = transcribedOutput.replaceAll(word, "");
+                }
             }
             onFinishProcessing?.(transcribedOutput);
         } catch (error) {
