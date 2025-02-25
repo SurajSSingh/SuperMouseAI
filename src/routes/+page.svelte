@@ -48,6 +48,7 @@
   // Helper Functions
   function copyToClipboard() {
     writeText(transcribedOutput);
+    notifier.showInfo("Copied to clipboard!", "", "");
     notifier.showNotification("Copied to clipboard!", "", "");
   }
 
@@ -163,7 +164,8 @@
           size="sm"
           class="m-2"
           onclick={copyToClipboard}
-          disabled={recordingState !== "stopped"}>(📋) Copy to Clipboard</Button
+          disabled={!transcribedOutput || recordingState !== "stopped"}
+          >(📋) Copy to Clipboard</Button
         >
       </div>
       <AudioTranscriber
