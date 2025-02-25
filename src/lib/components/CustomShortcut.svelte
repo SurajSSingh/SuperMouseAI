@@ -376,9 +376,7 @@
     <fieldset
         class={`fieldset bg-base-200 border border-base-300 p-4 rounded-box ${hasShortcutError ? "border-error" : "border-success"}`}
     >
-        <legend class="fieldset-legend"
-            >Custom Shortcut: {shortcut} || {tauriRegistered}</legend
-        >
+        <legend class="fieldset-legend">Custom Shortcut</legend>
         <p class="">
             {@render keyboardItem(
                 "Ctrl",
