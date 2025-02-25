@@ -42,7 +42,7 @@
     }
 </script>
 
-<fieldset class="fieldset mx-32 my-4">
+<fieldset class="fieldset my-4">
     <legend class="fieldset-legend">Transcription Output</legend>
     <Textarea
         color={transcribedOutput ? "success" : "warning"}
