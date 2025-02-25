@@ -32,20 +32,26 @@
 
     $effect(() => {
         const queryPermissions = async () => {
-            explicitMicrophonePermission =
-                // @ts-ignore 'microphone' should be querable for permissions
-                (await navigator.permissions.query({ name: "microphone" }))
-                    .state;
             notificationPermission = await notifier.checkPermissionGranted();
+            await updateMicrophonePermissions();
         };
         queryPermissions();
     });
 
+    async function updateMicrophonePermissions() {
+        explicitMicrophonePermission =
+            // @ts-ignore 'microphone' should be querable for permissions
+            (await navigator.permissions.query({ name: "microphone" })).state;
+    }
+
     async function resetPermission() {
-        // await invoke("reset_permission", { origin: window.origin });
+        let devices = await navigator.mediaDevices.enumerateDevices();
+        if (devices.length > 0) {
+            await updateMicrophonePermissions();
+            return;
+        }
         await setupRecorder();
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        console.log("Devices: ", devices);
+        devices = await navigator.mediaDevices.enumerateDevices();
     }
 </script>
 
@@ -92,7 +98,7 @@
     {@render PermissionRow(
         "Microphone",
         microphonePermission,
-        recordingState !== "stopped",
+        microphonePermission === true || recordingState !== "stopped",
         resetPermission,
         "🎤",
     )}
