@@ -2,6 +2,7 @@
     import { invoke } from "@tauri-apps/api/core";
     import { blobChunksToBytes } from "./utils";
     import Textarea from "./components/ui/textarea/textarea.svelte";
+    import Button from "./components/ui/button/button.svelte";
 
     interface TranscriberProps {
         transcribedOutput: string;
@@ -16,6 +17,22 @@
     }: TranscriberProps = $props();
 
     let workingChunks: Blob[] = $state([]);
+    let currentTranscriptionIndex: number = $state(0);
+    let transcriptions: string[] = $state([]);
+
+    function nextTranscription() {
+        if (currentTranscriptionIndex < transcriptions.length - 1)
+            currentTranscriptionIndex++;
+    }
+
+    function previousTranscription() {
+        if (currentTranscriptionIndex > 0) currentTranscriptionIndex--;
+    }
+
+    function addTranscription(transcript: string) {
+        transcriptions.push(transcript);
+        currentTranscriptionIndex = transcriptions.length - 1;
+    }
 
     export async function processData(
         blobChunks?: Blob[],
@@ -37,6 +54,7 @@
                     transcribedOutput = transcribedOutput.replaceAll(word, "");
                 }
             }
+            addTranscription(transcribedOutput);
             onFinishProcessing?.(transcribedOutput);
         } catch (error) {
             onError?.(`An error occured while transcribing: ${error}`);
@@ -44,14 +62,39 @@
     }
 </script>
 
-<fieldset class="fieldset my-4">
+<fieldset class="fieldset my-4 relative">
     <legend class="fieldset-legend">Transcription Output</legend>
+    <div class="sm:absolute sm:-top-10 sm:right-0">
+        <Button
+            width="default"
+            color="secondary"
+            onclick={previousTranscription}
+            class="text-xs"
+            disabled={currentTranscriptionIndex === 0}>{"<"}Previous</Button
+        >
+        <span
+            >{transcriptions.length
+                ? currentTranscriptionIndex + 1
+                : 0}/{transcriptions.length}</span
+        >
+        <Button
+            width="default"
+            color="secondary"
+            onclick={nextTranscription}
+            disabled={transcriptions.length === 0 ||
+                currentTranscriptionIndex === transcriptions.length - 1}
+            >Next{">"}</Button
+        >
+    </div>
     <Textarea
-        color={transcribedOutput ? "success" : "warning"}
-        size="xl"
+        color={transcriptions.length > 0 ? "success" : "warning"}
+        size="md"
         class="text-center rounded-md border-4 min-h-32 placeholder:text-xl placeholder:italic text-lg"
         placeholder="Record voice to transcribe..."
-        bind:value={transcribedOutput}
+        bind:value={() => transcriptions[currentTranscriptionIndex],
+        (v) => {
+            transcriptions[currentTranscriptionIndex] = v;
+        }}
         disabled={workingChunks.length === 0}
     />
 </fieldset>
