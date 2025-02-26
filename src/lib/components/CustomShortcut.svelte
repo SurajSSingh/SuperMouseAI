@@ -195,6 +195,9 @@
     const shortcut = $derived(
         `${modCtrl ? "Control+" : ""}${modShift ? "Shift+" : ""}${modAlt ? "Alt+" : ""}${modSuper ? "Super+" : ""}${mainKey}`,
     );
+    const numberOfModKyes = $derived(
+        +modCtrl + +modShift + +modAlt + +modSuper,
+    );
 
     // Looking at https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_code_values
     // for code values
@@ -362,7 +365,7 @@
     {#if enabled ?? true}
         <button {onclick}>
             <kbd
-                class={`kbd ${active ? "outline-2 outline-primary" : ""} ${onclick && "hover:bg-error"}`}
+                class={`kbd ${active ? "outline-2 outline-primary" : ""} ${numberOfModKyes > 1 && onclick ? "hover:bg-error" : ""}`}
                 >{name}</kbd
             >
         </button>
@@ -383,7 +386,12 @@
                 false,
                 modCtrl,
                 () => {
-                    modCtrl = false;
+                    if (numberOfModKyes > 1) modCtrl = false;
+                    else {
+                        notifier?.showInfo(
+                            "Must have at least one modifer key!",
+                        );
+                    }
                 },
                 true,
             )}
@@ -392,7 +400,12 @@
                 false,
                 modShift,
                 () => {
-                    modShift = false;
+                    if (numberOfModKyes > 1) modShift = false;
+                    else {
+                        notifier?.showInfo(
+                            "Must have at least one modifer key!",
+                        );
+                    }
                 },
                 true,
             )}
@@ -401,7 +414,12 @@
                 false,
                 modAlt,
                 () => {
-                    modAlt = false;
+                    if (numberOfModKyes > 1) modAlt = false;
+                    else {
+                        notifier?.showInfo(
+                            "Must have at least one modifer key!",
+                        );
+                    }
                 },
                 true,
             )}
@@ -410,7 +428,12 @@
                 false,
                 modSuper,
                 () => {
-                    modSuper = false;
+                    if (numberOfModKyes > 1) modSuper = false;
+                    else {
+                        notifier?.showInfo(
+                            "Must have at least one modifer key!",
+                        );
+                    }
                 },
                 true,
             )}
