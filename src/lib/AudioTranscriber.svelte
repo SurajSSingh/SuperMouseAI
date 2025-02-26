@@ -23,15 +23,18 @@
     function nextTranscription() {
         if (currentTranscriptionIndex < transcriptions.length - 1)
             currentTranscriptionIndex++;
+        transcribedOutput = transcriptions[currentTranscriptionIndex];
     }
 
     function previousTranscription() {
         if (currentTranscriptionIndex > 0) currentTranscriptionIndex--;
+        transcribedOutput = transcriptions[currentTranscriptionIndex];
     }
 
     function addTranscription(transcript: string) {
         transcriptions.push(transcript);
         currentTranscriptionIndex = transcriptions.length - 1;
+        transcribedOutput = transcriptions[currentTranscriptionIndex];
     }
 
     export async function processData(
