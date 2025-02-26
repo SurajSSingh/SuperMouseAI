@@ -11,6 +11,7 @@
   import ThemeDropdown from "$lib/components/ThemeDropdown.svelte";
   import Tab from "$lib/components/Tab.svelte";
   import PermissionsPage from "$lib/PermissionsPage.svelte";
+  import CustomShortcut from "$lib/components/CustomShortcut.svelte";
 
   const THEMES = [
     {
@@ -34,6 +35,7 @@
   let threads = $state(0);
   let initialPrompt = $state("");
   let theme: "system" | "light" | "dark" = $state("system");
+  let ignoredWords = $state(["[BLANK_AUDIO]", "[NO_AUDIO]", "[SILENCE]"]);
 
   // Inner Variables
   const notifier = new NotificationSystem(
@@ -46,6 +48,7 @@
   // Helper Functions
   function copyToClipboard() {
     writeText(transcribedOutput);
+    notifier.showInfo("Copied to clipboard!", "", "");
     notifier.showNotification("Copied to clipboard!", "", "");
   }
 
@@ -60,6 +63,7 @@
         chunks,
         threads > 0 ? threads : undefined,
         initialPrompt || undefined,
+        ignoredWords,
       );
     });
   }
@@ -84,85 +88,92 @@
   }
 </script>
 
-<main class="container">
+<main class="">
   <Toaster position="top-right" richColors closeButton {theme} />
   <ThemeDropdown themes={THEMES} bind:current={theme} class="fixed top-0" />
-  <h1 class="text-3xl text-center">SuperMouse AI</h1>
-  <div class="flex flex-col place-content-center">
-    <section class="tabs tabs-lift mx-32">
-      <Button
-        color="destructive"
-        variant="ghost"
-        shape="circle"
-        onclick={() =>
-          document.getElementsByName("tabs").forEach(
-            (tab) =>
-              // @ts-ignore: Every tab is a radio input
-              (tab.checked = false),
-          )}>X</Button
-      >
-      <Tab
-        value="tabs"
-        label="Permissions"
-        checked
-        class="bg-base-100 border-base-300 p-6"
-      >
-        <PermissionsPage
-          setupRecorder={() => micRecorder.setupRecorder()}
-          {recordingState}
-          {notifier}
-          {testNotify}
-        />
-      </Tab>
-      <Tab
-        value="tabs"
-        label="Settings"
-        class="bg-base-100 border-base-300 p-6"
-      >
-        <ShortcutSettings
-          onToggleShortcutEvent={() => micRecorder?.toggleRecording()}
-          {notifier}
-        />
-      </Tab>
-      <Tab
-        value="tabs"
-        label="Configuration"
-        class="bg-base-100 border-base-300 p-6"
-      >
-        <WhisperOptions bind:threads bind:initialPrompt />
-      </Tab>
-    </section>
-    <MicRecorder
-      bind:this={micRecorder}
-      {recordingState}
-      {onRecordingStart}
-      {onRecordingEnd}
-      {onError}
-    />
-    <div class="grid grid-cols-2 mx-32 my-1">
-      <Button
-        color={recordingState === "processing" ? "neutral" : "warning"}
-        size="sm"
-        class="m-2"
-        onclick={() => {
-          notifier.showNotification("Re-transcribing data.", "", "stop");
-          transcribe();
-        }}
-        disabled={recordingState !== "stopped"}>(✏️) Re-transcribe</Button
-      >
-      <Button
-        color="info"
-        size="sm"
-        class="m-2"
-        onclick={copyToClipboard}
-        disabled={recordingState !== "stopped"}>(📋) Copy to Clipboard</Button
-      >
+  <div class="mx-2 sm:mx-24 md:mx-32">
+    <h1 class="text-3xl text-center pt-12 sm:pt-0">SuperMouse AI</h1>
+    <div class="flex flex-col place-content-center">
+      <section class="tabs tabs-lift">
+        <Button
+          color="destructive"
+          variant="ghost"
+          shape="circle"
+          onclick={() =>
+            document.getElementsByName("tabs").forEach(
+              (tab) =>
+                // @ts-ignore: Every tab is a radio input
+                (tab.checked = false),
+            )}>X</Button
+        >
+        <Tab
+          value="tabs"
+          label="Permissions"
+          checked
+          class="bg-base-100 border-base-300 p-6"
+        >
+          <PermissionsPage
+            setupRecorder={() => micRecorder.setupRecorder()}
+            {recordingState}
+            {notifier}
+            {testNotify}
+          />
+        </Tab>
+        <Tab
+          value="tabs"
+          label="Settings"
+          class="bg-base-100 border-base-300 p-6"
+        >
+          <CustomShortcut
+            onToggleShortcutEvent={(e) => {
+              if (e.state === "Pressed") {
+                micRecorder?.toggleRecording();
+              }
+            }}
+            {notifier}
+          />
+        </Tab>
+        <Tab
+          value="tabs"
+          label="Configuration"
+          class="bg-base-100 border-base-300 p-6"
+        >
+          <WhisperOptions bind:threads bind:initialPrompt bind:ignoredWords />
+        </Tab>
+      </section>
+      <MicRecorder
+        bind:this={micRecorder}
+        {recordingState}
+        {onRecordingStart}
+        {onRecordingEnd}
+        {onError}
+      />
+      <div class="grid grid-cols-2 my-1">
+        <Button
+          color={recordingState === "processing" ? "neutral" : "warning"}
+          size="sm"
+          class="m-2"
+          onclick={() => {
+            notifier.showNotification("Re-transcribing data.", "", "stop");
+            transcribe();
+          }}
+          disabled={recordingState !== "stopped"}>(✏️) Re-transcribe</Button
+        >
+        <Button
+          color="info"
+          size="sm"
+          class="m-2"
+          onclick={copyToClipboard}
+          disabled={!transcribedOutput || recordingState !== "stopped"}
+          >(📋) Copy to Clipboard</Button
+        >
+      </div>
+      <AudioTranscriber
+        bind:this={audioTranscriber}
+        bind:transcribedOutput
+        {onFinishProcessing}
+        {onError}
+      />
     </div>
-    <AudioTranscriber
-      bind:this={audioTranscriber}
-      bind:transcribedOutput
-      {onFinishProcessing}
-      {onError}
-    />
   </div>
 </main>

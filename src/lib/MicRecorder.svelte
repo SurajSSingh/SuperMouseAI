@@ -145,7 +145,7 @@
     }
 </script>
 
-<section {id} class="mx-32 my-2 text-center">
+<section {id} class="my-2 text-center">
     <Button
         class="p-2 w-3/4 my-2 font-semibold rounded-sm"
         color={isRecording

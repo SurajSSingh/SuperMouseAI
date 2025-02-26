@@ -47,7 +47,7 @@ export class NotificationSystem {
                 body: message,
             });
         } else {
-            window.alert(`${subtitle ? subtitle + ": " : ""}${message}`);
+            this.showInfo(message, subtitle, sound);
         }
         this.playSound(sound);
     }
@@ -80,6 +80,20 @@ export class NotificationSystem {
         this.playSound(sound);
     }
 
+    // TEMP
+    showInfo(
+        message: string,
+        subtitle = "",
+        sound = "default_alert",
+        duration = 5000,
+    ) {
+        toast.info(subtitle || message, {
+            description: subtitle ? message : "",
+            duration
+        });
+        this.playSound(sound);
+    }
+
     showAlert(
         message: string,
         subtitle = "",
@@ -95,6 +109,15 @@ export class NotificationSystem {
             invoke("play_sound", { soundName: sound }).catch((err) =>
                 console.error(err),
             );
+        }
+    }
+
+    setEnabledSound(value: boolean | "toggle") {
+        if (value === "toggle") {
+            this.#enabledSound = !this.#enabledSound;
+        }
+        else {
+            this.#enabledSound = value;
         }
     }
 }
