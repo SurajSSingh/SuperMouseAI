@@ -9,6 +9,7 @@ use rodio::{Decoder, OutputStream, Sink};
 use serde::{Deserialize, Serialize};
 use tauri::{path::BaseDirectory, AppHandle, Emitter, Manager, State};
 
+mod command;
 mod mutter;
 mod transcript;
 
