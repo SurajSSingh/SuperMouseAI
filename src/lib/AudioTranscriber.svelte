@@ -92,7 +92,7 @@
     <Textarea
         color={transcriptions.length > 0 ? "success" : "warning"}
         size="md"
-        class="text-center rounded-md border-4 min-h-32 placeholder:text-xl placeholder:italic text-lg"
+        class="rounded-md border-4 min-h-32 placeholder:text-center placeholder:text-xl placeholder:italic text-lg"
         placeholder="Record voice to transcribe..."
         bind:value={() => transcriptions[currentTranscriptionIndex],
         (v) => {
