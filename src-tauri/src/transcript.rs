@@ -44,7 +44,6 @@ impl Transcript {
 
     /// Returns the transcript in VTT format.
     #[must_use]
-    #[allow(dead_code)] // For now because I don't use vtt feature
     pub fn as_vtt(&self) -> String {
         let vtt = self
             .utterances
@@ -64,7 +63,6 @@ impl Transcript {
 
     /// Returns the transcript in SRT format.
     #[must_use]
-    #[allow(dead_code)] // For now because I don't use srt feature
     pub fn as_srt(&self) -> String {
         self.utterances
             .iter()
