@@ -8,6 +8,9 @@ mod command;
 mod mutter;
 mod transcript;
 
+/// Macro to load audio path into the app's map with given name.
+///
+/// Includes both the exact name and `default_` prepended name.
 macro_rules! load_audio {
     ($app:ident, $map:ident, $name: ident) => {{
         let path = $app.path().resolve(
@@ -27,6 +30,7 @@ macro_rules! load_audio {
     }};
 }
 
+/// Number of milliseconds between checks of key events
 const KEY_QUERY_MILLIS: u64 = 100;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
