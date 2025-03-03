@@ -4,6 +4,7 @@ version = "0.4.2"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
+license = "FSL-1.1-MIT OR FSL-1.1-ALv2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
