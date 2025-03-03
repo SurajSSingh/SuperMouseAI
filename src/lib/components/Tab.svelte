@@ -1,3 +1,8 @@
+<!-- 
+@component
+
+See docs at <https://daisyui.com/components/tab/> 
+-->
 <script lang="ts">
     import type { Snippet } from "svelte";
 

@@ -1,3 +1,9 @@
+<!--
+@component
+- Wrapper for svelte-sonner component
+- See docs at <https://next.shadcn-svelte.com/docs/components/sonner>
+-->
+
 <script lang="ts">
     import {
         Toaster as Sonner,

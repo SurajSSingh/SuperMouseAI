@@ -1,3 +1,7 @@
+<!-- 
+@component
+See docs at <https://daisyui.com/components/loading/>
+-->
 <script lang="ts" module>
     import { tv, type VariantProps } from "tailwind-variants";
 

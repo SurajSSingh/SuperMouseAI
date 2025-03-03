@@ -1,3 +1,7 @@
+<!--
+@component
+Component based off of: <https://daisyui.com/components/theme-controller/>
+-->
 <script lang="ts">
     interface ThemeSwitcherProps {
         themes: {
