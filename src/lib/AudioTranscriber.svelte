@@ -1,6 +1,6 @@
 <script lang="ts">
     import { invoke } from "@tauri-apps/api/core";
-    import { blobChunksToBytes } from "./utils";
+    import { blobChunksToBytes } from "./myUtils";
     import Textarea from "./components/ui/textarea/textarea.svelte";
     import Button from "./components/ui/button/button.svelte";
 
