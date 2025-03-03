@@ -8,8 +8,8 @@
         type ShortcutHandler,
     } from "@tauri-apps/plugin-global-shortcut";
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-    import Button from "./components/ui/button/button.svelte";
-    import type { NotificationSystem } from "./notificationSystem.svelte";
+    import Button from "$lib/components/ui/button/button.svelte";
+    import type { NotificationSystem } from "$lib/notificationSystem.svelte";
 
     interface ShortcutsProps {
         notifier?: NotificationSystem;

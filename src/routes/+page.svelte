@@ -1,16 +1,15 @@
 <script lang="ts">
   import { Toaster } from "$lib/components/ui/sonner";
   import { type RecordingStates } from "$lib/types";
-  import MicRecorder from "$lib/MicRecorder.svelte";
-  import AudioTranscriber from "$lib/AudioTranscriber.svelte";
+  import MicRecorder from "$lib/components/MicRecorder.svelte";
+  import AudioTranscriber from "$lib/components/AudioTranscriber.svelte";
   import { NotificationSystem } from "$lib/notificationSystem.svelte";
-  import ShortcutSettings from "$lib/ShortcutSettings.svelte";
   import { writeText } from "@tauri-apps/plugin-clipboard-manager";
-  import WhisperOptions from "$lib/WhisperOptions.svelte";
+  import WhisperOptions from "$lib/components/WhisperOptions.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
-  import ThemeDropdown from "$lib/components/ThemeDropdown.svelte";
-  import Tab from "$lib/components/Tab.svelte";
-  import PermissionsPage from "$lib/PermissionsPage.svelte";
+  import Tab from "$lib/components/ui/Tab.svelte";
+  import ThemeDropdown from "$lib/components/ui/ThemeDropdown.svelte";
+  import PermissionsPage from "$lib/components/PermissionsPage.svelte";
   import CustomShortcut from "$lib/components/CustomShortcut.svelte";
 
   const THEMES = [
@@ -39,8 +38,9 @@
 
   // Inner Variables
   const notifier = new NotificationSystem(
-    //v: This is required to ignore the
-    //   state_referenced_locally warning
+    // | This is required to ignore the
+    // | state_referenced_locally warning
+    // V
     (() => enableSound)(),
     (() => testNotify)(),
   );

@@ -1,8 +1,8 @@
 <script lang="ts">
     import { invoke } from "@tauri-apps/api/core";
-    import { blobChunksToBytes } from "./utils";
-    import Textarea from "./components/ui/textarea/textarea.svelte";
-    import Button from "./components/ui/button/button.svelte";
+    import { blobChunksToBytes } from "$lib/myUtils";
+    import Textarea from "$lib/components/ui/textarea/textarea.svelte";
+    import Button from "$lib/components/ui/button/button.svelte";
 
     interface TranscriberProps {
         transcribedOutput: string;
@@ -92,7 +92,7 @@
     <Textarea
         color={transcriptions.length > 0 ? "success" : "warning"}
         size="md"
-        class="text-center rounded-md border-4 min-h-32 placeholder:text-xl placeholder:italic text-lg"
+        class="rounded-md border-4 min-h-32 placeholder:text-center placeholder:text-xl placeholder:italic text-lg"
         placeholder="Record voice to transcribe..."
         bind:value={() => transcriptions[currentTranscriptionIndex],
         (v) => {

@@ -1,3 +1,9 @@
+<!--
+@component
+- Better textarea component
+- See docs at <https://next.shadcn-svelte.com/docs/components/textarea>
+-->
+
 <script lang="ts" module>
     import type { WithElementRef, WithoutChildren } from "bits-ui";
     import type { HTMLTextareaAttributes } from "svelte/elements";

@@ -1,3 +1,11 @@
+<!--
+@component
+- Better button component
+    - Includes styles and variants
+    - Auto switch between `a` and `button` elements (with `href` attribute or `link` variant) 
+- See docs at <https://next.shadcn-svelte.com/docs/components/button>
+-->
+
 <script lang="ts" module>
     import type { WithElementRef } from "bits-ui";
     import type {
