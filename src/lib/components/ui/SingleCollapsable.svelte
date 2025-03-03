@@ -4,7 +4,7 @@ Implementation based on: <https://next.shadcn-svelte.com/docs/components/accordi
 -->
 <script lang="ts">
     import type { Snippet } from "svelte";
-    import { Content, Item, Root, Trigger } from "./ui/accordion";
+    import { Content, Item, Root, Trigger } from "./accordion";
 
     export interface SingleCollapsableProps {
         itemValue?: string;

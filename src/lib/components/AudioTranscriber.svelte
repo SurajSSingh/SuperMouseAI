@@ -1,8 +1,8 @@
 <script lang="ts">
     import { invoke } from "@tauri-apps/api/core";
-    import { blobChunksToBytes } from "./myUtils";
-    import Textarea from "./components/ui/textarea/textarea.svelte";
-    import Button from "./components/ui/button/button.svelte";
+    import { blobChunksToBytes } from "$lib/myUtils";
+    import Textarea from "$lib/components/ui/textarea/textarea.svelte";
+    import Button from "$lib/components/ui/button/button.svelte";
 
     interface TranscriberProps {
         transcribedOutput: string;

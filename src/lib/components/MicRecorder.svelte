@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { RecordingStates } from "./types";
+    import type { RecordingStates } from "$lib/types";
     import {
         MediaRecorder as ExtendedMediaRecorder,
         register,
@@ -7,8 +7,8 @@
         type IMediaRecorder,
     } from "extendable-media-recorder";
     import { connect } from "extendable-media-recorder-wav-encoder";
-    import Button from "./components/ui/button/button.svelte";
-    import Loading from "./components/Loading.svelte";
+    import Button from "$lib/components/ui/button/button.svelte";
+    import Loading from "$lib/components/ui/Loading.svelte";
 
     interface RecorderProps {
         id?: string;
