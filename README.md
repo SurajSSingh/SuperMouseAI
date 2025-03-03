@@ -30,10 +30,10 @@ A way to trascribe your voice using Whisper from the click of your mouse.
 This project is licensed under either of
 
 - Functional Source License, Version 1.1, ALv2 Future License
-  ([FSL-1.1-APACHE-2.0](LICENSE-FSL-1.1-ALv2) or
+  ([FSL-1.1-APACHE-2.0](LICENSE-FSL-1.1-ALv2.md) or
   <https://github.com/getsentry/fsl.software/blob/main/FSL-1.1-ALv2.template.md>)
 - Functional Source License, Version 1.1, MIT Future License
-  ([FSL-1.1-MIT](LICENSE-FSL-1.1-MIT) or
+  ([FSL-1.1-MIT](LICENSE-FSL-1.1-MIT.md) or
   <https://github.com/getsentry/fsl.software/blob/main/FSL-1.1-MIT.template.md>)
 
 at your option.
