@@ -1,7 +1,6 @@
 <script lang="ts">
     import Button from "$lib/components/ui/button/button.svelte";
     import { type RecordingStates } from "$lib/types";
-    import MicRecorder from "$lib/MicRecorder.svelte";
     import { NotificationSystem } from "./notificationSystem.svelte";
     import Status from "./components/Status.svelte";
 

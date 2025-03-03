@@ -43,7 +43,7 @@ Component based off of: <https://daisyui.com/components/theme-controller/>
                 <input
                     type="radio"
                     name="theme-dropdown"
-                    class="theme-controller w-full btn btn-sm btn-block btn-ghost hover:btn-soft justify-start"
+                    class="theme-controller btn btn-sm btn-block btn-ghost hover:btn-soft justify-start"
                     aria-label={theme.label || theme.value}
                     value={theme.value}
                     checked={theme?.isDefault ?? false}

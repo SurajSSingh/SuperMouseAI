@@ -3,7 +3,6 @@
 Given a url to an auido source, render it to allow user to listen.
 -->
 <script lang="ts">
-    import { type IMediaRecorder } from "extendable-media-recorder";
     interface AudioPreviewerProps {
         currentURL?: string;
     }

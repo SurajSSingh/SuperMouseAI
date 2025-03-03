@@ -4,7 +4,6 @@
   import MicRecorder from "$lib/MicRecorder.svelte";
   import AudioTranscriber from "$lib/AudioTranscriber.svelte";
   import { NotificationSystem } from "$lib/notificationSystem.svelte";
-  import ShortcutSettings from "$lib/ShortcutSettings.svelte";
   import { writeText } from "@tauri-apps/plugin-clipboard-manager";
   import WhisperOptions from "$lib/WhisperOptions.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
@@ -39,8 +38,9 @@
 
   // Inner Variables
   const notifier = new NotificationSystem(
-    //v: This is required to ignore the
-    //   state_referenced_locally warning
+    // | This is required to ignore the
+    // | state_referenced_locally warning
+    // V
     (() => enableSound)(),
     (() => testNotify)(),
   );
