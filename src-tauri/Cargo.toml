@@ -1,9 +1,10 @@
 [package]
 name = "super-mouse-ai"
-version = "0.4.2"
+version = "0.4.3"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
+license = "FSL-1.1-MIT OR FSL-1.1-ALv2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -36,19 +37,20 @@ device_query = "3.0.0"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 # NOTE: CUDA feature separate feature flag
-whisper-rs = { version = "0.13.2", features = [] }
+whisper-rs = { version = "0.14.2", features = [] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-whisper-rs = { version = "0.13.2", features = ["metal"] } # , "whisper-cpp-log"
+whisper-rs = { version = "0.14.2", features = ["metal", "coreml"] }
 
 [features]
 default = ["symphonia-all", "minimp3"]
 
-# simd = []
-# coreml = ["whisper-rs/coreml"]
-cuda = ["whisper-rs/cuda"]
+openblas = ["whisper-rs/openblas"]
+openmp = ["whisper-rs/openmp"]
+# For better CPU optimization
+cpu-opt = ["whisper-rs/openblas", "whisper-rs/openmp"]
+# Used generally for GPU
 vulkan = ["whisper-rs/vulkan"]
-# metal = ["whisper-rs/metal"]
 
 symphonia-aac = ["rodio/symphonia-aac"]
 symphonia-all = ["rodio/symphonia-all"]
