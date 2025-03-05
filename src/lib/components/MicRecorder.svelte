@@ -164,5 +164,4 @@
         {/if}
         {recordingText}
     </p>
-    <hr />
 </section>
