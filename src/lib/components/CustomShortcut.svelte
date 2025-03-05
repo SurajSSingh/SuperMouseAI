@@ -340,8 +340,8 @@
         </p>
         <Button
             id={LISTENER_BUTTON_ID}
-            color={isListening ? "primary" : "accent"}
-            class="h-4"
+            color={isListening ? "primary" : "info"}
+            class="h-6"
             onclick={toggleListen}
         >
             <span class="text-xs"> Listen for new shortcut </span>
