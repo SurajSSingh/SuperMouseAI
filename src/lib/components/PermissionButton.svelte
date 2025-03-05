@@ -58,7 +58,7 @@
             <Status color={statusColor} size="lg" class="mr-2" />
         {/if}
         <span class="text-accent">
-            {icon ? `${icon}` : ""}{icon && showName ? ":" : ""}{showName
+            {icon ? `${icon}` : ""}{icon && showName ? ": " : ""}{showName
                 ? name
                 : ""}</span
         >

@@ -8,6 +8,8 @@
         recordingState: RecordingStates;
         notifier: NotificationSystem;
         testNotify?: boolean;
+        showNames?: boolean;
+        showIcons?: boolean;
     }
 
     let {
@@ -15,6 +17,8 @@
         recordingState,
         notifier,
         testNotify = false,
+        showNames = true,
+        showIcons = true,
     }: PermissionsBarProps = $props();
 
     let explicitMicrophonePermission: PermissionState = $state(
@@ -60,17 +64,17 @@
     >
         <PermissionButton
             name="Microphone"
-            icon="🎤"
+            icon={showIcons ? "🎤" : ""}
             status={microphonePermission}
             onclick={resetPermission}
-            showName={false}
+            showName={showNames}
         />
         <PermissionButton
             name="Notification"
-            icon="🔔"
+            icon={showIcons ? "🔔" : ""}
             status={notificationPermission}
             onclick={() => notifier.getPermissionToNotify(testNotify)}
-            showName={false}
+            showName={showNames}
         />
     </div>
 </div>
