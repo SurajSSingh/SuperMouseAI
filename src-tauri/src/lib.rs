@@ -37,6 +37,7 @@ const KEY_QUERY_MILLIS: u64 = 100;
 /// Tauri entry point to run app
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             let _ = app
                 .get_webview_window("main")
