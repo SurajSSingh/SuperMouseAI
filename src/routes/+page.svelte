@@ -11,6 +11,8 @@
   import ThemeDropdown from "$lib/components/ui/ThemeDropdown.svelte";
   import PermissionsPage from "$lib/components/PermissionsPage.svelte";
   import CustomShortcut from "$lib/components/CustomShortcut.svelte";
+  import MenuScreen from "$lib/components/MenuScreen.svelte";
+  import PermissionBar from "$lib/components/PermissionBar.svelte";
 
   const THEMES = [
     {
@@ -89,58 +91,37 @@
 </script>
 
 <main class="">
-  <Toaster position="top-right" richColors closeButton {theme} />
-  <ThemeDropdown themes={THEMES} bind:current={theme} class="fixed top-0" />
+  <MenuScreen>
+    <section class="tabs tabs-lift w-full">
+      <Tab
+        value="tabs"
+        label="Configuration"
+        class="bg-base-100 border-base-300 p-6"
+        checked
+      >
+        <div class="h-60 overflow-auto pr-6">
+          <WhisperOptions bind:threads bind:initialPrompt bind:ignoredWords />
+        </div>
+      </Tab>
+    </section>
+  </MenuScreen>
+  <Toaster position="top-center" richColors closeButton {theme} />
+  <ThemeDropdown
+    themes={THEMES}
+    bind:current={theme}
+    class="fixed top-0 right-0"
+    listClass="p-1 w-full"
+    direction="bottom"
+  />
   <div class="mx-2 sm:mx-24 md:mx-32">
     <h1 class="text-3xl text-center pt-12 sm:pt-0">SuperMouse AI</h1>
+    <PermissionBar
+      setupRecorder={() => micRecorder.setupRecorder()}
+      {recordingState}
+      {notifier}
+      {testNotify}
+    />
     <div class="flex flex-col place-content-center">
-      <section class="tabs tabs-lift">
-        <Button
-          color="destructive"
-          variant="ghost"
-          shape="circle"
-          onclick={() =>
-            document.getElementsByName("tabs").forEach(
-              (tab) =>
-                // @ts-ignore: Every tab is a radio input
-                (tab.checked = false),
-            )}>X</Button
-        >
-        <Tab
-          value="tabs"
-          label="Permissions"
-          checked
-          class="bg-base-100 border-base-300 p-6"
-        >
-          <PermissionsPage
-            setupRecorder={() => micRecorder.setupRecorder()}
-            {recordingState}
-            {notifier}
-            {testNotify}
-          />
-        </Tab>
-        <Tab
-          value="tabs"
-          label="Settings"
-          class="bg-base-100 border-base-300 p-6"
-        >
-          <CustomShortcut
-            onToggleShortcutEvent={(e) => {
-              if (e.state === "Pressed") {
-                micRecorder?.toggleRecording();
-              }
-            }}
-            {notifier}
-          />
-        </Tab>
-        <Tab
-          value="tabs"
-          label="Configuration"
-          class="bg-base-100 border-base-300 p-6"
-        >
-          <WhisperOptions bind:threads bind:initialPrompt bind:ignoredWords />
-        </Tab>
-      </section>
       <MicRecorder
         bind:this={micRecorder}
         {recordingState}
@@ -148,6 +129,16 @@
         {onRecordingEnd}
         {onError}
       />
+      <CustomShortcut
+        class="w-3/4 mb-2"
+        onToggleShortcutEvent={(e) => {
+          if (e.state === "Pressed") {
+            micRecorder?.toggleRecording();
+          }
+        }}
+        {notifier}
+      />
+      <hr />
       <div class="grid grid-cols-2 my-1">
         <Button
           color={recordingState === "processing" ? "neutral" : "warning"}

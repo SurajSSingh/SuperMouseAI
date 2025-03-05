@@ -10,13 +10,21 @@
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
     import type { NotificationSystem } from "$lib/notificationSystem.svelte";
     import { SvelteSet } from "svelte/reactivity";
+    import type { Snippet } from "svelte";
 
     interface CustomShortcutProps {
         notifier?: NotificationSystem;
         onToggleShortcutEvent: ShortcutHandler;
+        class?: string;
+        description?: Snippet;
     }
 
-    let { notifier, onToggleShortcutEvent }: CustomShortcutProps = $props();
+    let {
+        notifier,
+        onToggleShortcutEvent,
+        class: className = "",
+        description,
+    }: CustomShortcutProps = $props();
 
     type ShowShortcutFn = <T>(shortcut: string, returns: T) => T;
 
@@ -244,7 +252,7 @@
     {#if enabled ?? true}
         <button {onclick}>
             <kbd
-                class={`kbd ${active ? "outline-2 outline-primary" : ""} ${numberOfModKyes > 1 && onclick ? "hover:bg-error" : ""}`}
+                class={`kbd text-xs sm:text-sm ${active ? "outline-2 outline-primary" : ""} ${numberOfModKyes > 1 && onclick ? "hover:bg-error" : ""}`}
                 >{name}</kbd
             >
         </button>
@@ -254,19 +262,21 @@
     {/if}
 {/snippet}
 
-<section>
+<section class="flex justify-center place-center">
     <fieldset
-        class={`fieldset bg-base-200 border border-base-300 p-4 rounded-box ${hasShortcutError ? "border-error" : "border-success"}`}
+        class={`fieldset bg-base-200 border border-base-300 p-4 rounded-box ${hasShortcutError ? "border-error" : "border-success"} ${className}`}
     >
-        <legend class="fieldset-legend">Custom Shortcut</legend>
-        <p class="">
+        <legend class="fieldset-legend">Recording Shortcut</legend>
+        <p class="flex justify-center align-text-top">
             {@render keyboardItem(
                 "Ctrl",
                 false,
                 modCtrl,
                 () => {
-                    if (numberOfModKyes > 1) modCtrl = false;
-                    else {
+                    if (numberOfModKyes > 1) {
+                        modCtrl = false;
+                        setupShortcut();
+                    } else {
                         notifier?.showInfo(
                             "Must have at least one modifer key!",
                         );
@@ -279,8 +289,10 @@
                 false,
                 modShift,
                 () => {
-                    if (numberOfModKyes > 1) modShift = false;
-                    else {
+                    if (numberOfModKyes > 1) {
+                        modShift = false;
+                        setupShortcut();
+                    } else {
                         notifier?.showInfo(
                             "Must have at least one modifer key!",
                         );
@@ -293,8 +305,10 @@
                 false,
                 modAlt,
                 () => {
-                    if (numberOfModKyes > 1) modAlt = false;
-                    else {
+                    if (numberOfModKyes > 1) {
+                        modAlt = false;
+                        setupShortcut();
+                    } else {
                         notifier?.showInfo(
                             "Must have at least one modifer key!",
                         );
@@ -307,8 +321,10 @@
                 false,
                 modSuper,
                 () => {
-                    if (numberOfModKyes > 1) modSuper = false;
-                    else {
+                    if (numberOfModKyes > 1) {
+                        modSuper = false;
+                        setupShortcut();
+                    } else {
                         notifier?.showInfo(
                             "Must have at least one modifer key!",
                         );
@@ -324,16 +340,14 @@
         </p>
         <Button
             id={LISTENER_BUTTON_ID}
-            color={isListening ? "primary" : "neutral"}
-            onclick={toggleListen}>Listen for shortcut</Button
+            color={isListening ? "primary" : "info"}
+            class="h-6"
+            onclick={toggleListen}
         >
-        <p class="fieldset-label">
-            You can click on modifier keys to remove them. There must always be
-            one main trigger key or mouse click in order to be a valid shortcut.
-        </p>
-        <p class="fieldset-label text-warning">
-            NOTE: Key shown may not map one-to-one if you are using a non-QWERTY
-            keyboard layout.
-        </p>
+            <span class="text-xs"> Listen for new shortcut </span>
+        </Button>
+        <div class="fieldset-label">
+            {@render description?.()}
+        </div>
     </fieldset>
 </section>
