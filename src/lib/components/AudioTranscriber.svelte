@@ -3,6 +3,7 @@
     import { blobChunksToBytes } from "$lib/myUtils";
     import Textarea from "$lib/components/ui/textarea/textarea.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
+    import { configStore } from "$lib/store";
 
     interface TranscriberProps {
         transcribedOutput: string;
@@ -35,6 +36,13 @@
         transcriptions.push(transcript);
         currentTranscriptionIndex = transcriptions.length - 1;
         transcribedOutput = transcriptions[currentTranscriptionIndex];
+        configStore.setPrevTranscriptions(transcriptions);
+    }
+
+    function removeTranscription() {
+        transcriptions.splice(currentTranscriptionIndex, 1);
+        transcribedOutput = transcriptions[currentTranscriptionIndex];
+        configStore.setPrevTranscriptions(transcriptions);
     }
 
     export async function processData(
@@ -63,6 +71,16 @@
             onError?.(`An error occured while transcribing: ${error}`);
         }
     }
+
+    $effect(() => {
+        const getTranscriptions = async () => {
+            const previous = await configStore.getPrevTranscriptions();
+            if (previous) {
+                transcriptions = previous;
+            }
+        };
+        getTranscriptions();
+    });
 </script>
 
 <fieldset class="fieldset my-4 relative">
@@ -89,6 +107,12 @@
             >Next{">"}</Button
         >
     </div>
+    <Button
+        variant="ghost"
+        color="destructive"
+        onclick={removeTranscription}
+        disabled={transcriptions.length === 0}>Delete Current</Button
+    >
     <Textarea
         color={transcriptions.length > 0 ? "success" : "warning"}
         size="md"
@@ -98,6 +122,6 @@
         (v) => {
             transcriptions[currentTranscriptionIndex] = v;
         }}
-        disabled={workingChunks.length === 0}
+        disabled={transcriptions.length === 0}
     />
 </fieldset>
