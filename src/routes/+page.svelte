@@ -77,6 +77,13 @@
   function onError(err: string) {
     alert(err);
   }
+
+  // Top-level clean-up ONLY (for store)
+  $effect(() => {
+    return () => {
+      configStore.cleanup();
+    };
+  });
 </script>
 
 <main class="">
@@ -154,7 +161,6 @@
       </div>
       <AudioTranscriber
         bind:this={audioTranscriber}
-        bind:transcribedOutput
         {onFinishProcessing}
         {onError}
       />

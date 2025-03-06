@@ -6,47 +6,41 @@
     import { configStore } from "$lib/store.svelte";
 
     interface TranscriberProps {
-        transcribedOutput: string;
         onFinishProcessing?: (text: string) => void;
         onError?: (err: string) => void;
     }
 
-    let {
-        transcribedOutput = $bindable(""),
-        onFinishProcessing,
-        onError,
-    }: TranscriberProps = $props();
+    let { onFinishProcessing, onError }: TranscriberProps = $props();
 
     let workingChunks: Blob[] = $state([]);
-    let currentTranscriptionIndex: number = $state(0);
 
-    function nextTranscription() {
-        if (currentTranscriptionIndex < configStore.transcriptions.length - 1)
-            currentTranscriptionIndex++;
-        transcribedOutput =
-            configStore.transcriptions[currentTranscriptionIndex];
-    }
+    // function nextTranscription() {
+    //     if (currentTranscriptionIndex < configStore.transcriptions.length - 1)
+    //         currentTranscriptionIndex++;
+    //     transcribedOutput =
+    //         configStore.transcriptions[currentTranscriptionIndex];
+    // }
 
-    function previousTranscription() {
-        if (currentTranscriptionIndex > 0) currentTranscriptionIndex--;
-        transcribedOutput =
-            configStore.transcriptions[currentTranscriptionIndex];
-    }
+    // function previousTranscription() {
+    //     if (currentTranscriptionIndex > 0) currentTranscriptionIndex--;
+    //     transcribedOutput =
+    //         configStore.transcriptions[currentTranscriptionIndex];
+    // }
 
-    function addTranscription(transcript: string) {
-        // configStore.transcriptions.push(transcript);
-        configStore.addTranscription(transcript);
-        currentTranscriptionIndex = configStore.transcriptions.length - 1;
-        transcribedOutput =
-            configStore.transcriptions[currentTranscriptionIndex];
-    }
+    // function addTranscription(transcript: string) {
+    //     // configStore.transcriptions.push(transcript);
+    //     configStore.addTranscription(transcript);
+    //     currentTranscriptionIndex = configStore.transcriptions.length - 1;
+    //     transcribedOutput =
+    //         configStore.transcriptions[currentTranscriptionIndex];
+    // }
 
-    function removeTranscription() {
-        // configStore.transcriptions.splice(currentTranscriptionIndex, 1);
-        configStore.removeTranscription(currentTranscriptionIndex);
-        transcribedOutput =
-            configStore.transcriptions[currentTranscriptionIndex];
-    }
+    // function removeTranscription() {
+    //     // configStore.transcriptions.splice(currentTranscriptionIndex, 1);
+    //     configStore.removeTranscription(currentTranscriptionIndex);
+    //     transcribedOutput =
+    //         configStore.transcriptions[currentTranscriptionIndex];
+    // }
 
     export async function processData(
         blobChunks?: Blob[],
@@ -57,7 +51,7 @@
         try {
             workingChunks = blobChunks ?? workingChunks;
             if (workingChunks.length > 0) {
-                transcribedOutput = (
+                let transcribedResult = (
                     (await invoke("transcribe", {
                         audioData: await blobChunksToBytes(workingChunks),
                         threads,
@@ -65,11 +59,11 @@
                     })) as string
                 ).trim();
                 for (const word of wordsToIgnore) {
-                    transcribedOutput = transcribedOutput.replaceAll(word, "");
+                    transcribedResult = transcribedResult.replaceAll(word, "");
                 }
+                configStore.addTranscription(transcribedResult);
             }
-            addTranscription(transcribedOutput);
-            onFinishProcessing?.(transcribedOutput);
+            onFinishProcessing?.(configStore.currentTranscript);
         } catch (error) {
             onError?.(`An error occured while transcribing: ${error}`);
         }
@@ -82,40 +76,40 @@
         <Button
             width="default"
             color="secondary"
-            onclick={previousTranscription}
+            onclick={() => configStore.prevIndex()}
             class="text-xs"
-            disabled={currentTranscriptionIndex === 0}>{"<"}Previous</Button
+            disabled={configStore.currentTranscriptionIndex === 0}
+            >{"<"}Previous</Button
         >
         <span
-            >{configStore.transcriptions.length
-                ? currentTranscriptionIndex + 1
-                : 0}/{configStore.transcriptions.length}</span
+            >{configStore.transcriptLength
+                ? configStore.currentTranscriptionIndex + 1
+                : 0}/{configStore.transcriptLength}</span
         >
         <Button
             width="default"
             color="secondary"
-            onclick={nextTranscription}
-            disabled={configStore.transcriptions.length === 0 ||
-                currentTranscriptionIndex ===
+            onclick={() => configStore.nextIndex()}
+            disabled={configStore.isTranscriptsEmpty ||
+                configStore.currentTranscriptionIndex ===
                     configStore.transcriptions.length - 1}>Next{">"}</Button
         >
     </div>
     <Button
         variant="ghost"
         color="destructive"
-        onclick={removeTranscription}
-        disabled={configStore.transcriptions.length === 0}
-        >Delete Current</Button
+        onclick={() => configStore.removeCurrentTranscription()}
+        disabled={configStore.isTranscriptsEmpty}>Delete Current</Button
     >
     <Textarea
         color={configStore.transcriptions.length > 0 ? "success" : "warning"}
         size="md"
         class="rounded-md border-4 min-h-32 placeholder:text-center placeholder:text-xl placeholder:italic text-lg"
         placeholder="Record voice to transcribe..."
-        bind:value={() => configStore.transcriptions[currentTranscriptionIndex],
+        bind:value={() => configStore.currentTranscript,
         (v) => {
-            configStore.transcriptions[currentTranscriptionIndex] = v;
+            configStore.editTranscription(v);
         }}
-        disabled={configStore.transcriptions.length === 0}
+        disabled={configStore.isTranscriptsEmpty}
     />
 </fieldset>
