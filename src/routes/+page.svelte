@@ -15,17 +15,6 @@
   import PermissionBar from "$lib/components/PermissionBar.svelte";
   import { configStore } from "$lib/store.svelte";
 
-  const THEMES = [
-    {
-      value: "system",
-      label: "System",
-      isDefault: true,
-      kind: "system" as const,
-    },
-    { value: "light", label: "Light", kind: "light" as const },
-    { value: "dark", label: "Dark", kind: "dark" as const },
-  ];
-
   // Component Bindings
   let micRecorder: MicRecorder;
   let audioTranscriber: AudioTranscriber;
@@ -112,7 +101,6 @@
     theme={configStore.theme}
   />
   <ThemeDropdown
-    themes={THEMES}
     class="fixed top-0 right-0"
     listClass="p-1 w-full"
     direction="bottom"

@@ -5,20 +5,24 @@ Component based off of: <https://daisyui.com/components/theme-controller/>
 <script lang="ts">
     import { configStore } from "$lib/store.svelte";
 
+    const THEMES = [
+        {
+            value: "system",
+            label: "System",
+            isDefault: true,
+            kind: "system" as const,
+        },
+        { value: "light", label: "Light", kind: "light" as const },
+        { value: "dark", label: "Dark", kind: "dark" as const },
+    ];
+
     interface ThemeSwitcherProps {
-        themes: {
-            value: string;
-            label?: string;
-            isDefault?: boolean;
-            kind?: "system" | "light" | "dark";
-        }[];
         class?: string;
         listClass?: string;
         direction?: "top" | "bottom" | "left" | "right";
     }
 
     let {
-        themes,
         class: className,
         listClass,
         direction = "bottom",
@@ -33,7 +37,7 @@ Component based off of: <https://daisyui.com/components/theme-controller/>
         id="theme-list"
         class={`dropdown-content bg-base-300 rounded-box z-1 shadow-2xl ${listClass}`}
     >
-        {#each themes as theme}
+        {#each THEMES as theme}
             <li>
                 <input
                     tabindex="0"
