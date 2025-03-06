@@ -104,6 +104,33 @@ export class NotificationSystem {
         this.playSound(sound);
     }
 
+    confirmAction(
+        message: string,
+        onConfirm: () => void,
+        onCancel: () => void = () => { },
+        subtitle = "",
+        confirm: string = "Yes",
+        cancel: string = "No",
+        sound = "default_alert",
+        confirmButtonStyle: string = "btn btn-success",
+        cancelButtonStyle: string = "btn btn-error",
+    ) {
+        toast.warning(`${subtitle ? subtitle + ": " : ""}${message}`, {
+            duration: Number.POSITIVE_INFINITY, action: {
+                label: confirm,
+                onClick: onConfirm,
+            },
+            actionButtonStyle: confirmButtonStyle,
+            cancel: {
+                label: cancel,
+                onClick: onCancel,
+            },
+            cancelButtonStyle,
+            important: true,
+        });
+        this.playSound(sound);
+    }
+
     playSound(sound = "default_alert") {
         if (this.#enabledSound && sound) {
             invoke("play_sound", { soundName: sound }).catch((err) =>

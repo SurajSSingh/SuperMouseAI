@@ -3,39 +3,18 @@
     import { blobChunksToBytes } from "$lib/myUtils";
     import Textarea from "$lib/components/ui/textarea/textarea.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
+    import { configStore } from "$lib/store.svelte";
+    import type { NotificationSystem } from "$lib/notificationSystem.svelte";
 
     interface TranscriberProps {
-        transcribedOutput: string;
         onFinishProcessing?: (text: string) => void;
         onError?: (err: string) => void;
+        notifier?: NotificationSystem;
     }
 
-    let {
-        transcribedOutput = $bindable(""),
-        onFinishProcessing,
-        onError,
-    }: TranscriberProps = $props();
+    let { onFinishProcessing, onError, notifier }: TranscriberProps = $props();
 
     let workingChunks: Blob[] = $state([]);
-    let currentTranscriptionIndex: number = $state(0);
-    let transcriptions: string[] = $state([]);
-
-    function nextTranscription() {
-        if (currentTranscriptionIndex < transcriptions.length - 1)
-            currentTranscriptionIndex++;
-        transcribedOutput = transcriptions[currentTranscriptionIndex];
-    }
-
-    function previousTranscription() {
-        if (currentTranscriptionIndex > 0) currentTranscriptionIndex--;
-        transcribedOutput = transcriptions[currentTranscriptionIndex];
-    }
-
-    function addTranscription(transcript: string) {
-        transcriptions.push(transcript);
-        currentTranscriptionIndex = transcriptions.length - 1;
-        transcribedOutput = transcriptions[currentTranscriptionIndex];
-    }
 
     export async function processData(
         blobChunks?: Blob[],
@@ -46,7 +25,7 @@
         try {
             workingChunks = blobChunks ?? workingChunks;
             if (workingChunks.length > 0) {
-                transcribedOutput = (
+                let transcribedResult = (
                     (await invoke("transcribe", {
                         audioData: await blobChunksToBytes(workingChunks),
                         threads,
@@ -54,11 +33,11 @@
                     })) as string
                 ).trim();
                 for (const word of wordsToIgnore) {
-                    transcribedOutput = transcribedOutput.replaceAll(word, "");
+                    transcribedResult = transcribedResult.replaceAll(word, "");
                 }
+                configStore.addTranscription(transcribedResult);
             }
-            addTranscription(transcribedOutput);
-            onFinishProcessing?.(transcribedOutput);
+            onFinishProcessing?.(configStore.currentTranscript);
         } catch (error) {
             onError?.(`An error occured while transcribing: ${error}`);
         }
@@ -71,33 +50,44 @@
         <Button
             width="default"
             color="secondary"
-            onclick={previousTranscription}
+            onclick={() => configStore.prevIndex()}
             class="text-xs"
-            disabled={currentTranscriptionIndex === 0}>{"<"}Previous</Button
+            disabled={configStore.currentTranscriptionIndex === 0}
+            >{"<"}Previous</Button
         >
         <span
-            >{transcriptions.length
-                ? currentTranscriptionIndex + 1
-                : 0}/{transcriptions.length}</span
+            >{configStore.transcriptLength
+                ? configStore.currentTranscriptionIndex + 1
+                : 0}/{configStore.transcriptLength}</span
         >
         <Button
             width="default"
             color="secondary"
-            onclick={nextTranscription}
-            disabled={transcriptions.length === 0 ||
-                currentTranscriptionIndex === transcriptions.length - 1}
-            >Next{">"}</Button
+            onclick={() => configStore.nextIndex()}
+            disabled={configStore.isTranscriptsEmpty ||
+                configStore.currentTranscriptionIndex ===
+                    configStore.transcriptions.length - 1}>Next{">"}</Button
         >
     </div>
+    <Button
+        variant="ghost"
+        color="destructive"
+        onclick={() => {
+            notifier?.confirmAction("Are you sure you want to delete?", () => {
+                configStore.removeCurrentTranscription();
+            });
+        }}
+        disabled={configStore.isTranscriptsEmpty}>Delete Current</Button
+    >
     <Textarea
-        color={transcriptions.length > 0 ? "success" : "warning"}
+        color={configStore.transcriptions.length > 0 ? "success" : "warning"}
         size="md"
         class="rounded-md border-4 min-h-32 placeholder:text-center placeholder:text-xl placeholder:italic text-lg"
         placeholder="Record voice to transcribe..."
-        bind:value={() => transcriptions[currentTranscriptionIndex],
+        bind:value={() => configStore.currentTranscript,
         (v) => {
-            transcriptions[currentTranscriptionIndex] = v;
+            configStore.editTranscription(v);
         }}
-        disabled={workingChunks.length === 0}
+        disabled={configStore.isTranscriptsEmpty}
     />
 </fieldset>

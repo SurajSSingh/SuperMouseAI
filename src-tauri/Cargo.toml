@@ -34,6 +34,7 @@ mouce = "0.2.50"
 tauri-plugin-notification = "2"
 tauri-plugin-clipboard-manager = "2"
 device_query = "3.0.0"
+tauri-plugin-store = "2"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 # NOTE: CUDA feature separate feature flag

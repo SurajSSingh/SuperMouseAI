@@ -9,34 +9,22 @@
   import Button from "$lib/components/ui/button/button.svelte";
   import Tab from "$lib/components/ui/Tab.svelte";
   import ThemeDropdown from "$lib/components/ui/ThemeDropdown.svelte";
-  import PermissionsPage from "$lib/components/PermissionsPage.svelte";
   import CustomShortcut from "$lib/components/CustomShortcut.svelte";
   import MenuScreen from "$lib/components/MenuScreen.svelte";
   import PermissionBar from "$lib/components/PermissionBar.svelte";
-
-  const THEMES = [
-    {
-      value: "system",
-      label: "System",
-      isDefault: true,
-      kind: "system" as const,
-    },
-    { value: "light", label: "Light", kind: "light" as const },
-    { value: "dark", label: "Dark", kind: "dark" as const },
-  ];
+  import { configStore } from "$lib/store.svelte";
 
   // Component Bindings
   let micRecorder: MicRecorder;
   let audioTranscriber: AudioTranscriber;
   // State
   let recordingState: RecordingStates = $state("stopped");
-  let transcribedOutput = $state("");
   let enableSound = $state(true);
   let testNotify = $state(true);
   let threads = $state(0);
   let initialPrompt = $state("");
-  let theme: "system" | "light" | "dark" = $state("system");
   let ignoredWords = $state(["[BLANK_AUDIO]", "[NO_AUDIO]", "[SILENCE]"]);
+  let hasRecorded = $state(false);
 
   // Inner Variables
   const notifier = new NotificationSystem(
@@ -49,12 +37,10 @@
 
   // Helper Functions
   function copyToClipboard() {
-    writeText(transcribedOutput);
+    writeText(configStore.currentTranscript);
     notifier.showInfo("Copied to clipboard!", "", "");
     notifier.showNotification("Copied to clipboard!", "", "");
   }
-
-  $inspect(recordingState);
 
   function transcribe(chunks?: Blob[]) {
     recordingState = "processing";
@@ -78,6 +64,7 @@
   function onRecordingEnd(chunks: Blob[]) {
     recordingState = "processing";
     notifier.showNotification("Recording Stopped!", "", "stop");
+    hasRecorded = true;
     transcribe(chunks);
   }
   function onFinishProcessing() {
@@ -88,6 +75,13 @@
   function onError(err: string) {
     alert(err);
   }
+
+  // Top-level clean-up ONLY (for store)
+  $effect(() => {
+    return () => {
+      configStore.cleanup();
+    };
+  });
 </script>
 
 <main class="">
@@ -105,10 +99,13 @@
       </Tab>
     </section>
   </MenuScreen>
-  <Toaster position="top-center" richColors closeButton {theme} />
+  <Toaster
+    position="top-center"
+    richColors
+    closeButton
+    theme={configStore.theme}
+  />
   <ThemeDropdown
-    themes={THEMES}
-    bind:current={theme}
     class="fixed top-0 right-0"
     listClass="p-1 w-full"
     direction="bottom"
@@ -148,22 +145,23 @@
             notifier.showNotification("Re-transcribing data.", "", "stop");
             transcribe();
           }}
-          disabled={recordingState !== "stopped"}>(✏️) Re-transcribe</Button
+          disabled={!hasRecorded || recordingState !== "stopped"}
+          >(✏️) Re-transcribe</Button
         >
         <Button
           color="info"
           size="sm"
           class="m-2"
           onclick={copyToClipboard}
-          disabled={!transcribedOutput || recordingState !== "stopped"}
-          >(📋) Copy to Clipboard</Button
+          disabled={!configStore.currentTranscript ||
+            recordingState !== "stopped"}>(📋) Copy to Clipboard</Button
         >
       </div>
       <AudioTranscriber
         bind:this={audioTranscriber}
-        bind:transcribedOutput
         {onFinishProcessing}
         {onError}
+        {notifier}
       />
     </div>
   </div>
