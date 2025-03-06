@@ -69,17 +69,19 @@ export class ConfigStore {
     addTranscription(transcript: string) {
         this.#transcriptions.push(transcript);
         this.fileStore?.set(ConfigItem.TRANSCRIPTS, this.#transcriptions);
+        this.currentTranscriptionIndex = this.transcriptLength - 1;
     }
 
     editTranscription(edited: string) {
         this.#transcriptions[this.#currentIndex] = edited;
         this.fileStore?.set(ConfigItem.TRANSCRIPTS, this.#transcriptions);
-        this.fileStore?.entries().then(x => console.log("edit: ", x));
     }
 
     removeCurrentTranscription() {
         this.#transcriptions.splice(this.#currentIndex, 1);
         this.fileStore?.set(ConfigItem.TRANSCRIPTS, this.#transcriptions);
+        if (this.#currentIndex >= this.transcriptLength) this.currentTranscriptionIndex = this.transcriptLength - 1;
+        if (this.isTranscriptsEmpty) this.currentTranscriptionIndex = 0;
     }
 
     get currentTranscriptionIndex() {
@@ -95,14 +97,12 @@ export class ConfigStore {
         if (this.#currentIndex <= 0) return;
         this.#currentIndex--;
         this.fileStore?.set(ConfigItem.INDEX, this.#currentIndex);
-        this.fileStore?.entries().then(x => console.log("prevI: ", x));
     }
 
     nextIndex() {
         if (this.#currentIndex >= this.transcriptLength - 1) return;
         this.#currentIndex++;
         this.fileStore?.set(ConfigItem.INDEX, this.#currentIndex);
-        this.fileStore?.entries().then(x => console.log("nextI: ", x));
     }
 }
 

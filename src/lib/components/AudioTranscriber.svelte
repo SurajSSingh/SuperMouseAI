@@ -4,43 +4,17 @@
     import Textarea from "$lib/components/ui/textarea/textarea.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import { configStore } from "$lib/store.svelte";
+    import type { NotificationSystem } from "$lib/notificationSystem.svelte";
 
     interface TranscriberProps {
         onFinishProcessing?: (text: string) => void;
         onError?: (err: string) => void;
+        notifier?: NotificationSystem;
     }
 
-    let { onFinishProcessing, onError }: TranscriberProps = $props();
+    let { onFinishProcessing, onError, notifier }: TranscriberProps = $props();
 
     let workingChunks: Blob[] = $state([]);
-
-    // function nextTranscription() {
-    //     if (currentTranscriptionIndex < configStore.transcriptions.length - 1)
-    //         currentTranscriptionIndex++;
-    //     transcribedOutput =
-    //         configStore.transcriptions[currentTranscriptionIndex];
-    // }
-
-    // function previousTranscription() {
-    //     if (currentTranscriptionIndex > 0) currentTranscriptionIndex--;
-    //     transcribedOutput =
-    //         configStore.transcriptions[currentTranscriptionIndex];
-    // }
-
-    // function addTranscription(transcript: string) {
-    //     // configStore.transcriptions.push(transcript);
-    //     configStore.addTranscription(transcript);
-    //     currentTranscriptionIndex = configStore.transcriptions.length - 1;
-    //     transcribedOutput =
-    //         configStore.transcriptions[currentTranscriptionIndex];
-    // }
-
-    // function removeTranscription() {
-    //     // configStore.transcriptions.splice(currentTranscriptionIndex, 1);
-    //     configStore.removeTranscription(currentTranscriptionIndex);
-    //     transcribedOutput =
-    //         configStore.transcriptions[currentTranscriptionIndex];
-    // }
 
     export async function processData(
         blobChunks?: Blob[],
@@ -98,7 +72,11 @@
     <Button
         variant="ghost"
         color="destructive"
-        onclick={() => configStore.removeCurrentTranscription()}
+        onclick={() => {
+            notifier?.confirmAction("Are you sure you want to delete?", () => {
+                configStore.removeCurrentTranscription();
+            });
+        }}
         disabled={configStore.isTranscriptsEmpty}>Delete Current</Button
     >
     <Textarea

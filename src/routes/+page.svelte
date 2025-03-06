@@ -9,7 +9,6 @@
   import Button from "$lib/components/ui/button/button.svelte";
   import Tab from "$lib/components/ui/Tab.svelte";
   import ThemeDropdown from "$lib/components/ui/ThemeDropdown.svelte";
-  import PermissionsPage from "$lib/components/PermissionsPage.svelte";
   import CustomShortcut from "$lib/components/CustomShortcut.svelte";
   import MenuScreen from "$lib/components/MenuScreen.svelte";
   import PermissionBar from "$lib/components/PermissionBar.svelte";
@@ -20,7 +19,6 @@
   let audioTranscriber: AudioTranscriber;
   // State
   let recordingState: RecordingStates = $state("stopped");
-  let transcribedOutput = $state("");
   let enableSound = $state(true);
   let testNotify = $state(true);
   let threads = $state(0);
@@ -39,7 +37,7 @@
 
   // Helper Functions
   function copyToClipboard() {
-    writeText(transcribedOutput);
+    writeText(configStore.currentTranscript);
     notifier.showInfo("Copied to clipboard!", "", "");
     notifier.showNotification("Copied to clipboard!", "", "");
   }
@@ -155,14 +153,15 @@
           size="sm"
           class="m-2"
           onclick={copyToClipboard}
-          disabled={!transcribedOutput || recordingState !== "stopped"}
-          >(📋) Copy to Clipboard</Button
+          disabled={!configStore.currentTranscript ||
+            recordingState !== "stopped"}>(📋) Copy to Clipboard</Button
         >
       </div>
       <AudioTranscriber
         bind:this={audioTranscriber}
         {onFinishProcessing}
         {onError}
+        {notifier}
       />
     </div>
   </div>
