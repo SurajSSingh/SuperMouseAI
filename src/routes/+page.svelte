@@ -37,6 +37,7 @@
   let initialPrompt = $state("");
   let theme: "system" | "light" | "dark" = $state("system");
   let ignoredWords = $state(["[BLANK_AUDIO]", "[NO_AUDIO]", "[SILENCE]"]);
+  let hasRecorded = $state(false);
 
   // Inner Variables
   const notifier = new NotificationSystem(
@@ -53,8 +54,6 @@
     notifier.showInfo("Copied to clipboard!", "", "");
     notifier.showNotification("Copied to clipboard!", "", "");
   }
-
-  $inspect(recordingState);
 
   function transcribe(chunks?: Blob[]) {
     recordingState = "processing";
@@ -78,6 +77,7 @@
   function onRecordingEnd(chunks: Blob[]) {
     recordingState = "processing";
     notifier.showNotification("Recording Stopped!", "", "stop");
+    hasRecorded = true;
     transcribe(chunks);
   }
   function onFinishProcessing() {
@@ -148,7 +148,8 @@
             notifier.showNotification("Re-transcribing data.", "", "stop");
             transcribe();
           }}
-          disabled={recordingState !== "stopped"}>(✏️) Re-transcribe</Button
+          disabled={!hasRecorded || recordingState !== "stopped"}
+          >(✏️) Re-transcribe</Button
         >
         <Button
           color="info"
