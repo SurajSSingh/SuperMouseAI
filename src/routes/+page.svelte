@@ -13,6 +13,7 @@
   import CustomShortcut from "$lib/components/CustomShortcut.svelte";
   import MenuScreen from "$lib/components/MenuScreen.svelte";
   import PermissionBar from "$lib/components/PermissionBar.svelte";
+  import { configStore } from "$lib/store.svelte";
 
   const THEMES = [
     {
@@ -35,7 +36,6 @@
   let testNotify = $state(true);
   let threads = $state(0);
   let initialPrompt = $state("");
-  let theme: "system" | "light" | "dark" = $state("system");
   let ignoredWords = $state(["[BLANK_AUDIO]", "[NO_AUDIO]", "[SILENCE]"]);
   let hasRecorded = $state(false);
 
@@ -105,10 +105,14 @@
       </Tab>
     </section>
   </MenuScreen>
-  <Toaster position="top-center" richColors closeButton {theme} />
+  <Toaster
+    position="top-center"
+    richColors
+    closeButton
+    theme={configStore.theme}
+  />
   <ThemeDropdown
     themes={THEMES}
-    bind:current={theme}
     class="fixed top-0 right-0"
     listClass="p-1 w-full"
     direction="bottom"

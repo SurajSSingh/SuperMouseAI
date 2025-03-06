@@ -3,7 +3,7 @@
     import { blobChunksToBytes } from "$lib/myUtils";
     import Textarea from "$lib/components/ui/textarea/textarea.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
-    import { configStore } from "$lib/store";
+    import { configStore } from "$lib/store.svelte";
 
     interface TranscriberProps {
         transcribedOutput: string;
@@ -19,30 +19,33 @@
 
     let workingChunks: Blob[] = $state([]);
     let currentTranscriptionIndex: number = $state(0);
-    let transcriptions: string[] = $state([]);
 
     function nextTranscription() {
-        if (currentTranscriptionIndex < transcriptions.length - 1)
+        if (currentTranscriptionIndex < configStore.transcriptions.length - 1)
             currentTranscriptionIndex++;
-        transcribedOutput = transcriptions[currentTranscriptionIndex];
+        transcribedOutput =
+            configStore.transcriptions[currentTranscriptionIndex];
     }
 
     function previousTranscription() {
         if (currentTranscriptionIndex > 0) currentTranscriptionIndex--;
-        transcribedOutput = transcriptions[currentTranscriptionIndex];
+        transcribedOutput =
+            configStore.transcriptions[currentTranscriptionIndex];
     }
 
     function addTranscription(transcript: string) {
-        transcriptions.push(transcript);
-        currentTranscriptionIndex = transcriptions.length - 1;
-        transcribedOutput = transcriptions[currentTranscriptionIndex];
-        configStore.setPrevTranscriptions(transcriptions);
+        // configStore.transcriptions.push(transcript);
+        configStore.addTranscription(transcript);
+        currentTranscriptionIndex = configStore.transcriptions.length - 1;
+        transcribedOutput =
+            configStore.transcriptions[currentTranscriptionIndex];
     }
 
     function removeTranscription() {
-        transcriptions.splice(currentTranscriptionIndex, 1);
-        transcribedOutput = transcriptions[currentTranscriptionIndex];
-        configStore.setPrevTranscriptions(transcriptions);
+        // configStore.transcriptions.splice(currentTranscriptionIndex, 1);
+        configStore.removeTranscription(currentTranscriptionIndex);
+        transcribedOutput =
+            configStore.transcriptions[currentTranscriptionIndex];
     }
 
     export async function processData(
@@ -71,16 +74,6 @@
             onError?.(`An error occured while transcribing: ${error}`);
         }
     }
-
-    $effect(() => {
-        const getTranscriptions = async () => {
-            const previous = await configStore.getPrevTranscriptions();
-            if (previous) {
-                transcriptions = previous;
-            }
-        };
-        getTranscriptions();
-    });
 </script>
 
 <fieldset class="fieldset my-4 relative">
@@ -94,34 +87,35 @@
             disabled={currentTranscriptionIndex === 0}>{"<"}Previous</Button
         >
         <span
-            >{transcriptions.length
+            >{configStore.transcriptions.length
                 ? currentTranscriptionIndex + 1
-                : 0}/{transcriptions.length}</span
+                : 0}/{configStore.transcriptions.length}</span
         >
         <Button
             width="default"
             color="secondary"
             onclick={nextTranscription}
-            disabled={transcriptions.length === 0 ||
-                currentTranscriptionIndex === transcriptions.length - 1}
-            >Next{">"}</Button
+            disabled={configStore.transcriptions.length === 0 ||
+                currentTranscriptionIndex ===
+                    configStore.transcriptions.length - 1}>Next{">"}</Button
         >
     </div>
     <Button
         variant="ghost"
         color="destructive"
         onclick={removeTranscription}
-        disabled={transcriptions.length === 0}>Delete Current</Button
+        disabled={configStore.transcriptions.length === 0}
+        >Delete Current</Button
     >
     <Textarea
-        color={transcriptions.length > 0 ? "success" : "warning"}
+        color={configStore.transcriptions.length > 0 ? "success" : "warning"}
         size="md"
         class="rounded-md border-4 min-h-32 placeholder:text-center placeholder:text-xl placeholder:italic text-lg"
         placeholder="Record voice to transcribe..."
-        bind:value={() => transcriptions[currentTranscriptionIndex],
+        bind:value={() => configStore.transcriptions[currentTranscriptionIndex],
         (v) => {
-            transcriptions[currentTranscriptionIndex] = v;
+            configStore.transcriptions[currentTranscriptionIndex] = v;
         }}
-        disabled={transcriptions.length === 0}
+        disabled={configStore.transcriptions.length === 0}
     />
 </fieldset>
