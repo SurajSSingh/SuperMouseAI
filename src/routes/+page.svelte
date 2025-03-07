@@ -87,6 +87,30 @@
           <WhisperOptions />
         </div>
       </Tab>
+      <Tab
+        value="tabs"
+        label="Danger Zone"
+        inputClass="input-ghost p-6 hover:bg-error checked:input-xl checked:text-warning"
+        class="bg-base-100 border-base-300 p-6"
+      >
+        <div class="h-60 overflow-auto pr-6">
+          <div
+            class="tooltip tooltip-right"
+            data-tip="Click to delete all configuration data."
+          >
+            <Button
+              color="destructive"
+              onclick={() =>
+                notifier.confirmAction(
+                  "You will clear all transcriptions alongside any customizations you have made. This will take effect AFTER closing the app.",
+                  () => configStore.clearData(),
+                  () => {},
+                  "Are you sure?",
+                )}>Clear App Data</Button
+            >
+          </div>
+        </div>
+      </Tab>
     </section>
   </MenuScreen>
   <Toaster
