@@ -73,9 +73,16 @@
         variant="ghost"
         color="destructive"
         onclick={() => {
-            notifier?.confirmAction("Are you sure you want to delete?", () => {
-                configStore.removeCurrentTranscription();
-            });
+            notifier?.confirmAction(
+                `You are deleting: ${configStore.currentTranscript.length > 100 ? configStore.currentTranscript.substring(0, 100).trimEnd() + "..." : configStore.currentTranscript}`,
+                () => {
+                    configStore.removeCurrentTranscription();
+                },
+                () => {
+                    notifier?.showInfo("Cancelled delete.", "", "");
+                },
+                "Are you sure you want to delete?",
+            );
         }}
         disabled={configStore.isTranscriptsEmpty}>Delete Current</Button
     >
