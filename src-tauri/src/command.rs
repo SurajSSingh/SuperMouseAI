@@ -22,6 +22,8 @@ pub struct AppState {
 
 impl AppState {
     pub fn new(model: Model, sound_map: HashMap<String, PathBuf>) -> Self {
+        // Load model into memory by evaluating short silence
+        let _ = model.transcribe_pcm_s16le(&[0.0; 20_000], false, false, None, None, None);
         AppState { model, sound_map }
     }
 
