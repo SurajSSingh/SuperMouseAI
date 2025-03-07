@@ -5,7 +5,7 @@
 use std::time::Instant;
 
 use crate::transcript::{Transcript, Utterance};
-use log::trace;
+use log::{debug, error, trace};
 use rodio::{source::UniformSourceIterator, Decoder, Source};
 use std::io::Cursor;
 use whisper_rs::{
@@ -132,6 +132,8 @@ impl Model {
         params.set_token_timestamps(word_timestamps);
         params.set_split_on_word(true);
 
+        trace!("Basic params for Whisper Set");
+
         #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
         let threads = threads.map_or_else(|| num_cpus::get() as i32, i32::from);
 
@@ -140,11 +142,20 @@ impl Model {
         params.set_n_threads(threads);
 
         let st = Instant::now();
-        let mut state = self.context.create_state().expect("failed to create state");
+        let mut state = self.context.create_state().map_err(|e| {
+            error!("Failed to create Whisper state");
+            ModelError::WhisperError(e)
+        })?;
         trace!("Transcribing audio with WhisperState");
-        state.full(params, audio).expect("failed to transcribe");
+        state.full(params, audio).map_err(|e| {
+            error!("Failed to transcribe");
+            ModelError::WhisperError(e)
+        })?;
 
-        let num_segments = state.full_n_segments().expect("failed to get segments");
+        let num_segments = state.full_n_segments().map_err(|e| {
+            error!("Failed to get segments");
+            ModelError::WhisperError(e)
+        })?;
         trace!("Number of segments: {}", num_segments);
 
         let mut words = Vec::new();
@@ -218,18 +229,23 @@ pub enum ModelError {
 ///
 /// Adapted from <https://github.com/sigaloid/mutter/blob/main/src/transcode.rs>
 pub fn decode(bytes: Vec<u8>) -> Result<Vec<f32>, ModelError> {
+    debug!("Start Decoding");
     let input = Cursor::new(bytes);
+    trace!("Created cursor of bytes");
     // We know it is m4a by Mime type in browser (and we set it to be that as well)
     let source = Decoder::new_wav(input).map_err(ModelError::DecodingError)?;
+    trace!("Produced WAV source from bytes");
     let output_sample_rate = 16000;
     let channels = 1;
     // Resample to output sample rate and channels
     let resample = UniformSourceIterator::new(source, channels, output_sample_rate);
     // High and low pass filters to enhance the audio
     let pass_filter = resample.low_pass(3000).high_pass(200).convert_samples();
+    trace!("Finished Resampling");
     let samples: Vec<i16> = pass_filter.collect::<Vec<i16>>();
     let mut output: Vec<f32> = vec![0.0f32; samples.len()];
     let result: Result<(), whisper_rs::WhisperError> =
         whisper_rs::convert_integer_to_float_audio(&samples, &mut output);
+    debug!("Decoding Finished");
     result.map(|()| output).map_err(ModelError::WhisperError)
 }

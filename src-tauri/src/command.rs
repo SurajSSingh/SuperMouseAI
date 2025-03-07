@@ -2,6 +2,7 @@
 
 // Crate level use (imports)
 use crate::mutter::{Model, ModelError};
+use log::error;
 use mouce::{
     common::{MouseButton, MouseEvent},
     Mouse, MouseActions,
@@ -137,7 +138,10 @@ pub fn listen_for_mouse_click(app_handle: AppHandle) -> Result<u8, String> {
         .hook(Box::new(move |e| match e {
             MouseEvent::Press(button) => app_handle
                 .emit("mouse_press", MouseButtonType::from(button))
-                .expect("App Handle should emit press event with button playload"),
+                .map_err(|e| {
+                    error!("App Handle expected to emit press event with button playload but could not: {}", e);
+                })
+                .unwrap_or_default(),
             MouseEvent::Release(_button) => { /* Do Nothing Yet */ }
             _ => (),
         }))
