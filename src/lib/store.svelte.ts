@@ -1,5 +1,6 @@
 import { load, Store } from '@tauri-apps/plugin-store';
 import type { ThemeKind } from './types';
+import type { UnlistenFn } from '@tauri-apps/api/event';
 
 /** Auto-save every given millisecond, or never if set to `false` */
 const AUTO_SAVE_FREQUENCY: false | number = 2000;
@@ -26,13 +27,14 @@ export class ConfigStore {
     // Store items
     fileStore: Store | null = null;
     cleanup: () => void;
+    keyChangeUnlistener: UnlistenFn | undefined;
     #version = 1;
 
     // Private Config data
     #theme: ThemeKind = $state("system");
     #transcriptions: string[] = $state([]);
     #currentIndex: number = $state(0);
-    #shortcut = $state("")
+    #shortcut = $state("Shift+Alt+KeyR")
     #threads = $state(1)
     #enableSound = $state(true);
     #testNotify = $state(true);
@@ -43,35 +45,63 @@ export class ConfigStore {
     transcriptLength = $derived(this.#transcriptions.length);
     isTranscriptsEmpty = $derived(this.#transcriptions.length === 0);
     currentTranscript = $derived(this.#transcriptions[this.#currentIndex]);
+    ignoredWordsList = $derived(this.#ignoredWords.split("\n"));
+    // NOTE: A main key will alawy exist for a valid shortcut
+    mainKey = $derived(this.#shortcut.split("+").at(-1)!);
 
+    #isReady: boolean = false;
     constructor() {
         this.cleanup = $effect.root(() => {
             $effect(() => {
                 const loadFile = async () => {
-                    this.fileStore = await load('super-mouse-ai.json', { autoSave: AUTO_SAVE_FREQUENCY })
+                    this.fileStore = await load('super-mouse-ai.json', { autoSave: AUTO_SAVE_FREQUENCY });
                     await this.loadAll();
+                    this.#isReady = true;
                 }
                 loadFile();
                 return () => {
+                    this.keyChangeUnlistener?.();
                     this.fileStore?.close()
                 }
             })
         });
     }
 
+    /** Wait until store is loaded */
+    async waitForStoreLoaded() {
+        // HACK: Works, but would be better to follow actual loading resolve
+        while (!this.#isReady) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+    }
+
     /** Load all items from store for states */
     private async loadAll() {
         if (!this.fileStore) return;
-        this.#version = await this.fileStore.get(ConfigItem.VERSION) ?? this.#version;
+        if (!this.fileStore.has(ConfigItem.VERSION)) {
+            await this.fileStore.set(ConfigItem.VERSION, this.#version);
+        }
+        else {
+            this.#version = await this.fileStore.get(ConfigItem.VERSION) ?? this.#version;
+        }
         this.#theme = await this.fileStore.get(ConfigItem.THEME) ?? this.#theme;
         this.#transcriptions = await this.fileStore.get(ConfigItem.TRANSCRIPTS) ?? this.#transcriptions;
         this.#currentIndex = await this.fileStore.get(ConfigItem.INDEX) ?? this.#currentIndex;
+        this.#shortcut = await this.fileStore.get(ConfigItem.SHORTCUT) || this.#shortcut;
+        this.#threads = await this.fileStore.get(ConfigItem.THREADS) ?? this.#threads;
         this.#enableSound = await this.fileStore.get(ConfigItem.SOUND) ?? this.#enableSound;
         this.#testNotify = await this.fileStore.get(ConfigItem.TEST_NOTIFY) ?? this.#testNotify;
         this.#initialPrompt = await this.fileStore.get(ConfigItem.PROMPT) ?? this.#initialPrompt;
         this.#ignoredWords = await this.fileStore.get(ConfigItem.IGNORED_WORDS) ?? this.#ignoredWords;
-        console.log(await this.fileStore.entries());
+        this.keyChangeUnlistener = await this.fileStore.onChange((k, v) => console.log(`STORE CHANGE: ${k} => ${v}`));
+        console.dir(await this.fileStore.entries());
     }
+
+    clearData() {
+        this.fileStore?.reset()
+    }
+
+    // Properties and Functions for config values
 
     get version(): number {
         return this.#version;
@@ -133,11 +163,6 @@ export class ConfigStore {
         return this.#shortcut
     }
 
-    get mainKey(): string {
-        // NOTE: A main key will alawy exist for a valid shortcut
-        return this.#shortcut.split("+").at(-1)!;
-    }
-
     get modifierKeys(): {
         hasAlt: boolean,
         hasControl: boolean,
@@ -153,15 +178,15 @@ export class ConfigStore {
     }
 
     set shortcut(newShortcut: string) {
-        this.#shortcut = newShortcut;
+        this.#shortcut = newShortcut || this.#shortcut;
         this.fileStore?.set(ConfigItem.SHORTCUT, this.#shortcut);
     }
 
-    get thread(): number {
+    get threads(): number {
         return this.#threads
     }
 
-    set thread(newCount: number) {
+    set threads(newCount: number) {
         this.#threads = newCount;
         this.fileStore?.set(ConfigItem.THREADS, this.#threads);
     }
@@ -195,10 +220,6 @@ export class ConfigStore {
 
     get ignoredWords(): string {
         return this.#ignoredWords;
-    }
-
-    get ignoredWordsList(): string[] {
-        return this.#ignoredWords.split("\n");
     }
 
     set ignoredWords(newIgnored: string) {
