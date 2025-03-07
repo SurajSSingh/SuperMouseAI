@@ -66,7 +66,12 @@ pub fn transcribe(
             individual_word_timestamps.unwrap_or(false),
             initial_prompt.as_deref(),
             language.as_deref(),
-            threads,
+            // Make sure not to pass 0 for CPU thread,
+            // otherwise model crashes
+            match threads {
+                Some(0) => None,
+                _ => threads,
+            },
         )
         .map_err(|err| {
             log::error!("Transcription Error: {:?}", err);

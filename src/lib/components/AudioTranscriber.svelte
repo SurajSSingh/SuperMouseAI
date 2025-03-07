@@ -23,7 +23,11 @@
                 let transcribedResult = (
                     (await invoke("transcribe", {
                         audioData: await blobChunksToBytes(workingChunks),
-                        threads: configStore.threads,
+                        threads:
+                            // Make sure Some(positive threads) or None (for <=0)
+                            configStore.threads > 0
+                                ? configStore.threads
+                                : null,
                         initialPrompt: configStore.initialPrompt,
                     })) as string
                 )
