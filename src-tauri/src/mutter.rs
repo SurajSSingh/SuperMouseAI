@@ -52,7 +52,7 @@ impl Model {
     /// - `initial_prompt`: Optinal initial prompt to whisper model.
     /// - `language`: Optinal language setting for whisper model.
     /// - `threads`: Number of threads to use. `None` will use the number of cores from
-    /// the `num_cpus` crate.
+    ///   the `num_cpus` crate.
     /// # Errors
     /// - [`ModelError`]
     /// # Returns

@@ -75,7 +75,7 @@ pub fn transcribe(
                 ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
             }
         })?;
-    match format.as_ref().map(String::as_str) {
+    match format.as_deref() {
         Some("vtt") => Ok(transcription.as_vtt()),
         Some("srt") => Ok(transcription.as_srt()),
         Some("text") | None => Ok(transcription.as_text()),
