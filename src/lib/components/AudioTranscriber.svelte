@@ -26,7 +26,10 @@
                         threads: configStore.threads,
                         initialPrompt: configStore.initialPrompt,
                     })) as string
-                ).trim();
+                )
+                    .trim()
+                    // Replace all "empty" newlines after words
+                    .replaceAll(/(?<=\w)[ \t]*\n/g, " ");
                 for (const word of configStore.ignoredWordsList) {
                     transcribedResult = transcribedResult.replaceAll(word, "");
                 }
