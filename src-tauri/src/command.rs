@@ -2,6 +2,7 @@
 
 // Crate level use (imports)
 use crate::mutter::{Model, ModelError};
+use log::error;
 use mouce::{
     common::{MouseButton, MouseEvent},
     Mouse, MouseActions,
@@ -22,6 +23,8 @@ pub struct AppState {
 
 impl AppState {
     pub fn new(model: Model, sound_map: HashMap<String, PathBuf>) -> Self {
+        // Load model into memory by evaluating short silence
+        let _ = model.transcribe_pcm_s16le(&[0.0; 20_000], false, false, None, None, None);
         AppState { model, sound_map }
     }
 
@@ -47,6 +50,14 @@ pub fn transcribe(
     language: Option<String>,
     format: Option<String>,
 ) -> Result<String, String> {
+    log::info!("Transcribing with parameters: translate={:?}, use_timestamp={:?}, threads={:?}, prompt={:?}, lang={:?}, fmt={:?}", 
+    translate,
+    individual_word_timestamps,
+    threads,
+    initial_prompt,
+    language,
+    format,
+);
     let transcription = app_state
         .model
         .transcribe_audio(
@@ -57,11 +68,14 @@ pub fn transcribe(
             language.as_deref(),
             threads,
         )
-        .map_err(|err| match err {
-            ModelError::WhisperError(whisper_error) => whisper_error.to_string(),
-            ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
+        .map_err(|err| {
+            log::error!("Transcription Error: {:?}", err);
+            match err {
+                ModelError::WhisperError(whisper_error) => whisper_error.to_string(),
+                ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
+            }
         })?;
-    match format.as_ref().map(String::as_str) {
+    match format.as_deref() {
         Some("vtt") => Ok(transcription.as_vtt()),
         Some("srt") => Ok(transcription.as_srt()),
         Some("text") | None => Ok(transcription.as_text()),
@@ -124,7 +138,10 @@ pub fn listen_for_mouse_click(app_handle: AppHandle) -> Result<u8, String> {
         .hook(Box::new(move |e| match e {
             MouseEvent::Press(button) => app_handle
                 .emit("mouse_press", MouseButtonType::from(button))
-                .expect("App Handle should emit press event with button playload"),
+                .map_err(|e| {
+                    error!("App Handle expected to emit press event with button playload but could not: {}", e);
+                })
+                .unwrap_or_default(),
             MouseEvent::Release(_button) => { /* Do Nothing Yet */ }
             _ => (),
         }))

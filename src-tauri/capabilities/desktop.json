@@ -16,6 +16,7 @@
     "global-shortcut:allow-unregister-all",
     "notification:default",
     "clipboard-manager:allow-write-text",
-    "store:default"
+    "store:default",
+    "log:default"
   ]
 }

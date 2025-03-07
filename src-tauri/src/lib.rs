@@ -37,6 +37,20 @@ const KEY_QUERY_MILLIS: u64 = 100;
 /// Tauri entry point to run app
 pub fn run() {
     tauri::Builder::default()
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .target(tauri_plugin_log::Target::new(
+                    tauri_plugin_log::TargetKind::LogDir {
+                        file_name: Some("super-mouse-ai-logs".to_string()),
+                    },
+                ))
+                .level(if cfg!(debug_assertions) {
+                    log::LevelFilter::max()
+                } else {
+                    log::LevelFilter::Warn
+                })
+                .build(),
+        )
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             let _ = app
@@ -88,19 +102,19 @@ pub fn run() {
                         .then(|| {
                             map.insert("start".into(), start_path.clone());
                         })
-                        .unwrap_or_else(|| println!("No start path found: {:?}", start_path));
+                        .unwrap_or_else(|| log::info!("No start path found: {:?}", start_path));
                     stop_path
                         .exists()
                         .then(|| {
                             map.insert("stop".into(), stop_path.clone());
                         })
-                        .unwrap_or_else(|| println!("No stop path found: {:?}", stop_path));
+                        .unwrap_or_else(|| log::info!("No stop path found: {:?}", stop_path));
                     magic_path
                         .exists()
                         .then(|| {
                             map.insert("finish".into(), magic_path.clone());
                         })
-                        .unwrap_or_else(|| println!("No magic path found: {:?}", magic_path));
+                        .unwrap_or_else(|| log::info!("No magic path found: {:?}", magic_path));
                 }
                 map
             };

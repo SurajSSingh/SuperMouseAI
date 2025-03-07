@@ -96,6 +96,22 @@
         <div class="h-60 overflow-auto pr-6">
           <div
             class="tooltip tooltip-right"
+            data-tip="Click to clear all transcripts."
+          >
+            <Button
+              color="destructive"
+              onclick={() =>
+                notifier.confirmAction(
+                  "You will clear all transcriptions!",
+                  () => configStore.clearTranscripts(),
+                  () => {},
+                  "Are you sure?",
+                )}>Delete All Transcripts</Button
+            >
+          </div>
+          <br />
+          <div
+            class="tooltip tooltip-right"
             data-tip="Click to delete all configuration data."
           >
             <Button

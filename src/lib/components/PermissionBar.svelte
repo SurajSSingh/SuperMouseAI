@@ -72,8 +72,14 @@
             name="Notification"
             icon={showIcons ? "🔔" : ""}
             status={notificationPermission}
-            onclick={() =>
-                notifier.getPermissionToNotify(configStore.testNotify)}
+            onclick={() => {
+                notifier.getPermissionToNotify(configStore.testNotify);
+                notifier
+                    .checkPermissionGranted()
+                    .then(
+                        (permission) => (notificationPermission = permission),
+                    );
+            }}
             showName={showNames}
         />
     </div>
