@@ -248,6 +248,11 @@
                 }
             });
             await configStore.waitForStoreLoaded();
+            const storedModKeys = configStore.modifierKeys;
+            modAlt = storedModKeys.hasAlt;
+            modCtrl = storedModKeys.hasControl;
+            modShift = storedModKeys.hasShift;
+            modSuper = storedModKeys.hasSuper;
             setupShortcut(previousShortcut === "");
         };
         asyncSetup();
