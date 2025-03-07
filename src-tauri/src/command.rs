@@ -47,6 +47,14 @@ pub fn transcribe(
     language: Option<String>,
     format: Option<String>,
 ) -> Result<String, String> {
+    log::info!("Transcribing with parameters: translate={:?}, use_timestamp={:?}, threads={:?}, prompt={:?}, lang={:?}, fmt={:?}", 
+    translate,
+    individual_word_timestamps,
+    threads,
+    initial_prompt,
+    language,
+    format,
+);
     let transcription = app_state
         .model
         .transcribe_audio(
@@ -57,9 +65,12 @@ pub fn transcribe(
             language.as_deref(),
             threads,
         )
-        .map_err(|err| match err {
-            ModelError::WhisperError(whisper_error) => whisper_error.to_string(),
-            ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
+        .map_err(|err| {
+            log::error!("Transcription Error: {:?}", err);
+            match err {
+                ModelError::WhisperError(whisper_error) => whisper_error.to_string(),
+                ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
+            }
         })?;
     match format.as_ref().map(String::as_str) {
         Some("vtt") => Ok(transcription.as_vtt()),
