@@ -3,20 +3,16 @@
     import { type RecordingStates } from "$lib/types";
     import { NotificationSystem } from "$lib/notificationSystem.svelte";
     import Status from "$lib/components/ui/Status.svelte";
+    import { configStore } from "$lib/store.svelte";
 
     interface PermissionsPageProps {
         setupRecorder: () => Promise<void>;
         recordingState: RecordingStates;
         notifier: NotificationSystem;
-        testNotify?: boolean;
     }
 
-    let {
-        setupRecorder,
-        recordingState,
-        notifier,
-        testNotify = false,
-    }: PermissionsPageProps = $props();
+    let { setupRecorder, recordingState, notifier }: PermissionsPageProps =
+        $props();
 
     let explicitMicrophonePermission: PermissionState = $state(
         "denied" as PermissionState,
@@ -105,7 +101,7 @@
         "Notification",
         notificationPermission,
         notificationPermission,
-        () => notifier.getPermissionToNotify(testNotify),
+        () => notifier.getPermissionToNotify(configStore.testNotify),
         "🔔",
     )}
 </div>

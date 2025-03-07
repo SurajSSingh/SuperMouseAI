@@ -29,7 +29,7 @@ export class NotificationSystem {
         requestPermission().then(permission => {
             this.#permissionGranted = permission === "granted";
             if (testNotify && this.#permissionGranted) {
-                sendNotification("Notification Test!");
+                sendNotification("Notification are enabled!");
             } else if (testNotify) {
                 window.alert("Notification not enabled!");
             }
@@ -115,7 +115,7 @@ export class NotificationSystem {
         confirmButtonStyle: string = "btn btn-success",
         cancelButtonStyle: string = "btn btn-error",
     ) {
-        toast.warning(`${subtitle ? subtitle + ": " : ""}${message}`, {
+        toast.warning(subtitle ? subtitle : message, {
             duration: Number.POSITIVE_INFINITY, action: {
                 label: confirm,
                 onClick: onConfirm,
@@ -127,6 +127,7 @@ export class NotificationSystem {
             },
             cancelButtonStyle,
             important: true,
+            description: subtitle ? message : undefined,
         });
         this.playSound(sound);
     }

@@ -11,6 +11,7 @@
     import type { NotificationSystem } from "$lib/notificationSystem.svelte";
     import { SvelteSet } from "svelte/reactivity";
     import type { Snippet } from "svelte";
+    import { configStore } from "$lib/store.svelte";
 
     interface CustomShortcutProps {
         notifier?: NotificationSystem;
@@ -73,15 +74,11 @@
     let modShift: boolean = $state(true);
 
     let modCurrentSet: SvelteSet<string> = new SvelteSet();
-    let mainKey: string = $state("KeyR");
     let isListening: boolean = $state(false);
     let tauriRegistered: boolean = $state(false);
     const LISTENER_BUTTON_ID = "shortcut-listener";
     let previousShortcut = $state("");
 
-    const shortcut = $derived(
-        `${modCtrl ? "Control+" : ""}${modShift ? "Shift+" : ""}${modAlt ? "Alt+" : ""}${modSuper ? "Super+" : ""}${mainKey}`,
-    );
     const numberOfModKyes = $derived(
         +modCtrl + +modShift + +modAlt + +modSuper,
     );
@@ -110,7 +107,7 @@
         modSuper = event.metaKey;
         const keycode = event.code;
         if (!keycode || EXCLUDED_MAIN_KEYS.includes(keycode)) return;
-        mainKey = keycode;
+        configStore.shortcut = formatShortcutWith(keycode);
     }
 
     function mouseNumberToText(button: number): string {
@@ -124,6 +121,10 @@
             return "RightClick";
         }
         return `MouseButton${button + 1}Click`;
+    }
+
+    function formatShortcutWith(mainKey: string) {
+        return `${modCtrl ? "Control+" : ""}${modShift ? "Shift+" : ""}${modAlt ? "Alt+" : ""}${modSuper ? "Super+" : ""}${mainKey}`;
     }
 
     function onMouseDown(event: MouseEvent) {
@@ -140,16 +141,20 @@
         modCtrl = event.ctrlKey;
         modShift = event.shiftKey;
         modSuper = event.metaKey;
-        mainKey = mouseNumberToText(event.button);
+        configStore.shortcut = formatShortcutWith(
+            mouseNumberToText(event.button),
+        );
     }
 
     function toggleListen() {
+        // Set previous shortcut before starting to listen
         if (!isListening) {
-            previousShortcut = shortcut;
+            previousShortcut = configStore.shortcut;
         }
         isListening = !isListening;
+        // Register after finish listening
         if (!isListening) {
-            setupShortcut(previousShortcut !== shortcut);
+            setupShortcut(previousShortcut !== configStore.shortcut);
         }
     }
 
@@ -165,18 +170,33 @@
                 showShortcutUnregistrationError(previousShortcut, null),
             );
         }
-        // For mouse click, don't use Tauri's shortcut system
-        if (shortcut.includes("Click")) {
+        // For mouse click, don't register with Tauri's shortcut system
+        if (configStore.shortcut.includes("Click")) {
             tauriRegistered = false;
         } else {
-            await register(shortcut, onToggleShortcutEvent).then(
-                (_success) => {
-                    tauriRegistered = true;
-                },
-                (_failure) => showShortcutRegistrationError(shortcut, null),
-            );
+            // Check before registering (prevent re-registration error)
+            try {
+                const isShortcutReg = await isRegistered(configStore.shortcut);
+                if (!isShortcutReg)
+                    await register(
+                        configStore.shortcut,
+                        onToggleShortcutEvent,
+                    ).then(
+                        (_success) => {
+                            tauriRegistered = true;
+                        },
+                        (_failure) =>
+                            showShortcutRegistrationError(
+                                configStore.shortcut,
+                                null,
+                            ),
+                    );
+            } catch (error) {
+                showShortcutFindingError(configStore.shortcut, false);
+                return;
+            }
         }
-        showShortcutRegistrationSuccess(shortcut, null);
+        showShortcutRegistrationSuccess(configStore.shortcut, null);
     }
 
     let clickEventUnlistener: UnlistenFn | null = null;
@@ -200,7 +220,10 @@
             clickEventUnlistener = await listen("mouse_press", (p) => {
                 if (isListening || tauriRegistered) return;
                 const payload = p.payload as string;
-                if (checkAllModPressed() && mainKey.includes(payload)) {
+                if (
+                    checkAllModPressed() &&
+                    configStore.shortcut.includes(payload)
+                ) {
                     onToggleShortcutEvent({
                         shortcut: "MouseClick",
                         id: 0,
@@ -224,6 +247,7 @@
                     modCurrentSet.delete(key);
                 }
             });
+            await configStore.waitForStoreLoaded();
             setupShortcut(previousShortcut === "");
         };
         asyncSetup();
@@ -275,7 +299,7 @@
                 () => {
                     if (numberOfModKyes > 1) {
                         modCtrl = false;
-                        setupShortcut();
+                        setupShortcut(true);
                     } else {
                         notifier?.showInfo(
                             "Must have at least one modifer key!",
@@ -291,7 +315,7 @@
                 () => {
                     if (numberOfModKyes > 1) {
                         modShift = false;
-                        setupShortcut();
+                        setupShortcut(true);
                     } else {
                         notifier?.showInfo(
                             "Must have at least one modifer key!",
@@ -307,7 +331,7 @@
                 () => {
                     if (numberOfModKyes > 1) {
                         modAlt = false;
-                        setupShortcut();
+                        setupShortcut(true);
                     } else {
                         notifier?.showInfo(
                             "Must have at least one modifer key!",
@@ -323,7 +347,7 @@
                 () => {
                     if (numberOfModKyes > 1) {
                         modSuper = false;
-                        setupShortcut();
+                        setupShortcut(true);
                     } else {
                         notifier?.showInfo(
                             "Must have at least one modifer key!",
@@ -333,7 +357,7 @@
                 true,
             )}
             {@render keyboardItem(
-                mainKey.replace(/([a-z0-9])([A-Z])/g, "$1 $2"),
+                configStore.mainKey.replace(/([a-z0-9])([A-Z])/g, "$1 $2"),
                 false,
                 true,
             )}

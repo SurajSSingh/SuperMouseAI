@@ -19,11 +19,6 @@
   let audioTranscriber: AudioTranscriber;
   // State
   let recordingState: RecordingStates = $state("stopped");
-  let enableSound = $state(true);
-  let testNotify = $state(true);
-  let threads = $state(0);
-  let initialPrompt = $state("");
-  let ignoredWords = $state(["[BLANK_AUDIO]", "[NO_AUDIO]", "[SILENCE]"]);
   let hasRecorded = $state(false);
 
   // Inner Variables
@@ -31,8 +26,8 @@
     // | This is required to ignore the
     // | state_referenced_locally warning
     // V
-    (() => enableSound)(),
-    (() => testNotify)(),
+    (() => configStore.enabledSound)(),
+    (() => configStore.testNotify)(),
   );
 
   // Helper Functions
@@ -47,12 +42,7 @@
     // Force a microtask to allow rendering before transcribing,
     // fixes issue with "processing" state not updating during processing
     new Promise((resolve) => requestAnimationFrame(resolve)).finally(() => {
-      audioTranscriber.processData(
-        chunks,
-        threads > 0 ? threads : undefined,
-        initialPrompt || undefined,
-        ignoredWords,
-      );
+      audioTranscriber.processData(chunks);
     });
   }
 
@@ -94,7 +84,31 @@
         checked
       >
         <div class="h-60 overflow-auto pr-6">
-          <WhisperOptions bind:threads bind:initialPrompt bind:ignoredWords />
+          <WhisperOptions />
+        </div>
+      </Tab>
+      <Tab
+        value="tabs"
+        label="Danger Zone"
+        inputClass="input-ghost p-6 hover:bg-error checked:input-xl checked:text-warning"
+        class="bg-base-100 border-base-300 p-6"
+      >
+        <div class="h-60 overflow-auto pr-6">
+          <div
+            class="tooltip tooltip-right"
+            data-tip="Click to delete all configuration data."
+          >
+            <Button
+              color="destructive"
+              onclick={() =>
+                notifier.confirmAction(
+                  "You will clear all transcriptions alongside any customizations you have made. This will take effect AFTER closing the app.",
+                  () => configStore.clearData(),
+                  () => {},
+                  "Are you sure?",
+                )}>Clear App Data</Button
+            >
+          </div>
         </div>
       </Tab>
     </section>
@@ -116,7 +130,6 @@
       setupRecorder={() => micRecorder.setupRecorder()}
       {recordingState}
       {notifier}
-      {testNotify}
     />
     <div class="flex flex-col place-content-center">
       <MicRecorder
