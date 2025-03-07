@@ -2,12 +2,12 @@
     import { NotificationSystem } from "$lib/notificationSystem.svelte";
     import { type RecordingStates } from "$lib/types";
     import PermissionButton from "$lib/components/PermissionButton.svelte";
+    import { configStore } from "$lib/store.svelte";
 
     interface PermissionsBarProps {
         setupRecorder: () => Promise<void>;
         recordingState: RecordingStates;
         notifier: NotificationSystem;
-        testNotify?: boolean;
         showNames?: boolean;
         showIcons?: boolean;
     }
@@ -16,7 +16,6 @@
         setupRecorder,
         recordingState,
         notifier,
-        testNotify = false,
         showNames = true,
         showIcons = true,
     }: PermissionsBarProps = $props();
@@ -73,7 +72,8 @@
             name="Notification"
             icon={showIcons ? "🔔" : ""}
             status={notificationPermission}
-            onclick={() => notifier.getPermissionToNotify(testNotify)}
+            onclick={() =>
+                notifier.getPermissionToNotify(configStore.testNotify)}
             showName={showNames}
         />
     </div>

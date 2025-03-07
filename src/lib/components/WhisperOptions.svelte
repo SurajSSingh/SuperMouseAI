@@ -1,20 +1,16 @@
 <script lang="ts">
+    import { configStore } from "$lib/store.svelte";
+
     interface WhisperOptionProps {
-        threads?: number;
         translate?: boolean;
         individualWordTimestamps?: boolean;
-        initialPrompt?: string;
         language?: string;
-        ignoredWords?: string[];
     }
 
     let {
-        threads = $bindable(0),
         translate = $bindable(),
         individualWordTimestamps = $bindable(),
-        initialPrompt = $bindable(),
         language = $bindable("en"),
-        ignoredWords = $bindable(),
     }: WhisperOptionProps = $props();
 </script>
 
@@ -26,7 +22,7 @@
         name="threads"
         id="threads-option"
         min="0"
-        bind:value={threads}
+        bind:value={configStore.threads}
         class="p-1 rounded-sm border-1"
     />
     <p class="fieldset-label">0 = Use all, otherwise, limited to number</p>
@@ -38,7 +34,7 @@
         name="prompt"
         id="promt-option"
         placeholder="Using default prompt."
-        bind:value={initialPrompt}
+        bind:value={configStore.initialPrompt}
         class="p-1 rounded-sm border-1 w-full"
     />
     <p class="fieldset-label">Can use to define style or fix spelling.</p>
@@ -51,10 +47,7 @@
         placeholder="List of words to ignore."
         class="p-1 rounded-sm border-1 w-full"
         rows={5}
-        bind:value={() => ignoredWords?.join("\n") || "",
-        (words) => {
-            ignoredWords = words.split("\n").map((w) => w.trim());
-        }}
+        bind:value={configStore.ignoredWords}
     ></textarea>
     <p class="fieldset-label">
         Specify words to ignore (define each on new line)

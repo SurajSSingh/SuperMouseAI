@@ -16,23 +16,18 @@
 
     let workingChunks: Blob[] = $state([]);
 
-    export async function processData(
-        blobChunks?: Blob[],
-        threads?: number,
-        initialPrompt?: string,
-        wordsToIgnore: string[] = [],
-    ) {
+    export async function processData(blobChunks?: Blob[]) {
         try {
             workingChunks = blobChunks ?? workingChunks;
             if (workingChunks.length > 0) {
                 let transcribedResult = (
                     (await invoke("transcribe", {
                         audioData: await blobChunksToBytes(workingChunks),
-                        threads,
-                        initialPrompt,
+                        threads: configStore.threads,
+                        initialPrompt: configStore.initialPrompt,
                     })) as string
                 ).trim();
-                for (const word of wordsToIgnore) {
+                for (const word of configStore.ignoredWordsList) {
                     transcribedResult = transcribedResult.replaceAll(word, "");
                 }
                 configStore.addTranscription(transcribedResult);
