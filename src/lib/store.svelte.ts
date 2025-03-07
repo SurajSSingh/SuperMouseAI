@@ -86,7 +86,7 @@ export class ConfigStore {
         }
         this.#theme = await this.fileStore.get(ConfigItem.THEME) ?? this.#theme;
         this.#transcriptions = await this.fileStore.get(ConfigItem.TRANSCRIPTS) ?? this.#transcriptions;
-        this.#currentIndex = await this.fileStore.get(ConfigItem.INDEX) ?? this.#currentIndex;
+        this.#currentIndex = this.transcriptLength > 0 ? await this.fileStore.get(ConfigItem.INDEX) ?? this.#currentIndex : 0;
         this.#shortcut = await this.fileStore.get(ConfigItem.SHORTCUT) || this.#shortcut;
         this.#threads = await this.fileStore.get(ConfigItem.THREADS) ?? this.#threads;
         this.#enableSound = await this.fileStore.get(ConfigItem.SOUND) ?? this.#enableSound;
@@ -95,6 +95,12 @@ export class ConfigStore {
         this.#ignoredWords = await this.fileStore.get(ConfigItem.IGNORED_WORDS) ?? this.#ignoredWords;
         this.keyChangeUnlistener = await this.fileStore.onChange((k, v) => console.log(`STORE CHANGE: ${k} => ${v}`));
         console.dir(await this.fileStore.entries());
+    }
+
+    clearTranscripts() {
+        this.fileStore?.delete(ConfigItem.TRANSCRIPTS);
+        this.currentTranscriptionIndex = 0;
+        this.#transcriptions = []
     }
 
     clearData() {
