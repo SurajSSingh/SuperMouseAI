@@ -165,10 +165,12 @@
                 showShortcutUnregistrationError(previousShortcut, null),
             );
         }
-        // For mouse click, don't use Tauri's shortcut system
+        // For mouse click, don't register with Tauri's shortcut system
         if (shortcut.includes("Click")) {
             tauriRegistered = false;
-        } else {
+        }
+        // Check before registering (prevent re-registration error)
+        else if (await isRegistered(shortcut)) {
             await register(shortcut, onToggleShortcutEvent).then(
                 (_success) => {
                     tauriRegistered = true;
