@@ -1,3 +1,11 @@
+#![cfg_attr(
+    all(not(debug_assertions), target_os = "windows"),
+    windows_subsystem = "windows"
+)]
+
+use specta_typescript::Typescript;
+use tauri_specta::{collect_commands, Builder};
+
 use std::{collections::HashMap, path::PathBuf};
 
 use command::{is_modkey, listen_for_mouse_click, play_sound, transcribe, AppState, ModKeyEvent};
@@ -36,6 +44,14 @@ const KEY_QUERY_MILLIS: u64 = 100;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 /// Tauri entry point to run app
 pub fn run() {
+    // Following <https://docs.rs/tauri-specta/2.0.0-rc.21/tauri_specta/index.html>
+    let builder = Builder::<tauri::Wry>::new()
+        // Then register them (separated by a comma)
+        .commands(collect_commands![transcribe, play_sound]);
+    #[cfg(debug_assertions)] // <- Only export on non-release builds
+    builder
+        .export(Typescript::default(), "../src/lib/bindings.ts")
+        .expect("Failed to export typescript bindings");
     tauri::Builder::default()
         .plugin(
             tauri_plugin_log::Builder::new()
@@ -60,7 +76,10 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_notification::init())
-        .setup(|app| {
+        .invoke_handler(builder.invoke_handler())
+        .setup(move |app| {
+            // This is also required if you want to use events
+            builder.mount_events(app);
             // Initialize Shortcuts plugin
             #[cfg(desktop)]
             app.handle()
@@ -146,7 +165,6 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![transcribe, play_sound])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
