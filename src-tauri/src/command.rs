@@ -38,6 +38,7 @@ impl AppState {
 }
 
 #[tauri::command]
+#[specta::specta]
 /// Take WAV audio data and transcribe it with application Whisper model.
 ///
 /// Check [`crate::mutter::Model`] for details on argument
@@ -92,6 +93,7 @@ pub async fn transcribe(
 }
 
 #[tauri::command]
+#[specta::specta]
 /// Play the provided sound given its name that is stored in the app_state
 pub async fn play_sound(app_state: State<'_, AppState>, sound_name: String) -> Result<(), String> {
     // Get sound source
