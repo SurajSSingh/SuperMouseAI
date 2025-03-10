@@ -8,4 +8,4 @@ can be found and downloaded from here:
 Default model must be named `whisper-model.bin` in order to be properly loaded.
 
 Currently used model:
-[`ggml-small.en-q5_1.bin`](https://huggingface.co/ggerganov/whisper.cpp/blob/main/ggml-small.en-q5_1.bin)
+[`ggml-large-v3-turbo-q8_0.bin`](https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q8_0.bin)
