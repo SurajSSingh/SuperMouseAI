@@ -25,7 +25,8 @@
     "active": true,
     "targets": "all",
     "resources": [
-      "resources/**/*"
+      "resources/**/*.mp3",
+      "resources/**/*.bin"
     ],
     "macOS": {
       "dmg": {
