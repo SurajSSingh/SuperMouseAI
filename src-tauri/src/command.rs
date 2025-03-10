@@ -40,7 +40,7 @@ impl AppState {
 /// Take WAV audio data and transcribe it with application Whisper model.
 ///
 /// Check [`crate::mutter::Model`] for details on argument
-pub fn transcribe(
+pub async fn transcribe(
     app_state: State<'_, AppState>,
     audio_data: Vec<u8>,
     translate: Option<bool>,
@@ -92,7 +92,7 @@ pub fn transcribe(
 
 #[tauri::command]
 /// Play the provided sound given its name that is stored in the app_state
-pub fn play_sound(app_state: State<'_, AppState>, sound_name: String) -> Result<(), String> {
+pub async fn play_sound(app_state: State<'_, AppState>, sound_name: String) -> Result<(), String> {
     // Get sound source
     let source = app_state
         .get_sound_path(&sound_name)
