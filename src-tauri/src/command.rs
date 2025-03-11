@@ -68,6 +68,10 @@ pub async fn process_text(text: String, options: Option<TextProcessOptions>) -> 
     options.removed_words.unwrap_or_default().iter().for_each(|word| {
         updated_text = updated_text.replace(word, "");
     });
+    if options.replace_inter_sentence_newlines.unwrap_or(true) {
+        let regex = regex::Regex::new(r"(\w)[ \t]*\n").map_err(|e| {log::error!("Regex error: {e}"); e.to_string()})?;
+        updated_text = regex.replace_all(&updated_text, "$1 ").to_string();
+    }
     Ok(updated_text.trim().to_string())
 }
 

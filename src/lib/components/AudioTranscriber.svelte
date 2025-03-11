@@ -40,13 +40,7 @@
                     );
                     return;
                 }
-                let transcribedResult = result.data
-                    // Replace all "empty" newlines after words
-                    .replaceAll(/(?<=\w)[ \t]*\n/g, " ");
-                // for (const word of configStore.ignoredWordsList) {
-                //     transcribedResult = transcribedResult.replaceAll(word, "");
-                // }
-                configStore.addTranscription(transcribedResult);
+                configStore.addTranscription(result.data);
             }
             onFinishProcessing?.(configStore.currentTranscript);
         } catch (error) {
