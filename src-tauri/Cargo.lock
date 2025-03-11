@@ -4787,6 +4787,7 @@ dependencies = [
  "mouce",
  "num",
  "num_cpus",
+ "regex",
  "rodio",
  "serde",
  "serde_json",
