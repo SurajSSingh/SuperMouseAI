@@ -20,7 +20,7 @@
         try {
             workingChunks = blobChunks ?? workingChunks;
             if (workingChunks.length > 0) {
-                let result = await commands.transcribe(
+                let result = await commands.transcribeWithPostProcess(
                     // @ts-ignore Uint8Array should be number[]-like
                     await blobChunksToBytes(workingChunks),
                     {
@@ -30,18 +30,22 @@
                                 : null,
                         initial_prompt: configStore.initialPrompt,
                     },
+                    {
+                        removed_words: configStore.ignoredWordsList,
+                    },
                 );
                 if (result.status === "error") {
-                    notifier?.showError(result.error);
+                    onError?.(
+                        `An error occured while transcribing: ${result.error}`,
+                    );
                     return;
                 }
                 let transcribedResult = result.data
-                    .trim()
                     // Replace all "empty" newlines after words
                     .replaceAll(/(?<=\w)[ \t]*\n/g, " ");
-                for (const word of configStore.ignoredWordsList) {
-                    transcribedResult = transcribedResult.replaceAll(word, "");
-                }
+                // for (const word of configStore.ignoredWordsList) {
+                //     transcribedResult = transcribedResult.replaceAll(word, "");
+                // }
                 configStore.addTranscription(transcribedResult);
             }
             onFinishProcessing?.(configStore.currentTranscript);
