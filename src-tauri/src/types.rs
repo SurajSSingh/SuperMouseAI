@@ -147,8 +147,8 @@ pub enum TextDecoration {
 /// All items are optional.
 pub struct TextProcessOptions {
     /// Words that will be removed (or striken) from the string
-    pub removed_words: Vec<String>,
+    pub removed_words: Option<Vec<String>>,
     /// Words to modify in someway that does not change meaning of word,
     /// but adds some decoration
-    pub decorated_words: Vec<(TextDecoration, String)>,
+    pub decorated_words: Option<Vec<(TextDecoration, String)>>,
 }
