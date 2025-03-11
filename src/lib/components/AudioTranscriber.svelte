@@ -23,13 +23,13 @@
                 let result = await commands.transcribe(
                     // @ts-ignore Uint8Array should be number[]-like
                     await blobChunksToBytes(workingChunks),
-                    // TODO: Simplify function params with object config
-                    null,
-                    null,
-                    configStore.threads > 0 ? configStore.threads : null,
-                    configStore.initialPrompt,
-                    null,
-                    null,
+                    {
+                        threads:
+                            configStore.threads > 0
+                                ? configStore.threads
+                                : null,
+                        initial_prompt: configStore.initialPrompt,
+                    },
                 );
                 if (result.status === "error") {
                     notifier?.showError(result.error);
