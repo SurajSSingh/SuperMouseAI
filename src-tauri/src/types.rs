@@ -95,3 +95,37 @@ pub fn is_modkey(key: &device_query::Keycode) -> bool {
             | K::RShift
     )
 }
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[non_exhaustive]
+/// Format type for a transcription
+pub enum TranscriptionFormat {
+    #[default]
+    Text,
+    SRT,
+    VTT,
+}
+
+impl TranscriptionFormat {
+    /// Convert a given transcript to its string form based on the current format type.
+    pub fn convert_transcript(&self, transcript: crate::transcript::Transcript) -> String {
+        match self {
+            TranscriptionFormat::Text => transcript.as_text(),
+            TranscriptionFormat::SRT => transcript.as_srt(),
+            TranscriptionFormat::VTT => transcript.as_vtt(),
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Debug, Default, Serialize, Deserialize, Type)]
+/// Options for the transcribing function.
+///
+/// All items are optional. Based on arguments for [crate::mutter::Model::transcribe_audio].
+pub struct TranscribeOptions {
+    pub translate: Option<bool>,
+    pub individual_word_timestamps: Option<bool>,
+    pub threads: Option<u16>,
+    pub initial_prompt: Option<String>,
+    pub language: Option<String>,
+    pub format: Option<TranscriptionFormat>,
+}
