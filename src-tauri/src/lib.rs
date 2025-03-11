@@ -11,7 +11,7 @@ use std::{collections::HashMap, path::PathBuf};
 
 use command::{listen_for_mouse_click, play_sound, transcribe};
 use mutter::Model;
-use tauri::{path::BaseDirectory, Emitter, Manager};
+use tauri::{path::BaseDirectory, Manager};
 use types::{is_modkey, AppState, ModKeyPayload};
 
 mod command;
