@@ -1,10 +1,10 @@
 <script lang="ts">
-    import { invoke } from "@tauri-apps/api/core";
     import { blobChunksToBytes } from "$lib/myUtils";
     import Textarea from "$lib/components/ui/textarea/textarea.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import { configStore } from "$lib/store.svelte";
     import type { NotificationSystem } from "$lib/notificationSystem.svelte";
+    import { commands } from "$lib/bindings";
 
     interface TranscriberProps {
         onFinishProcessing?: (text: string) => void;
@@ -20,17 +20,22 @@
         try {
             workingChunks = blobChunks ?? workingChunks;
             if (workingChunks.length > 0) {
-                let transcribedResult = (
-                    (await invoke("transcribe", {
-                        audioData: await blobChunksToBytes(workingChunks),
-                        threads:
-                            // Make sure Some(positive threads) or None (for <=0)
-                            configStore.threads > 0
-                                ? configStore.threads
-                                : null,
-                        initialPrompt: configStore.initialPrompt,
-                    })) as string
-                )
+                let result = await commands.transcribe(
+                    // @ts-ignore Uint8Array should be number[]-like
+                    await blobChunksToBytes(workingChunks),
+                    // TODO: Simplify function params with object config
+                    null,
+                    null,
+                    configStore.threads > 0 ? configStore.threads : null,
+                    configStore.initialPrompt,
+                    null,
+                    null,
+                );
+                if (result.status === "error") {
+                    notifier?.showError(result.error);
+                    return;
+                }
+                let transcribedResult = result.data
                     .trim()
                     // Replace all "empty" newlines after words
                     .replaceAll(/(?<=\w)[ \t]*\n/g, " ");

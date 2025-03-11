@@ -8,7 +8,7 @@ export const commands = {
 /**
  * Take WAV audio data and transcribe it with application Whisper model.
  * 
- * Check [`crate::mutter::Model`] for details on argument
+ * Check [crate::mutter::Model::transcribe_audio] for details on arguments
  */
 async transcribe(audioData: number[], translate: boolean | null, individualWordTimestamps: boolean | null, threads: number | null, initialPrompt: string | null, language: string | null, format: string | null) : Promise<Result<string, string>> {
     try {
@@ -34,6 +34,13 @@ async playSound(soundName: string) : Promise<Result<null, string>> {
 /** user-defined events **/
 
 
+export const events = __makeEvents__<{
+modKeyEvent: ModKeyEvent,
+mouseClickEvent: MouseClickEvent
+}>({
+modKeyEvent: "mod-key-event",
+mouseClickEvent: "mouse-click-event"
+})
 
 /** user-defined constants **/
 
@@ -41,7 +48,32 @@ async playSound(soundName: string) : Promise<Result<null, string>> {
 
 /** user-defined types **/
 
-
+/**
+ * Tauri event representing a modifier key press globally
+ * 
+ * ### Payload
+ * 
+ * [ModKeyPayload] : The modifer key that is pressed/released
+ */
+export type ModKeyEvent = ModKeyPayload
+/**
+ * Information about modifier key event (pressed or released)
+ */
+export type ModKeyPayload = { key: string; is_pressed: boolean }
+/**
+ * Enum representing mouse button type
+ * 
+ * Main three are left, middle, and right
+ */
+export type MouseButtonType = "Left" | "Middle" | "Right"
+/**
+ * Tauri event representing mouse click globally
+ * 
+ * ### Payload
+ * 
+ * [MouseButtonType] : Which button was pressed
+ */
+export type MouseClickEvent = MouseButtonType
 
 /** tauri-specta globals **/
 

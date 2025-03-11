@@ -12,6 +12,7 @@
     import { SvelteSet } from "svelte/reactivity";
     import type { Snippet } from "svelte";
     import { configStore } from "$lib/store.svelte";
+    import { events } from "$lib/bindings";
 
     interface CustomShortcutProps {
         notifier?: NotificationSystem;
@@ -217,36 +218,36 @@
         addEventListener("keydown", onKeyDown);
         addEventListener("mousedown", onMouseDown);
         const asyncSetup = async () => {
-            clickEventUnlistener = await listen("mouse_press", (p) => {
-                if (isListening || tauriRegistered) return;
-                const payload = p.payload as string;
-                if (
-                    checkAllModPressed() &&
-                    configStore.shortcut.includes(payload)
-                ) {
-                    onToggleShortcutEvent({
-                        shortcut: "MouseClick",
-                        id: 0,
-                        state: "Pressed",
-                    });
-                }
-            });
-            modKeyEventUnlistener = await listen("mod_key", (p) => {
-                if (isListening || tauriRegistered) return;
-                const payload = p.payload as {
-                    key: string;
-                    is_pressed: boolean;
-                };
-                const key = payload.key
-                    .replace(/(?:L(?:eft)?|R(?:ight))?(.*)/g, "$1")
-                    .replace("Option", "Alt")
-                    .replace("Command", "Super");
-                if (payload.is_pressed) {
-                    modCurrentSet.add(key);
-                } else {
-                    modCurrentSet.delete(key);
-                }
-            });
+            clickEventUnlistener = await events.mouseClickEvent.listen(
+                (response) => {
+                    if (isListening || tauriRegistered) return;
+                    const payload = response.payload as string;
+                    if (
+                        checkAllModPressed() &&
+                        configStore.shortcut.includes(payload)
+                    ) {
+                        onToggleShortcutEvent({
+                            shortcut: "MouseClick",
+                            id: 0,
+                            state: "Pressed",
+                        });
+                    }
+                },
+            );
+            modKeyEventUnlistener = await events.modKeyEvent.listen(
+                (response) => {
+                    if (isListening || tauriRegistered) return;
+                    const key = response.payload.key
+                        .replace(/(?:L(?:eft)?|R(?:ight))?(.*)/g, "$1")
+                        .replace("Option", "Alt")
+                        .replace("Command", "Super");
+                    if (response.payload.is_pressed) {
+                        modCurrentSet.add(key);
+                    } else {
+                        modCurrentSet.delete(key);
+                    }
+                },
+            );
             await configStore.waitForStoreLoaded();
             const storedModKeys = configStore.modifierKeys;
             modAlt = storedModKeys.hasAlt;
