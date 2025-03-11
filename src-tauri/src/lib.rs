@@ -9,7 +9,10 @@ use tauri_specta::{collect_commands, collect_events, Builder, Event};
 
 use std::{collections::HashMap, path::PathBuf};
 
-use command::{listen_for_mouse_click, paste_text, play_sound, transcribe};
+use command::{
+    listen_for_mouse_click, paste_text, play_sound, process_text, transcribe,
+    transcribe_with_post_process,
+};
 use mutter::Model;
 use tauri::{path::BaseDirectory, Manager};
 use types::{is_modkey, AppState, ModKeyPayload};
@@ -51,7 +54,13 @@ pub fn run() {
     // Following <https://docs.rs/tauri-specta/2.0.0-rc.21/tauri_specta/index.html>
     let builder = Builder::<tauri::Wry>::new()
         // Then register them (separated by a comma)
-        .commands(collect_commands![transcribe, play_sound, paste_text])
+        .commands(collect_commands![
+            transcribe,
+            play_sound,
+            paste_text,
+            process_text,
+            transcribe_with_post_process
+        ])
         .events(collect_events![MouseClickEvent, ModKeyEvent]);
     #[cfg(debug_assertions)] // <- Only export on non-release builds
     builder
