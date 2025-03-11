@@ -10,9 +10,9 @@ export const commands = {
  * 
  * Check [crate::mutter::Model::transcribe_audio] for details on arguments
  */
-async transcribe(audioData: number[], translate: boolean | null, individualWordTimestamps: boolean | null, threads: number | null, initialPrompt: string | null, language: string | null, format: string | null) : Promise<Result<string, string>> {
+async transcribe(audioData: number[], options: TranscribeOptions | null) : Promise<Result<string, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("transcribe", { audioData, translate, individualWordTimestamps, threads, initialPrompt, language, format }) };
+    return { status: "ok", data: await TAURI_INVOKE("transcribe", { audioData, options }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -85,6 +85,16 @@ export type MouseButtonType = "Left" | "Middle" | "Right"
  * [MouseButtonType] : Which button was pressed
  */
 export type MouseClickEvent = MouseButtonType
+/**
+ * Options for the transcribing function.
+ * 
+ * All items are optional. Based on arguments for [crate::mutter::Model::transcribe_audio].
+ */
+export type TranscribeOptions = { translate: boolean | null; individual_word_timestamps: boolean | null; threads: number | null; initial_prompt: string | null; language: string | null; format: TranscriptionFormat | null }
+/**
+ * Format type for a transcription
+ */
+export type TranscriptionFormat = "Text" | "SRT" | "VTT"
 
 /** tauri-specta globals **/
 
