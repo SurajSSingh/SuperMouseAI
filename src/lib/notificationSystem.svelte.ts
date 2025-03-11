@@ -1,10 +1,11 @@
-import { invoke } from "@tauri-apps/api/core";
+import { warn } from '@tauri-apps/plugin-log';
 import {
     isPermissionGranted,
     requestPermission,
     sendNotification,
 } from "@tauri-apps/plugin-notification";
 import { toast } from "svelte-sonner";
+import { commands } from "./bindings";
 
 
 export class NotificationSystem {
@@ -134,9 +135,7 @@ export class NotificationSystem {
 
     playSound(sound = "default_alert") {
         if (this.#enabledSound && sound) {
-            invoke("play_sound", { soundName: sound }).catch((err) =>
-                console.error(err),
-            );
+            commands.playSound(sound).catch(err => warn(err))
         }
     }
 
