@@ -4,7 +4,7 @@
 use crate::{
     events::MouseClickEvent,
     mutter::ModelError,
-    types::{AppState, MouseButtonType},
+    types::{AppState, MouseButtonType, TranscribeOptions},
 };
 use enigo::{Enigo, Keyboard, Settings};
 use log::error;
@@ -22,34 +22,30 @@ use tauri_specta::Event;
 pub async fn transcribe(
     app_state: State<'_, AppState>,
     audio_data: Vec<u8>,
-    translate: Option<bool>,
-    individual_word_timestamps: Option<bool>,
-    threads: Option<u16>,
-    initial_prompt: Option<String>,
-    language: Option<String>,
-    format: Option<String>,
+    options: Option<TranscribeOptions>,
 ) -> Result<String, String> {
+    let options = options.unwrap_or_default();
     log::info!("Transcribing with parameters: translate={:?}, use_timestamp={:?}, threads={:?}, prompt={:?}, lang={:?}, fmt={:?}", 
-    translate,
-    individual_word_timestamps,
-    threads,
-    initial_prompt,
-    language,
-    format,
+    options.translate,
+    options.individual_word_timestamps,
+    options.threads,
+    options.initial_prompt,
+    options.language,
+    options.format,
 );
     let transcription = app_state
         .model
         .transcribe_audio(
             &audio_data,
-            translate.unwrap_or(false),
-            individual_word_timestamps.unwrap_or(false),
-            initial_prompt.as_deref(),
-            language.as_deref(),
-            // Make sure not to pass 0 for CPU thread,
+            options.translate.unwrap_or(false),
+            options.individual_word_timestamps.unwrap_or(false),
+            options.initial_prompt.as_deref(),
+            options.language.as_deref(),
+            // Make sure not to pass <=0 for CPU thread,
             // otherwise model crashes
-            match threads {
-                Some(0) => None,
-                _ => threads,
+            match options.threads {
+                Some(t) if t <= 0 => None,
+                threads => threads,
             },
         )
         .map_err(|err| {
@@ -59,14 +55,7 @@ pub async fn transcribe(
                 ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
             }
         })?;
-    match format.as_deref() {
-        Some("vtt") => Ok(transcription.as_vtt()),
-        Some("srt") => Ok(transcription.as_srt()),
-        Some("text") | None => Ok(transcription.as_text()),
-        Some("str") => Err("Unknown Format `str`, did you mean `srt` instead?".into()),
-        Some("txt") => Err("Unknown Format `txt`, did you mean `text` instead?".into()),
-        Some(unk) => Err(format!("Unknown Format: {}, should be `text`,", unk)),
-    }
+        Ok(options.format.unwrap_or_default().convert_transcript(transcription))
 }
 
 #[tauri::command]
