@@ -39,6 +39,28 @@ async pasteText(text: string) : Promise<Result<null, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+/**
+ * Process the text
+ */
+async processText(text: string, options: TextProcessOptions | null) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("process_text", { text, options }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Run [transcribe] function then pass to [process_text] for post processing.
+ */
+async transcribeWithPostProcess(audioData: number[], transcribeOptions: TranscribeOptions | null, processingOptions: TextProcessOptions | null) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("transcribe_with_post_process", { audioData, transcribeOptions, processingOptions }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -85,6 +107,25 @@ export type MouseButtonType = "Left" | "Middle" | "Right"
  * [MouseButtonType] : Which button was pressed
  */
 export type MouseClickEvent = MouseButtonType
+/**
+ * Ways a text can be decorated
+ */
+export type TextDecoration = "Bold" | "Italics" | "Underline" | "Strikethrough" | "Mark"
+/**
+ * Options for the text post-processing function.
+ * 
+ * All items are optional.
+ */
+export type TextProcessOptions = { 
+/**
+ * Words that will be removed (or striken) from the string
+ */
+removed_words: string[] | null; 
+/**
+ * Words to modify in someway that does not change meaning of word,
+ * but adds some decoration
+ */
+decorated_words: ([TextDecoration, string])[] | null }
 /**
  * Options for the transcribing function.
  * 
