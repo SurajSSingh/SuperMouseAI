@@ -129,3 +129,26 @@ pub struct TranscribeOptions {
     pub language: Option<String>,
     pub format: Option<TranscriptionFormat>,
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
+#[non_exhaustive]
+/// Ways a text can be decorated
+pub enum TextDecoration {
+    Bold,
+    Italics,
+    Underline,
+    Strikethrough,
+    Mark,
+}
+
+#[derive(Clone, PartialEq, Debug, Default, Serialize, Deserialize, Type)]
+/// Options for the text post-processing function.
+///
+/// All items are optional.
+pub struct TextProcessOptions {
+    /// Words that will be removed (or striken) from the string
+    pub removed_words: Vec<String>,
+    /// Words to modify in someway that does not change meaning of word,
+    /// but adds some decoration
+    pub decorated_words: Vec<(TextDecoration, String)>,
+}

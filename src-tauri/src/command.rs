@@ -4,7 +4,7 @@
 use crate::{
     events::MouseClickEvent,
     mutter::ModelError,
-    types::{AppState, MouseButtonType, TranscribeOptions},
+    types::{AppState, MouseButtonType, TextProcessOptions, TranscribeOptions},
 };
 use enigo::{Enigo, Keyboard, Settings};
 use log::error;
@@ -56,6 +56,31 @@ pub async fn transcribe(
             }
         })?;
         Ok(options.format.unwrap_or_default().convert_transcript(transcription))
+}
+
+
+#[tauri::command]
+#[specta::specta]
+/// Process the text
+pub async fn process_text(mut text: String, options: Option<TextProcessOptions>) -> Result<String, String> {
+    let mut updated_text = text;
+    let options = options.unwrap_or_default();
+    options.removed_words.iter().for_each(|word| {
+        updated_text = updated_text.replace(word, "");
+    });
+    Ok(updated_text)
+}
+
+#[tauri::command]
+#[specta::specta]
+/// Run [transcribe] function then pass to [process_text] for post processing.
+pub async fn transcribe_with_post_process(
+    app_state: State<'_, AppState>,
+    audio_data: Vec<u8>,
+    transcribe_options: Option<TranscribeOptions>,
+    processing_options: Option<TextProcessOptions>
+) -> Result<String, String> {
+    process_text(transcribe(app_state, audio_data, transcribe_options).await?, processing_options).await
 }
 
 #[tauri::command]
