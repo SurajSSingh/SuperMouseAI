@@ -3,18 +3,22 @@
     windows_subsystem = "windows"
 )]
 
+use events::{ModKeyEvent, MouseClickEvent};
 use specta_typescript::Typescript;
-use tauri_specta::{collect_commands, Builder};
+use tauri_specta::{collect_commands, collect_events, Builder, Event};
 
 use std::{collections::HashMap, path::PathBuf};
 
-use command::{is_modkey, listen_for_mouse_click, play_sound, transcribe, AppState, ModKeyEvent};
+use command::{listen_for_mouse_click, play_sound, transcribe};
 use mutter::Model;
 use tauri::{path::BaseDirectory, Emitter, Manager};
+use types::{is_modkey, AppState, ModKeyPayload};
 
 mod command;
+mod events;
 mod mutter;
 mod transcript;
+mod types;
 
 /// Macro to load audio path into the app's map with given name.
 ///
@@ -47,7 +51,8 @@ pub fn run() {
     // Following <https://docs.rs/tauri-specta/2.0.0-rc.21/tauri_specta/index.html>
     let builder = Builder::<tauri::Wry>::new()
         // Then register them (separated by a comma)
-        .commands(collect_commands![transcribe, play_sound]);
+        .commands(collect_commands![transcribe, play_sound])
+        .events(collect_events![MouseClickEvent, ModKeyEvent]);
     #[cfg(debug_assertions)] // <- Only export on non-release builds
     builder
         .export(Typescript::default(), "../src/lib/bindings.ts")
@@ -152,13 +157,15 @@ pub fn run() {
                 let app_handle_down = app_key_listener_handler.clone();
                 let _up_guard = device_state.on_key_up(move |key| {
                     is_modkey(key).then(|| {
-                        app_handle_up.emit("mod_key", ModKeyEvent::released(key.to_string()))
+                        let _ = ModKeyEvent::with_payload(ModKeyPayload::released(key.to_string()))
+                            .emit(&app_handle_up)
+                            .map_err(|err| log::error!("Error for mod key event release: {err}"));
                     });
                 });
                 let _down_guard = device_state.on_key_down(move |key| {
-                    is_modkey(key).then(|| {
-                        app_handle_down.emit("mod_key", ModKeyEvent::pressed(key.to_string()))
-                    });
+                    let _ = ModKeyEvent::with_payload(ModKeyPayload::pressed(key.to_string()))
+                        .emit(&app_handle_down)
+                        .map_err(|err| log::error!("Error for mod key event press: {err}"));
                 });
                 loop {}
             });
