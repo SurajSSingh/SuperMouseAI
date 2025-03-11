@@ -62,13 +62,13 @@ pub async fn transcribe(
 #[tauri::command]
 #[specta::specta]
 /// Process the text
-pub async fn process_text(mut text: String, options: Option<TextProcessOptions>) -> Result<String, String> {
+pub async fn process_text(text: String, options: Option<TextProcessOptions>) -> Result<String, String> {
     let mut updated_text = text;
     let options = options.unwrap_or_default();
-    options.removed_words.iter().for_each(|word| {
+    options.removed_words.unwrap_or_default().iter().for_each(|word| {
         updated_text = updated_text.replace(word, "");
     });
-    Ok(updated_text)
+    Ok(updated_text.trim().to_string())
 }
 
 #[tauri::command]
