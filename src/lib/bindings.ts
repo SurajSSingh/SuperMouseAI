@@ -125,7 +125,7 @@ removed_words: string[] | null;
  * Words to modify in someway that does not change meaning of word,
  * but adds some decoration
  */
-decorated_words: ([TextDecoration, string])[] | null }
+decorated_words: ([TextDecoration, string])[] | null; replace_inter_sentence_newlines: boolean | null }
 /**
  * Options for the transcribing function.
  * 

@@ -151,4 +151,5 @@ pub struct TextProcessOptions {
     /// Words to modify in someway that does not change meaning of word,
     /// but adds some decoration
     pub decorated_words: Option<Vec<(TextDecoration, String)>>,
+    pub replace_inter_sentence_newlines: Option<bool>,
 }
