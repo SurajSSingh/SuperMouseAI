@@ -1,12 +1,27 @@
+#![cfg_attr(
+    all(not(debug_assertions), target_os = "windows"),
+    windows_subsystem = "windows"
+)]
+
+use events::{ModKeyEvent, MouseClickEvent};
+use specta_typescript::Typescript;
+use tauri_specta::{collect_commands, collect_events, Builder, Event};
+
 use std::{collections::HashMap, path::PathBuf};
 
-use command::{is_modkey, listen_for_mouse_click, play_sound, transcribe, AppState, ModKeyEvent};
+use command::{
+    listen_for_mouse_click, paste_text, play_sound, process_text, transcribe,
+    transcribe_with_post_process,
+};
 use mutter::Model;
-use tauri::{path::BaseDirectory, Emitter, Manager};
+use tauri::{path::BaseDirectory, Manager};
+use types::{is_modkey, AppState, ModKeyPayload};
 
 mod command;
+mod events;
 mod mutter;
 mod transcript;
+mod types;
 
 /// Macro to load audio path into the app's map with given name.
 ///
@@ -36,6 +51,21 @@ const KEY_QUERY_MILLIS: u64 = 100;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 /// Tauri entry point to run app
 pub fn run() {
+    // Following <https://docs.rs/tauri-specta/2.0.0-rc.21/tauri_specta/index.html>
+    let builder = Builder::<tauri::Wry>::new()
+        // Then register them (separated by a comma)
+        .commands(collect_commands![
+            transcribe,
+            play_sound,
+            paste_text,
+            process_text,
+            transcribe_with_post_process
+        ])
+        .events(collect_events![MouseClickEvent, ModKeyEvent]);
+    #[cfg(debug_assertions)] // <- Only export on non-release builds
+    builder
+        .export(Typescript::default(), "../src/lib/bindings.ts")
+        .expect("Failed to export typescript bindings");
     tauri::Builder::default()
         .plugin(
             tauri_plugin_log::Builder::new()
@@ -60,7 +90,10 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_notification::init())
-        .setup(|app| {
+        .invoke_handler(builder.invoke_handler())
+        .setup(move |app| {
+            // This is also required if you want to use events
+            builder.mount_events(app);
             // Initialize Shortcuts plugin
             #[cfg(desktop)]
             app.handle()
@@ -133,20 +166,21 @@ pub fn run() {
                 let app_handle_down = app_key_listener_handler.clone();
                 let _up_guard = device_state.on_key_up(move |key| {
                     is_modkey(key).then(|| {
-                        app_handle_up.emit("mod_key", ModKeyEvent::released(key.to_string()))
+                        let _ = ModKeyEvent::with_payload(ModKeyPayload::released(key.to_string()))
+                            .emit(&app_handle_up)
+                            .map_err(|err| log::error!("Error for mod key event release: {err}"));
                     });
                 });
                 let _down_guard = device_state.on_key_down(move |key| {
-                    is_modkey(key).then(|| {
-                        app_handle_down.emit("mod_key", ModKeyEvent::pressed(key.to_string()))
-                    });
+                    let _ = ModKeyEvent::with_payload(ModKeyPayload::pressed(key.to_string()))
+                        .emit(&app_handle_down)
+                        .map_err(|err| log::error!("Error for mod key event press: {err}"));
                 });
                 loop {}
             });
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![transcribe, play_sound])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

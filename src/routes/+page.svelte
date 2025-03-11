@@ -13,6 +13,7 @@
   import MenuScreen from "$lib/components/MenuScreen.svelte";
   import PermissionBar from "$lib/components/PermissionBar.svelte";
   import { configStore } from "$lib/store.svelte";
+  import { commands } from "$lib/bindings";
 
   // Component Bindings
   let micRecorder: MicRecorder;
@@ -61,6 +62,9 @@
     recordingState = "stopped";
     notifier.showNotification("Transcription Finished!", "", "finish");
     copyToClipboard();
+    commands
+      .pasteText(configStore.currentTranscript)
+      .catch((err) => notifier.showError(err));
   }
   function onError(err: string) {
     alert(err);

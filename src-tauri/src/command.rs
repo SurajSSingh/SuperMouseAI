@@ -1,77 +1,51 @@
 //! All things related to Rust of the Super Mouse AI app
 
 // Crate level use (imports)
-use crate::mutter::{Model, ModelError};
-use log::error;
-use mouce::{
-    common::{MouseButton, MouseEvent},
-    Mouse, MouseActions,
+use crate::{
+    events::MouseClickEvent,
+    mutter::ModelError,
+    types::{AppState, MouseButtonType, TextProcessOptions, TranscribeOptions},
 };
+use enigo::{Enigo, Keyboard, Settings};
+use log::error;
+use mouce::{common::MouseEvent, Mouse, MouseActions};
 use rodio::{Decoder, OutputStream, Sink};
-use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs::File, io::BufReader, path::PathBuf};
-use tauri::{AppHandle, Emitter, State};
-
-/// "Global" state for the application.
-///
-/// This holds all data that is expected to
-/// persist throughout the app's runtime.
-pub struct AppState {
-    model: Model,
-    sound_map: HashMap<String, PathBuf>,
-}
-
-impl AppState {
-    pub fn new(model: Model, sound_map: HashMap<String, PathBuf>) -> Self {
-        // Load model into memory by evaluating short silence
-        // FIXME: Need to do this in another thread, otherwise UI freezes
-        // let _ = model.transcribe_pcm_s16le(&[0.0; 20_000], false, false, None, None, None);
-        AppState { model, sound_map }
-    }
-
-    /// Get sound by the provided name or by prepending `default_` to the beginning.
-    pub fn get_sound_path(&self, sound_name: &str) -> Option<&PathBuf> {
-        self.sound_map
-            .get(sound_name)
-            .or_else(|| self.sound_map.get(&format!("default_{}", &sound_name)))
-    }
-}
+use std::{fs::File, io::BufReader};
+use tauri::{AppHandle, State};
+use tauri_specta::Event;
 
 #[tauri::command]
+#[specta::specta]
 /// Take WAV audio data and transcribe it with application Whisper model.
 ///
-/// Check [`crate::mutter::Model`] for details on argument
-pub fn transcribe(
+/// Check [crate::mutter::Model::transcribe_audio] for details on arguments
+pub async fn transcribe(
     app_state: State<'_, AppState>,
     audio_data: Vec<u8>,
-    translate: Option<bool>,
-    individual_word_timestamps: Option<bool>,
-    threads: Option<u16>,
-    initial_prompt: Option<String>,
-    language: Option<String>,
-    format: Option<String>,
+    options: Option<TranscribeOptions>,
 ) -> Result<String, String> {
+    let options = options.unwrap_or_default();
     log::info!("Transcribing with parameters: translate={:?}, use_timestamp={:?}, threads={:?}, prompt={:?}, lang={:?}, fmt={:?}", 
-    translate,
-    individual_word_timestamps,
-    threads,
-    initial_prompt,
-    language,
-    format,
+    options.translate,
+    options.individual_word_timestamps,
+    options.threads,
+    options.initial_prompt,
+    options.language,
+    options.format,
 );
     let transcription = app_state
         .model
         .transcribe_audio(
             &audio_data,
-            translate.unwrap_or(false),
-            individual_word_timestamps.unwrap_or(false),
-            initial_prompt.as_deref(),
-            language.as_deref(),
-            // Make sure not to pass 0 for CPU thread,
+            options.translate.unwrap_or(false),
+            options.individual_word_timestamps.unwrap_or(false),
+            options.initial_prompt.as_deref(),
+            options.language.as_deref(),
+            // Make sure not to pass <=0 for CPU thread,
             // otherwise model crashes
-            match threads {
-                Some(0) => None,
-                _ => threads,
+            match options.threads {
+                Some(t) if t <= 0 => None,
+                threads => threads,
             },
         )
         .map_err(|err| {
@@ -81,19 +55,42 @@ pub fn transcribe(
                 ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
             }
         })?;
-    match format.as_deref() {
-        Some("vtt") => Ok(transcription.as_vtt()),
-        Some("srt") => Ok(transcription.as_srt()),
-        Some("text") | None => Ok(transcription.as_text()),
-        Some("str") => Err("Unknown Format `str`, did you mean `srt` instead?".into()),
-        Some("txt") => Err("Unknown Format `txt`, did you mean `text` instead?".into()),
-        Some(unk) => Err(format!("Unknown Format: {}, should be `text`,", unk)),
+        Ok(options.format.unwrap_or_default().convert_transcript(transcription))
+}
+
+
+#[tauri::command]
+#[specta::specta]
+/// Process the text
+pub async fn process_text(text: String, options: Option<TextProcessOptions>) -> Result<String, String> {
+    let mut updated_text = text;
+    let options = options.unwrap_or_default();
+    options.removed_words.unwrap_or_default().iter().for_each(|word| {
+        updated_text = updated_text.replace(word, "");
+    });
+    if options.replace_inter_sentence_newlines.unwrap_or(true) {
+        let regex = regex::Regex::new(r"(\w)[ \t]*\n").map_err(|e| {log::error!("Regex error: {e}"); e.to_string()})?;
+        updated_text = regex.replace_all(&updated_text, "$1 ").to_string();
     }
+    Ok(updated_text.trim().to_string())
 }
 
 #[tauri::command]
+#[specta::specta]
+/// Run [transcribe] function then pass to [process_text] for post processing.
+pub async fn transcribe_with_post_process(
+    app_state: State<'_, AppState>,
+    audio_data: Vec<u8>,
+    transcribe_options: Option<TranscribeOptions>,
+    processing_options: Option<TextProcessOptions>
+) -> Result<String, String> {
+    process_text(transcribe(app_state, audio_data, transcribe_options).await?, processing_options).await
+}
+
+#[tauri::command]
+#[specta::specta]
 /// Play the provided sound given its name that is stored in the app_state
-pub fn play_sound(app_state: State<'_, AppState>, sound_name: String) -> Result<(), String> {
+pub async fn play_sound(app_state: State<'_, AppState>, sound_name: String) -> Result<(), String> {
     // Get sound source
     let source = app_state
         .get_sound_path(&sound_name)
@@ -113,27 +110,6 @@ pub fn play_sound(app_state: State<'_, AppState>, sound_name: String) -> Result<
     Ok(())
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-/// Enum representing mouse button type
-///
-/// Main three are left, middle, and right
-#[non_exhaustive]
-enum MouseButtonType {
-    Left,
-    Middle,
-    Right,
-}
-
-impl From<&MouseButton> for MouseButtonType {
-    fn from(mb: &MouseButton) -> Self {
-        match mb {
-            MouseButton::Left => MouseButtonType::Left,
-            MouseButton::Middle => MouseButtonType::Middle,
-            MouseButton::Right => MouseButtonType::Right,
-        }
-    }
-}
-
 /// Function to listen for any clicks from mouse and emits Tauri event.
 ///
 /// Returns either the callback id or an error message.
@@ -142,8 +118,9 @@ impl From<&MouseButton> for MouseButtonType {
 pub fn listen_for_mouse_click(app_handle: AppHandle) -> Result<u8, String> {
     Mouse::new()
         .hook(Box::new(move |e| match e {
-            MouseEvent::Press(button) => app_handle
-                .emit("mouse_press", MouseButtonType::from(button))
+            MouseEvent::Press(button) => 
+            MouseClickEvent::with_payload(MouseButtonType::from(button))
+                .emit(&app_handle)
                 .map_err(|e| {
                     error!("App Handle expected to emit press event with button playload but could not: {}", e);
                 })
@@ -154,47 +131,14 @@ pub fn listen_for_mouse_click(app_handle: AppHandle) -> Result<u8, String> {
         .map_err(|err| err.to_string())
 }
 
-/// Given a key, check if it matches one of the (specific) modifier keys.
-///
-/// The main modifiers are: Alt, Control, Meta, Option, and Shift (both left and right).
-pub fn is_modkey(key: &device_query::Keycode) -> bool {
-    use device_query::Keycode as K;
-    matches!(
-        key,
-        K::Command
-            | K::LAlt
-            | K::LControl
-            | K::LMeta
-            | K::LOption
-            | K::LShift
-            | K::RAlt
-            | K::RControl
-            | K::RMeta
-            | K::ROption
-            | K::RShift
-    )
-}
-
-#[derive(Clone, Debug, Default, Serialize)]
-/// Information about modifier key event (pressed or released)
-pub struct ModKeyEvent {
-    key: String,
-    is_pressed: bool,
-}
-
-impl ModKeyEvent {
-    /// New Modifier Key Event
-    pub fn new(key: String, is_pressed: bool) -> Self {
-        Self { key, is_pressed }
-    }
-
-    /// New pressed event for given key
-    pub fn pressed(key: String) -> Self {
-        Self::new(key, true)
-    }
-
-    /// New release event for given key
-    pub fn released(key: String) -> Self {
-        Self::new(key, false)
-    }
+#[tauri::command]
+#[specta::specta]
+/// Paste text from clipboard
+pub async fn paste_text(text: String) -> Result<(), String>{
+    log::debug!("Start Paste from clipboard");
+    let mut enigo = Enigo::new(&Settings::default()).unwrap();
+    log::trace!("Enigo setup: {:?}", enigo);
+    enigo.text(&text).map_err(|e| e.to_string())?;
+    log::trace!("Enigo Wrote: `{}`", text);
+    Ok(())
 }

@@ -1,10 +1,10 @@
 <script lang="ts">
-    import { invoke } from "@tauri-apps/api/core";
     import { blobChunksToBytes } from "$lib/myUtils";
     import Textarea from "$lib/components/ui/textarea/textarea.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import { configStore } from "$lib/store.svelte";
     import type { NotificationSystem } from "$lib/notificationSystem.svelte";
+    import { commands } from "$lib/bindings";
 
     interface TranscriberProps {
         onFinishProcessing?: (text: string) => void;
@@ -20,24 +20,27 @@
         try {
             workingChunks = blobChunks ?? workingChunks;
             if (workingChunks.length > 0) {
-                let transcribedResult = (
-                    (await invoke("transcribe", {
-                        audioData: await blobChunksToBytes(workingChunks),
+                let result = await commands.transcribeWithPostProcess(
+                    // @ts-ignore Uint8Array should be number[]-like
+                    await blobChunksToBytes(workingChunks),
+                    {
                         threads:
-                            // Make sure Some(positive threads) or None (for <=0)
                             configStore.threads > 0
                                 ? configStore.threads
                                 : null,
-                        initialPrompt: configStore.initialPrompt,
-                    })) as string
-                )
-                    .trim()
-                    // Replace all "empty" newlines after words
-                    .replaceAll(/(?<=\w)[ \t]*\n/g, " ");
-                for (const word of configStore.ignoredWordsList) {
-                    transcribedResult = transcribedResult.replaceAll(word, "");
+                        initial_prompt: configStore.initialPrompt,
+                    },
+                    {
+                        removed_words: configStore.ignoredWordsList,
+                    },
+                );
+                if (result.status === "error") {
+                    onError?.(
+                        `An error occured while transcribing: ${result.error}`,
+                    );
+                    return;
                 }
-                configStore.addTranscription(transcribedResult);
+                configStore.addTranscription(result.data);
             }
             onFinishProcessing?.(configStore.currentTranscript);
         } catch (error) {
