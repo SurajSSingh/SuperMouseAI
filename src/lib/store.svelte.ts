@@ -24,6 +24,40 @@ export const ConfigItem = {
 
 }
 
+class StoreOption<T> {
+    #value;
+    #name;
+    #config: Store | undefined;
+
+    constructor(initial: T, name: string) {
+        this.#value = initial;
+        this.#name = name;
+    }
+
+    async loadFrom(store: Store) {
+        this.#config = store;
+        const value = await this.#config.get<T>(this.#name);
+        if (value) this.#value = value
+    }
+
+    async saveToStore() {
+        await this.#config?.set(this.#name, this.#value)
+    }
+
+    get value(): T {
+        return this.#value;
+    }
+
+    set value(v: T) {
+        this.#value = v;
+        this.saveToStore()
+    }
+
+    get name(): string {
+        return this.#name;
+    }
+}
+
 export class ConfigStore {
     // Store items
     fileStore: Store | null = null;
