@@ -102,7 +102,7 @@
         "Notification",
         notificationPermission,
         notificationPermission,
-        () => notifier.getPermissionToNotify(configStore.testNotify),
+        () => notifier.getPermissionToNotify(configStore.testNotify.value),
         "🔔",
     )}
 </div>

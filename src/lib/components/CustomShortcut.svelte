@@ -109,7 +109,7 @@
         modSuper = event.metaKey;
         const keycode = event.code;
         if (!keycode || EXCLUDED_MAIN_KEYS.includes(keycode)) return;
-        configStore.shortcut = formatShortcutWith(keycode);
+        configStore.shortcut.value = formatShortcutWith(keycode);
     }
 
     function mouseNumberToText(button: number): string {
@@ -143,7 +143,7 @@
         modCtrl = event.ctrlKey;
         modShift = event.shiftKey;
         modSuper = event.metaKey;
-        configStore.shortcut = formatShortcutWith(
+        configStore.shortcut.value = formatShortcutWith(
             mouseNumberToText(event.button),
         );
     }
@@ -151,12 +151,12 @@
     function toggleListen() {
         // Set previous shortcut before starting to listen
         if (!isListening) {
-            previousShortcut = configStore.shortcut;
+            previousShortcut = configStore.shortcut.value;
         }
         isListening = !isListening;
         // Register after finish listening
         if (!isListening) {
-            setupShortcut(previousShortcut !== configStore.shortcut);
+            setupShortcut(previousShortcut !== configStore.shortcut.value);
         }
     }
 
@@ -173,15 +173,17 @@
             );
         }
         // For mouse click, don't register with Tauri's shortcut system
-        if (configStore.shortcut.includes("Click")) {
+        if (configStore.shortcut.value.includes("Click")) {
             tauriRegistered = false;
         } else {
             // Check before registering (prevent re-registration error)
             try {
-                const isShortcutReg = await isRegistered(configStore.shortcut);
+                const isShortcutReg = await isRegistered(
+                    configStore.shortcut.value,
+                );
                 if (!isShortcutReg)
                     await register(
-                        configStore.shortcut,
+                        configStore.shortcut.value,
                         onToggleShortcutEvent,
                     ).then(
                         (_success) => {
@@ -189,16 +191,16 @@
                         },
                         (_failure) =>
                             showShortcutRegistrationError(
-                                configStore.shortcut,
+                                configStore.shortcut.value,
                                 null,
                             ),
                     );
             } catch (error) {
-                showShortcutFindingError(configStore.shortcut, false);
+                showShortcutFindingError(configStore.shortcut.value, false);
                 return;
             }
         }
-        showShortcutRegistrationSuccess(configStore.shortcut, null);
+        showShortcutRegistrationSuccess(configStore.shortcut.value, null);
     }
 
     let clickEventUnlistener: UnlistenFn | null = null;
@@ -225,7 +227,7 @@
                     const payload = response.payload as string;
                     if (
                         checkAllModPressed() &&
-                        configStore.shortcut.includes(payload)
+                        configStore.shortcut.value.includes(payload)
                     ) {
                         onToggleShortcutEvent({
                             shortcut: "MouseClick",

@@ -190,4 +190,4 @@ export class NotificationSystem {
     }
 }
 
-export const notifier = new NotificationSystem(configStore.enabledSound, configStore.testNotify, configStore.useSystemNotification)
+export const notifier = new NotificationSystem(configStore.enabledSound.value, configStore.testNotify.value, configStore.useSystemNotification.value)

@@ -74,7 +74,7 @@
             icon={showIcons ? "🔔" : ""}
             status={notificationPermission}
             onclick={() => {
-                notifier.getPermissionToNotify(configStore.testNotify);
+                notifier.getPermissionToNotify(configStore.testNotify.value);
                 notifier
                     .checkPermissionGranted()
                     .then(

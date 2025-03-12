@@ -27,10 +27,10 @@
                     await blobChunksToBytes(workingChunks),
                     {
                         threads:
-                            configStore.threads > 0
-                                ? configStore.threads
+                            configStore.threads.value > 0
+                                ? configStore.threads.value
                                 : null,
-                        initial_prompt: configStore.initialPrompt,
+                        initial_prompt: configStore.initialPrompt.value,
                     },
                     {
                         removed_words: configStore.ignoredWordsList,
@@ -42,6 +42,7 @@
                     );
                     return;
                 }
+                console.log("Add");
                 configStore.addTranscription(result.data);
             }
             onFinishProcessing?.(configStore.currentTranscript);
@@ -59,12 +60,12 @@
             color="secondary"
             onclick={() => configStore.prevIndex()}
             class="text-xs"
-            disabled={configStore.currentTranscriptionIndex === 0}
+            disabled={configStore.currentIndex.value === 0}
             >{"<"}Previous</Button
         >
         <span
             >{configStore.transcriptLength
-                ? configStore.currentTranscriptionIndex + 1
+                ? configStore.currentIndex.value + 1
                 : 0}/{configStore.transcriptLength}</span
         >
         <Button
@@ -72,8 +73,9 @@
             color="secondary"
             onclick={() => configStore.nextIndex()}
             disabled={configStore.isTranscriptsEmpty ||
-                configStore.currentTranscriptionIndex ===
-                    configStore.transcriptions.length - 1}>Next{">"}</Button
+                configStore.currentIndex.value ===
+                    configStore.transcriptions.value.length - 1}
+            >Next{">"}</Button
         >
     </div>
     <Button
@@ -83,6 +85,7 @@
             notifier?.confirmAction(
                 `You are deleting: ${configStore.currentTranscript.length > 100 ? configStore.currentTranscript.substring(0, 100).trimEnd() + "..." : configStore.currentTranscript}`,
                 () => {
+                    console.log("Remove");
                     configStore.removeCurrentTranscription();
                 },
                 () => {
@@ -94,7 +97,9 @@
         disabled={configStore.isTranscriptsEmpty}>Delete Current</Button
     >
     <Textarea
-        color={configStore.transcriptions.length > 0 ? "success" : "warning"}
+        color={configStore.transcriptions.value.length > 0
+            ? "success"
+            : "warning"}
         size="md"
         class="rounded-md border-4 min-h-32 placeholder:text-center placeholder:text-xl placeholder:italic text-lg"
         placeholder="Record voice to transcribe..."
