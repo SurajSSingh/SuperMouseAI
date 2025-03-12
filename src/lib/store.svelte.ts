@@ -43,7 +43,6 @@ class StoreStateOption<T> {
     }
 
     async saveToStore() {
-        console.log("SAVE: ", this.#name)
         await this.#config?.set(this.#name, this.#value)
     }
 
@@ -52,7 +51,6 @@ class StoreStateOption<T> {
     }
 
     set value(v: T) {
-        console.log("SET: ", this.#name)
         this.#value = v;
         this.saveToStore()
     }
@@ -81,6 +79,19 @@ export class ConfigStore {
     initialPrompt = new StoreStateOption<string>("", ConfigItem.PROMPT);
     ignoredWords = new StoreStateOption<string>("[BLANK_AUDIO]\n[NO_AUDIO]\n[SILENCE]", ConfigItem.IGNORED_WORDS);
     windowFloat = new StoreStateOption<boolean>(false, ConfigItem.FLOAT_WINDOW);
+
+    #configFields = [
+        this.theme,
+        this.transcriptions,
+        this.currentIndex,
+        this.shortcut,
+        this.threads,
+        this.enabledSound,
+        this.testNotify,
+        this.initialPrompt,
+        this.ignoredWords,
+        this.windowFloat,
+    ] as const;
 
     // Derived values
     transcriptLength = $derived(this.transcriptions.value.length);
@@ -132,22 +143,19 @@ export class ConfigStore {
             this.#version = await this.fileStore.get(ConfigItem.VERSION) ?? this.#version;
         }
         // Load all config from file store
-        await Promise.allSettled([
-            this.theme.loadFrom(this.fileStore),
-            this.transcriptions.loadFrom(this.fileStore),
-            this.currentIndex.loadFrom(this.fileStore),
-            this.shortcut.loadFrom(this.fileStore),
-            this.threads.loadFrom(this.fileStore),
-            this.enabledSound.loadFrom(this.fileStore),
-            this.testNotify.loadFrom(this.fileStore),
-            this.initialPrompt.loadFrom(this.fileStore),
-            this.ignoredWords.loadFrom(this.fileStore),
-            this.windowFloat.loadFrom(this.fileStore),
-        ]).catch((err) => {
+        await Promise.allSettled(
+            this.#configFields.map(field => field.loadFrom(this.fileStore!))
+        ).catch((err) => {
             warn("Failed to load from store with given error: ", err)
         })
         this.keyChangeUnlistener = await this.fileStore.onChange((k, v) => console.log(`STORE CHANGE: ${k} => ${v}`));
         console.dir(await this.fileStore.entries());
+    }
+
+    async saveAll() {
+        return Promise.allSettled(
+            this.#configFields.map(field => field.saveToStore())
+        )
     }
 
     clearTranscripts() {
@@ -167,31 +175,29 @@ export class ConfigStore {
     }
 
     addTranscription(transcript: string) {
-        console.log("ADD");
-        this.transcriptions.value.push(transcript);
+        // HACK: Issue with proxing array in classes, don't fully understand why yet
+        this.transcriptions.value = [...this.transcriptions.value, transcript];
         this.currentIndex.value = this.transcriptLength - 1;
     }
 
     editTranscription(edited: string) {
-        console.log("EDIT");
-        this.transcriptions.value[this.currentIndex.value] = edited;
+        // HACK: Issue with proxing array in classes, don't fully understand why yet
+        this.transcriptions.value = this.transcriptions.value.map((original, index) => index === this.currentIndex.value ? edited : original)
     }
 
     removeCurrentTranscription() {
-        this.transcriptions.value.splice(this.currentIndex.value, 1);
-        console.log("REMOVE");
+        // HACK: Issue with proxing array in classes, don't fully understand why yet
+        this.transcriptions.value = this.transcriptions.value.filter((_, i) => i !== this.currentIndex.value)
         if (this.currentIndex.value >= this.transcriptLength) this.currentIndex.value = this.transcriptLength - 1;
         if (this.isTranscriptsEmpty) this.currentIndex.value = 0;
     }
 
     prevIndex() {
-        console.log("PREV");
         if (this.currentIndex.value <= 0) return;
         this.currentIndex.value--;
     }
 
     nextIndex() {
-        console.log("NEXT");
         if (this.currentIndex.value >= this.transcriptLength - 1) return;
         this.currentIndex.value++;
     }

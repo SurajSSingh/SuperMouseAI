@@ -42,7 +42,6 @@
                     );
                     return;
                 }
-                console.log("Add");
                 configStore.addTranscription(result.data);
             }
             onFinishProcessing?.(configStore.currentTranscript);
@@ -85,7 +84,6 @@
             notifier?.confirmAction(
                 `You are deleting: ${configStore.currentTranscript.length > 100 ? configStore.currentTranscript.substring(0, 100).trimEnd() + "..." : configStore.currentTranscript}`,
                 () => {
-                    console.log("Remove");
                     configStore.removeCurrentTranscription();
                 },
                 () => {
