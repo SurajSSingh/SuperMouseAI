@@ -24,8 +24,8 @@ export const ConfigItem = {
 
 }
 
-class StoreOption<T> {
-    #value;
+class StoreStateOption<T> {
+    #value = $state() as T;
     #name;
     #config: Store | undefined;
 
