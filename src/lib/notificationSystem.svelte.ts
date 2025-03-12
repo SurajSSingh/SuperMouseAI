@@ -4,9 +4,24 @@ import {
     requestPermission,
     sendNotification,
 } from "@tauri-apps/plugin-notification";
-import { toast } from "svelte-sonner";
+import { toast, type ExternalToast } from "svelte-sonner";
 import { commands } from "./bindings";
 
+
+export const toastData: ExternalToast = {
+
+    unstyled: true, classes: {
+        toast: "alert",
+        error: "alert-error",
+        info: "alert-info",
+        success: "alert-success",
+        warning: "alert-warning",
+        loading: "alert-info",
+        closeButton: "btn btn-narrow",
+        actionButton: "btn btn-primary hover:btn-success",
+        cancelButton: "btn btn-accent hover:btn-error",
+    }
+} as const;
 
 export class NotificationSystem {
     #permissionGranted = false;
@@ -21,9 +36,9 @@ export class NotificationSystem {
         return this.#permissionGranted
     }
 
-    constructor(enableSound = true, testNotify = false) {
+    constructor(enableSound = true, testNotify = false, includeSystemNotification = true) {
         this.#enabledSound = enableSound;
-        this.getPermissionToNotify(testNotify);
+        if (includeSystemNotification) this.getPermissionToNotify(testNotify);
     }
 
     getPermissionToNotify(testNotify = false) {
@@ -51,6 +66,31 @@ export class NotificationSystem {
             this.showInfo(message, subtitle, sound);
         }
         this.playSound(sound);
+    }
+
+    showToast(message: string, subtitle = "", type?: "info" | "warn" | "error" | "success" | "loading" | "default", sound = "", duration = 5000): string | number {
+        // This would be fixed it TS allowed switch/match-expression
+        const toster =
+            type === "info" ? toast.info
+                : type === "warn" ? toast.warning
+                    : type === "error" ? toast.error
+                        : type === "success" ? toast.success
+                            : type === "loading" ? toast.loading
+                                : toast;
+        if (sound) {
+            this.playSound(sound)
+        }
+        return toster(subtitle || message, { ...toastData, duration, })
+    }
+
+    showPromiseToast<T>(
+        promise: Promise<T>,
+        loading: string = "Loading...",
+        success: string | ((data: T) => string) = "Success!",
+        error: string | ((error: unknown) => string) = "Error!",
+        final?: () => void | Promise<void>
+    ): string | number | undefined {
+        return toast.promise(promise, { ...toastData, loading, success, error, finally: final })
     }
 
     // TEMP
