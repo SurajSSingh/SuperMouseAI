@@ -61,6 +61,17 @@ async transcribeWithPostProcess(audioData: number[], transcribeOptions: Transcri
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+/**
+ * Put window on top
+ */
+async setWindowTop(overrideValue: boolean | null) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_window_top", { overrideValue }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
