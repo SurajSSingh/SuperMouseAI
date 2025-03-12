@@ -160,7 +160,15 @@
         }
     }
 
-    async function setupShortcut(unregisterOld: boolean = false) {
+    async function setupShortcut(
+        unregisterOld = false,
+        modifierUpdate = false,
+    ) {
+        if (modifierUpdate) {
+            configStore.shortcut.value = formatShortcutWith(
+                configStore.mainKey,
+            );
+        }
         if (
             unregisterOld &&
             tauriRegistered &&
@@ -308,7 +316,7 @@
                 () => {
                     if (numberOfModKyes > 1) {
                         modCtrl = false;
-                        setupShortcut(true);
+                        setupShortcut(true, true);
                     } else {
                         notifier?.showInfo(
                             "Must have at least one modifer key!",
@@ -324,7 +332,7 @@
                 () => {
                     if (numberOfModKyes > 1) {
                         modShift = false;
-                        setupShortcut(true);
+                        setupShortcut(true, true);
                     } else {
                         notifier?.showInfo(
                             "Must have at least one modifer key!",
@@ -340,7 +348,7 @@
                 () => {
                     if (numberOfModKyes > 1) {
                         modAlt = false;
-                        setupShortcut(true);
+                        setupShortcut(true, true);
                     } else {
                         notifier?.showInfo(
                             "Must have at least one modifer key!",
@@ -356,7 +364,7 @@
                 () => {
                     if (numberOfModKyes > 1) {
                         modSuper = false;
-                        setupShortcut(true);
+                        setupShortcut(true, true);
                     } else {
                         notifier?.showInfo(
                             "Must have at least one modifer key!",
