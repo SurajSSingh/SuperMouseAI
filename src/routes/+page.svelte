@@ -113,7 +113,7 @@
     position="top-center"
     richColors
     closeButton
-    theme={configStore.theme}
+    theme={configStore.theme.value}
   />
   <ThemeDropdown
     class="fixed top-0 right-0"

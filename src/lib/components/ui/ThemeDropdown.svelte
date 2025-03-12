@@ -31,7 +31,7 @@ Component based off of: <https://daisyui.com/components/theme-controller/>
 
 <div class={`dropdown dropdown-${direction} z-10 ${className}`}>
     <div tabindex="0" role="button" class="btn m-1">
-        Theme:<span class="text-accent">{configStore.theme}</span>
+        Theme:<span class="text-accent">{configStore.theme.value}</span>
     </div>
     <ul
         id="theme-list"
@@ -47,7 +47,7 @@ Component based off of: <https://daisyui.com/components/theme-controller/>
                     aria-label={theme.label || theme.value}
                     value={theme.value}
                     checked={theme?.isDefault ?? false}
-                    bind:group={configStore.theme}
+                    bind:group={configStore.theme.value}
                 />
             </li>
         {/each}

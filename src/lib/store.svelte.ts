@@ -66,7 +66,7 @@ export class ConfigStore {
     #version = 1;
 
     // Private Config data
-    #theme = new StoreStateOption<ThemeKind>("system", ConfigItem.THEME);
+    theme = new StoreStateOption<ThemeKind>("system", ConfigItem.THEME);
     #transcriptions: string[] = $state([]);
     #currentIndex: number = $state(0);
     #shortcut = $state("Shift+Alt+KeyR")
@@ -120,7 +120,7 @@ export class ConfigStore {
         else {
             this.#version = await this.fileStore.get(ConfigItem.VERSION) ?? this.#version;
         }
-        await this.#theme.loadFrom(this.fileStore);
+        await this.theme.loadFrom(this.fileStore);
         this.#transcriptions = await this.fileStore.get(ConfigItem.TRANSCRIPTS) ?? this.#transcriptions;
         this.#currentIndex = this.transcriptLength > 0 ? await this.fileStore.get(ConfigItem.INDEX) ?? this.#currentIndex : 0;
         this.#shortcut = await this.fileStore.get(ConfigItem.SHORTCUT) || this.#shortcut;
@@ -147,14 +147,6 @@ export class ConfigStore {
 
     get version(): number {
         return this.#version;
-    }
-
-    get theme(): ThemeKind {
-        return this.#theme.value;
-    }
-
-    set theme(newTheme: ThemeKind) {
-        this.#theme.value = newTheme;
     }
 
     get transcriptions(): string[] {
