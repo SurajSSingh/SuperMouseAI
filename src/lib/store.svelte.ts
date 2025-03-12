@@ -20,6 +20,7 @@ export const ConfigItem = {
     IGNORED_WORDS: "ignored",
     SOUND: "sound",
     TEST_NOTIFY: "notify_on_load",
+    SYSTEM_NOTIFY: "use_system_notification",
 
 }
 
@@ -38,6 +39,7 @@ export class ConfigStore {
     #threads = $state(1)
     #enableSound = $state(true);
     #testNotify = $state(true);
+    #useSystemNotification = $state(true)
     #initialPrompt = $state("")
     #ignoredWords = $state("[BLANK_AUDIO]\n[NO_AUDIO]\n[SILENCE]");
 
@@ -231,6 +233,15 @@ export class ConfigStore {
     set ignoredWords(newIgnored: string) {
         this.#ignoredWords = newIgnored;
         this.fileStore?.set(ConfigItem.IGNORED_WORDS, this.#ignoredWords);
+    }
+
+    get useSystemNotification(): boolean {
+        return this.#useSystemNotification;
+    }
+
+    set useSystemNotification(newUse: boolean) {
+        this.#useSystemNotification = newUse;
+        this.fileStore?.set(ConfigItem.SYSTEM_NOTIFY, this.#useSystemNotification);
     }
 }
 
