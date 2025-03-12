@@ -142,3 +142,13 @@ pub async fn paste_text(text: String) -> Result<(), String>{
     log::trace!("Enigo Wrote: `{}`", text);
     Ok(())
 }
+
+#[tauri::command]
+#[specta::specta]
+/// Put window on top
+pub async fn set_window_top(webview_window: tauri::WebviewWindow, overrideValue: Option<bool>) -> Result<(), String> {
+  Ok(webview_window.set_always_on_top(overrideValue.unwrap_or(true)).map_err(|err| {
+    log::error!("Could not set window to top: {}", err);
+    err.to_string()
+  })?)
+}

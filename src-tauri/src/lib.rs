@@ -10,7 +10,7 @@ use tauri_specta::{collect_commands, collect_events, Builder, Event};
 use std::{collections::HashMap, path::PathBuf};
 
 use command::{
-    listen_for_mouse_click, paste_text, play_sound, process_text, transcribe,
+    listen_for_mouse_click, paste_text, play_sound, process_text, set_window_top, transcribe,
     transcribe_with_post_process,
 };
 use mutter::Model;
@@ -59,7 +59,8 @@ pub fn run() {
             play_sound,
             paste_text,
             process_text,
-            transcribe_with_post_process
+            transcribe_with_post_process,
+            set_window_top
         ])
         .events(collect_events![MouseClickEvent, ModKeyEvent]);
     #[cfg(debug_assertions)] // <- Only export on non-release builds
