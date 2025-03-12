@@ -14,6 +14,7 @@
   import PermissionBar from "$lib/components/PermissionBar.svelte";
   import { configStore } from "$lib/store.svelte";
   import { commands } from "$lib/bindings";
+  import DangerZone from "$lib/components/DangerZone.svelte";
 
   // Component Bindings
   let micRecorder: MicRecorder;
@@ -89,37 +90,7 @@
         class="bg-base-100 border-base-300 p-6"
       >
         <div class="h-60 overflow-auto pr-6">
-          <div
-            class="tooltip tooltip-right"
-            data-tip="Click to clear all transcripts."
-          >
-            <Button
-              color="destructive"
-              onclick={() =>
-                notifier.confirmAction(
-                  "You will clear all transcriptions!",
-                  () => configStore.clearTranscripts(),
-                  () => {},
-                  "Are you sure?",
-                )}>Delete All Transcripts</Button
-            >
-          </div>
-          <br />
-          <div
-            class="tooltip tooltip-right"
-            data-tip="Click to delete all configuration data."
-          >
-            <Button
-              color="destructive"
-              onclick={() =>
-                notifier.confirmAction(
-                  "You will clear all transcriptions alongside any customizations you have made. This will take effect AFTER closing the app.",
-                  () => configStore.clearData(),
-                  () => {},
-                  "Are you sure?",
-                )}>Clear App Data</Button
-            >
-          </div>
+          <DangerZone />
         </div>
       </Tab>
     </section>
