@@ -1,18 +1,19 @@
 <script lang="ts">
     import Button from "$lib/components/ui/button/button.svelte";
     import { type RecordingStates } from "$lib/types";
-    import { NotificationSystem } from "$lib/notificationSystem.svelte";
+    import {
+        NotificationSystem,
+        notifier,
+    } from "$lib/notificationSystem.svelte";
     import Status from "$lib/components/ui/Status.svelte";
     import { configStore } from "$lib/store.svelte";
 
     interface PermissionsPageProps {
         setupRecorder: () => Promise<void>;
         recordingState: RecordingStates;
-        notifier: NotificationSystem;
     }
 
-    let { setupRecorder, recordingState, notifier }: PermissionsPageProps =
-        $props();
+    let { setupRecorder, recordingState }: PermissionsPageProps = $props();
 
     let explicitMicrophonePermission: PermissionState = $state(
         "denied" as PermissionState,

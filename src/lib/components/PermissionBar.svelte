@@ -1,5 +1,8 @@
 <script lang="ts">
-    import { NotificationSystem } from "$lib/notificationSystem.svelte";
+    import {
+        NotificationSystem,
+        notifier,
+    } from "$lib/notificationSystem.svelte";
     import { type RecordingStates } from "$lib/types";
     import PermissionButton from "$lib/components/PermissionButton.svelte";
     import { configStore } from "$lib/store.svelte";
@@ -7,7 +10,6 @@
     interface PermissionsBarProps {
         setupRecorder: () => Promise<void>;
         recordingState: RecordingStates;
-        notifier: NotificationSystem;
         showNames?: boolean;
         showIcons?: boolean;
     }
@@ -15,7 +17,6 @@
     let {
         setupRecorder,
         recordingState,
-        notifier,
         showNames = true,
         showIcons = true,
     }: PermissionsBarProps = $props();

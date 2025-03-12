@@ -6,6 +6,7 @@ import {
 } from "@tauri-apps/plugin-notification";
 import { toast, type ExternalToast } from "svelte-sonner";
 import { commands } from "./bindings";
+import { configStore } from './store.svelte';
 
 
 export const toastData: ExternalToast = {
@@ -188,3 +189,5 @@ export class NotificationSystem {
         }
     }
 }
+
+export const notifier = new NotificationSystem(configStore.enabledSound, configStore.testNotify, configStore.useSystemNotification)

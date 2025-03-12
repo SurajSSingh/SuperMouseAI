@@ -3,16 +3,18 @@
     import Textarea from "$lib/components/ui/textarea/textarea.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import { configStore } from "$lib/store.svelte";
-    import type { NotificationSystem } from "$lib/notificationSystem.svelte";
+    import {
+        notifier,
+        type NotificationSystem,
+    } from "$lib/notificationSystem.svelte";
     import { commands } from "$lib/bindings";
 
     interface TranscriberProps {
         onFinishProcessing?: (text: string) => void;
         onError?: (err: string) => void;
-        notifier?: NotificationSystem;
     }
 
-    let { onFinishProcessing, onError, notifier }: TranscriberProps = $props();
+    let { onFinishProcessing, onError }: TranscriberProps = $props();
 
     let workingChunks: Blob[] = $state([]);
 

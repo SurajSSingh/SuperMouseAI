@@ -3,7 +3,7 @@
   import { type RecordingStates } from "$lib/types";
   import MicRecorder from "$lib/components/MicRecorder.svelte";
   import AudioTranscriber from "$lib/components/AudioTranscriber.svelte";
-  import { NotificationSystem } from "$lib/notificationSystem.svelte";
+  import { NotificationSystem, notifier } from "$lib/notificationSystem.svelte";
   import { writeText } from "@tauri-apps/plugin-clipboard-manager";
   import WhisperOptions from "$lib/components/WhisperOptions.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
@@ -21,15 +21,6 @@
   // State
   let recordingState: RecordingStates = $state("stopped");
   let hasRecorded = $state(false);
-
-  // Inner Variables
-  const notifier = new NotificationSystem(
-    // | This is required to ignore the
-    // | state_referenced_locally warning
-    // V
-    (() => configStore.enabledSound)(),
-    (() => configStore.testNotify)(),
-  );
 
   // Helper Functions
   function copyToClipboard() {
@@ -149,7 +140,6 @@
     <PermissionBar
       setupRecorder={() => micRecorder.setupRecorder()}
       {recordingState}
-      {notifier}
     />
     <div class="flex flex-col place-content-center">
       <MicRecorder
@@ -166,7 +156,6 @@
             micRecorder?.toggleRecording();
           }
         }}
-        {notifier}
       />
       <hr />
       <div class="grid grid-cols-2 my-1">
@@ -194,7 +183,6 @@
         bind:this={audioTranscriber}
         {onFinishProcessing}
         {onError}
-        {notifier}
       />
     </div>
   </div>

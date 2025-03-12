@@ -8,21 +8,22 @@
     } from "@tauri-apps/plugin-global-shortcut";
     import Button from "./ui/button/button.svelte";
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-    import type { NotificationSystem } from "$lib/notificationSystem.svelte";
+    import {
+        notifier,
+        type NotificationSystem,
+    } from "$lib/notificationSystem.svelte";
     import { SvelteSet } from "svelte/reactivity";
     import type { Snippet } from "svelte";
     import { configStore } from "$lib/store.svelte";
     import { events } from "$lib/bindings";
 
     interface CustomShortcutProps {
-        notifier?: NotificationSystem;
         onToggleShortcutEvent: ShortcutHandler;
         class?: string;
         description?: Snippet;
     }
 
     let {
-        notifier,
         onToggleShortcutEvent,
         class: className = "",
         description,
