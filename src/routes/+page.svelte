@@ -15,6 +15,7 @@
   import { configStore } from "$lib/store.svelte";
   import { commands } from "$lib/bindings";
   import DangerZone from "$lib/components/DangerZone.svelte";
+  import AppOptions from "$lib/components/AppOptions.svelte";
 
   // Component Bindings
   let micRecorder: MicRecorder;
@@ -68,6 +69,10 @@
       configStore.cleanup();
     };
   });
+
+  // TEMP
+  // TODO: Move to Config Store
+  let windowOnTop = $state(false);
 </script>
 
 <main class="">
@@ -81,6 +86,15 @@
       >
         <div class="h-60 overflow-auto pr-6">
           <WhisperOptions />
+        </div>
+      </Tab>
+      <Tab
+        value="tabs"
+        label="App Options"
+        class="bg-base-100 border-base-300 p-6"
+      >
+        <div class="h-60 overflow-auto pr-6">
+          <AppOptions bind:windowOnTop />
         </div>
       </Tab>
       <Tab

@@ -3,6 +3,7 @@
     import Switch from "./switch/switch.svelte";
     import type { Snippet } from "svelte";
     import type { ButtonColor, ButtonSize } from "./button";
+    import type { ChangeEventHandler } from "svelte/elements";
 
     interface ToggleSwitchProps {
         label?: string | Snippet;
@@ -12,6 +13,7 @@
         indeterminate?: boolean;
         checkedClass?: string;
         uncheckedClass?: string;
+        onchange?: ChangeEventHandler<HTMLInputElement>;
     }
 
     let {
@@ -22,7 +24,10 @@
         indeterminate = false,
         checkedClass = "",
         uncheckedClass = "",
+        onchange,
     }: ToggleSwitchProps = $props();
+
+    $inspect(checked);
 </script>
 
 <div>
@@ -41,5 +46,6 @@
             .join(" ")}`}
         bind:checked
         {indeterminate}
+        {onchange}
     />
 </div>
