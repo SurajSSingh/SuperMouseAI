@@ -23,7 +23,8 @@ export const ConfigItem = {
     TEST_NOTIFY: "notify_on_load",
     SYSTEM_NOTIFY: "use_system_notification",
     FLOAT_WINDOW: "window_always_on_top",
-
+    INTER_SENTENCE_NEWLINE_REMOVE: "remove_newline_inside_sentence",
+    AUTO_PASTE: "paste_after_transcribe",
 }
 
 class StoreStateOption<T> {
@@ -79,7 +80,10 @@ export class ConfigStore {
     initialPrompt = new StoreStateOption<string>("", ConfigItem.PROMPT);
     ignoredWords = new StoreStateOption<string>("[BLANK_AUDIO]\n[NO_AUDIO]\n[SILENCE]", ConfigItem.IGNORED_WORDS);
     windowFloat = new StoreStateOption<boolean>(false, ConfigItem.FLOAT_WINDOW);
+    interNLRemove = new StoreStateOption<boolean>(true, ConfigItem.INTER_SENTENCE_NEWLINE_REMOVE);
+    autoPaste = new StoreStateOption<boolean>(true, ConfigItem.AUTO_PASTE);
 
+    /** Array of all fields in class that are configuration optiosn */
     #configFields = [
         this.theme,
         this.transcriptions,
@@ -88,9 +92,12 @@ export class ConfigStore {
         this.threads,
         this.enabledSound,
         this.testNotify,
+        this.useSystemNotification,
         this.initialPrompt,
         this.ignoredWords,
         this.windowFloat,
+        this.interNLRemove,
+        this.autoPaste,
     ] as const;
 
     // Derived values

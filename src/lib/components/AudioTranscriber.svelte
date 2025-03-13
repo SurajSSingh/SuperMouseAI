@@ -34,6 +34,8 @@
                     },
                     {
                         removed_words: configStore.ignoredWordsList,
+                        replace_inter_sentence_newlines:
+                            configStore.interNLRemove.value,
                     },
                 );
                 if (result.status === "error") {

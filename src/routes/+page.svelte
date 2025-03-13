@@ -55,9 +55,11 @@
     recordingState = "stopped";
     notifier.showNotification("Transcription Finished!", "", "finish");
     copyToClipboard();
-    commands
-      .pasteText(configStore.currentTranscript)
-      .catch((err) => notifier.showError(err));
+    if (configStore.autoPaste.value) {
+      commands
+        .pasteText(configStore.currentTranscript)
+        .catch((err) => notifier.showError(err));
+    }
   }
   function onError(err: string) {
     alert(err);
@@ -69,10 +71,6 @@
       configStore.cleanup();
     };
   });
-
-  // TEMP
-  // TODO: Move to Config Store
-  let windowOnTop = $state(false);
 </script>
 
 <main class="">
@@ -94,7 +92,7 @@
         class="bg-base-100 border-base-300 p-6"
       >
         <div class="h-60 overflow-auto pr-6">
-          <AppOptions bind:windowOnTop />
+          <AppOptions />
         </div>
       </Tab>
       <Tab
