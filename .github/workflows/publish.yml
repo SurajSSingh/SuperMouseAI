@@ -18,8 +18,7 @@ jobs:
           - platform: 'macos-latest' # for Intel based macs.
             args: '--target x86_64-apple-darwin --features cpu-opt'
           - platform: 'windows-latest'
-            args: ''
-            features: 'vulkan,cpu-opt'
+            args: '--features vulkan,cpu-opt'
           # Linux not currently needed
           # - platform: 'ubuntu-22.04'
           #   args: ''
@@ -27,6 +26,12 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
+
+      # TODO: Move URL and SHA above for easier access
+      - name: download and verify Whisper GGML model
+        run: |
+          wget -O "./src-tauri/resources/whisper-model.bin" https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q8_0.bin
+          echo "317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1 ./src-tauri/resources/whisper-model.bin" | sha256sum -c - || { echo "Failed to verify whisper model!"; exit 1; }
 
       # Platform-specific dependency installation
       - name: install macOS dependencies
@@ -37,7 +42,8 @@ jobs:
       - name: install Windows dependencies
         if: matrix.platform == 'windows-latest'
         run: |
-          choco install vulkan-sdk openblas openmp
+          vcpkg install openblas
+          choco install vulkan-sdk
 
       # - name: install dependencies (ubuntu only)
       #   if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
@@ -61,11 +67,12 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
-      - name: install frontend dependencies
+      - name: install Frontend Dependencies
         # If you don't have `beforeBuildCommand` configured you may want to build your frontend here too.
         run: deno install
 
-      - uses: tauri-apps/tauri-action@v0
+      - name: build with Tauri
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
