@@ -32,10 +32,10 @@ jobs:
         if: matrix.platform == 'macos-latest'
         run: |
           brew install openblas
-        # Based on what brew told me
           export LDFLAGS="-L/opt/homebrew/opt/openblas/lib"
           export CPPFLAGS="-I/opt/homebrew/opt/openblas/include"
           export PKG_CONFIG_PATH="/opt/homebrew/opt/openblas/lib/pkgconfig"
+        # ^^^^^^ Export based on what brew told me
 
       - name: install Windows dependencies
         if: matrix.platform == 'windows-latest'
