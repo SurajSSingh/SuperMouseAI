@@ -32,11 +32,11 @@ jobs:
         run: |
           echo "Current Dir:\n\t$PWD"
           echo "\nCurl:"
-          curl --version
+          curl --version || echo "No Curl"
           echo "\wget:"
-          wget --version
+          wget --version || echo "No wget"
           echo "\Sha-256 Sum:"
-          sha256sum --version
+          sha256sum --version || echo "No sha256sum"
           echo "\nFiles and Directories"
           ls -a
 
