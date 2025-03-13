@@ -27,18 +27,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # TODO: Move URL and SHA above for easier access
-      - name: download Whisper GGML model
-        run: |
-          wget -O "./src-tauri/resources/whisper-model.bin" https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q8_0.bin
-        # TODO: Need to figure out how to use SHA256 validation in GitHub Action, `sha256sum` is not found
-        #  echo "317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1 ./src-tauri/resources/whisper-model.bin" | sha256sum -c - || { echo "Failed to verify whisper model!"; exit 1; }
-
       # Platform-specific dependency installation
       - name: install macOS dependencies
         if: matrix.platform == 'macos-latest'
         run: |
           brew install openblas
+        # Based on what brew told me
+          export LDFLAGS="-L/opt/homebrew/opt/openblas/lib"
+          export CPPFLAGS="-I/opt/homebrew/opt/openblas/include"
+          export PKG_CONFIG_PATH="/opt/homebrew/opt/openblas/lib/pkgconfig"
 
       - name: install Windows dependencies
         if: matrix.platform == 'windows-latest'
@@ -51,6 +48,14 @@ jobs:
       #   run: |
       #     sudo apt-get update
       #     sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libvulkan1 libopenblas-dev libomp-dev
+
+      # TODO: Move URL and SHA above for easier access
+      - name: download Whisper GGML model
+        shell: bash
+        run: |
+          wget -O "./src-tauri/resources/whisper-model.bin" https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q8_0.bin
+        # TODO: Need to figure out how to use SHA256 validation in GitHub Action, `sha256sum` is not found
+        #  echo "317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1 ./src-tauri/resources/whisper-model.bin" | sha256sum -c - || { echo "Failed to verify whisper model!"; exit 1; }
 
       - name: install Deno
         uses: denoland/setup-deno@v2
