@@ -1,0 +1,63 @@
+name: 'test-build'
+
+on:
+  push:
+    branches:
+      - gh-actions
+
+jobs:
+  publish-tauri:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'windows-latest'
+            args: '--features vulkan'
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable # Set this to dtolnay/rust-toolchain@nightly
+        with:
+          # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Echo Info for testing
+        shell: bash
+        run: |
+          echo "Current Dir = $PWD"
+          echo "\nCurl:"
+          curl --version || echo "No Curl"
+          echo "\nSha-256 Sum:"
+          sha256sum --version || echo "No sha256sum"
+          echo "\nDeno:"
+          deno --version || echo "No Deno"
+          echo "\nRustc:"
+          rustc --version || echo "No Rust"
+          echo "\nFiles and Directories"
+          ls -a
+
+      - name: download Whisper GGML model
+        shell: bash
+        run: |
+          curl -o "./src-tauri/resources/whisper-model.bin" https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny-encoder.mlmodelc.zip
+         echo "c88cbd2648e1f5415092bcf5256add463a0f19943e6938f46e8d4ffdebd47739 ./src-tauri/resources/whisper-model.bin" | sha256sum -c - || { echo "Failed to verify whisper model!"; exit 1; }
+
+      # - name: install Frontend Dependencies
+      #   # If you don't have `beforeBuildCommand` configured you may want to build your frontend here too.
+      #   run: deno install
+        
