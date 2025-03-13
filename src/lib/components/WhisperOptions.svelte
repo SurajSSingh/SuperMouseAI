@@ -22,7 +22,7 @@
         name="threads"
         id="threads-option"
         min="0"
-        bind:value={configStore.threads}
+        bind:value={configStore.threads.value}
         class="p-1 rounded-sm border-1"
     />
     <p class="fieldset-label">0 = Use all, otherwise, limited to number</p>
@@ -34,7 +34,7 @@
         name="prompt"
         id="promt-option"
         placeholder="Using default prompt."
-        bind:value={configStore.initialPrompt}
+        bind:value={configStore.initialPrompt.value}
         class="p-1 rounded-sm border-1 w-full"
     />
     <p class="fieldset-label">Can use to define style or fix spelling.</p>
@@ -47,7 +47,7 @@
         placeholder="List of words to ignore."
         class="p-1 rounded-sm border-1 w-full"
         rows={5}
-        bind:value={configStore.ignoredWords}
+        bind:value={configStore.ignoredWords.value}
     ></textarea>
     <p class="fieldset-label">
         Specify words to ignore (define each on new line)

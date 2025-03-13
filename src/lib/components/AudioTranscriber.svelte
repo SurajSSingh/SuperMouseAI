@@ -3,16 +3,18 @@
     import Textarea from "$lib/components/ui/textarea/textarea.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import { configStore } from "$lib/store.svelte";
-    import type { NotificationSystem } from "$lib/notificationSystem.svelte";
+    import {
+        notifier,
+        type NotificationSystem,
+    } from "$lib/notificationSystem.svelte";
     import { commands } from "$lib/bindings";
 
     interface TranscriberProps {
         onFinishProcessing?: (text: string) => void;
         onError?: (err: string) => void;
-        notifier?: NotificationSystem;
     }
 
-    let { onFinishProcessing, onError, notifier }: TranscriberProps = $props();
+    let { onFinishProcessing, onError }: TranscriberProps = $props();
 
     let workingChunks: Blob[] = $state([]);
 
@@ -25,13 +27,15 @@
                     await blobChunksToBytes(workingChunks),
                     {
                         threads:
-                            configStore.threads > 0
-                                ? configStore.threads
+                            configStore.threads.value > 0
+                                ? configStore.threads.value
                                 : null,
-                        initial_prompt: configStore.initialPrompt,
+                        initial_prompt: configStore.initialPrompt.value,
                     },
                     {
                         removed_words: configStore.ignoredWordsList,
+                        replace_inter_sentence_newlines:
+                            configStore.interNLRemove.value,
                     },
                 );
                 if (result.status === "error") {
@@ -57,12 +61,12 @@
             color="secondary"
             onclick={() => configStore.prevIndex()}
             class="text-xs"
-            disabled={configStore.currentTranscriptionIndex === 0}
+            disabled={configStore.currentIndex.value === 0}
             >{"<"}Previous</Button
         >
         <span
             >{configStore.transcriptLength
-                ? configStore.currentTranscriptionIndex + 1
+                ? configStore.currentIndex.value + 1
                 : 0}/{configStore.transcriptLength}</span
         >
         <Button
@@ -70,8 +74,9 @@
             color="secondary"
             onclick={() => configStore.nextIndex()}
             disabled={configStore.isTranscriptsEmpty ||
-                configStore.currentTranscriptionIndex ===
-                    configStore.transcriptions.length - 1}>Next{">"}</Button
+                configStore.currentIndex.value ===
+                    configStore.transcriptions.value.length - 1}
+            >Next{">"}</Button
         >
     </div>
     <Button
@@ -92,7 +97,9 @@
         disabled={configStore.isTranscriptsEmpty}>Delete Current</Button
     >
     <Textarea
-        color={configStore.transcriptions.length > 0 ? "success" : "warning"}
+        color={configStore.transcriptions.value.length > 0
+            ? "success"
+            : "warning"}
         size="md"
         class="rounded-md border-4 min-h-32 placeholder:text-center placeholder:text-xl placeholder:italic text-lg"
         placeholder="Record voice to transcribe..."

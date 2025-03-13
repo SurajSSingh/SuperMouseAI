@@ -3,7 +3,7 @@
   import { type RecordingStates } from "$lib/types";
   import MicRecorder from "$lib/components/MicRecorder.svelte";
   import AudioTranscriber from "$lib/components/AudioTranscriber.svelte";
-  import { NotificationSystem } from "$lib/notificationSystem.svelte";
+  import { NotificationSystem, notifier } from "$lib/notificationSystem.svelte";
   import { writeText } from "@tauri-apps/plugin-clipboard-manager";
   import WhisperOptions from "$lib/components/WhisperOptions.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
@@ -14,6 +14,8 @@
   import PermissionBar from "$lib/components/PermissionBar.svelte";
   import { configStore } from "$lib/store.svelte";
   import { commands } from "$lib/bindings";
+  import DangerZone from "$lib/components/DangerZone.svelte";
+  import AppOptions from "$lib/components/AppOptions.svelte";
 
   // Component Bindings
   let micRecorder: MicRecorder;
@@ -21,15 +23,6 @@
   // State
   let recordingState: RecordingStates = $state("stopped");
   let hasRecorded = $state(false);
-
-  // Inner Variables
-  const notifier = new NotificationSystem(
-    // | This is required to ignore the
-    // | state_referenced_locally warning
-    // V
-    (() => configStore.enabledSound)(),
-    (() => configStore.testNotify)(),
-  );
 
   // Helper Functions
   function copyToClipboard() {
@@ -62,9 +55,11 @@
     recordingState = "stopped";
     notifier.showNotification("Transcription Finished!", "", "finish");
     copyToClipboard();
-    commands
-      .pasteText(configStore.currentTranscript)
-      .catch((err) => notifier.showError(err));
+    if (configStore.autoPaste.value) {
+      commands
+        .pasteText(configStore.currentTranscript)
+        .catch((err) => notifier.showError(err));
+    }
   }
   function onError(err: string) {
     alert(err);
@@ -93,42 +88,21 @@
       </Tab>
       <Tab
         value="tabs"
+        label="App Options"
+        class="bg-base-100 border-base-300 p-6"
+      >
+        <div class="h-60 overflow-auto pr-6">
+          <AppOptions />
+        </div>
+      </Tab>
+      <Tab
+        value="tabs"
         label="Danger Zone"
         inputClass="input-ghost p-6 hover:bg-error checked:input-xl checked:text-warning"
         class="bg-base-100 border-base-300 p-6"
       >
         <div class="h-60 overflow-auto pr-6">
-          <div
-            class="tooltip tooltip-right"
-            data-tip="Click to clear all transcripts."
-          >
-            <Button
-              color="destructive"
-              onclick={() =>
-                notifier.confirmAction(
-                  "You will clear all transcriptions!",
-                  () => configStore.clearTranscripts(),
-                  () => {},
-                  "Are you sure?",
-                )}>Delete All Transcripts</Button
-            >
-          </div>
-          <br />
-          <div
-            class="tooltip tooltip-right"
-            data-tip="Click to delete all configuration data."
-          >
-            <Button
-              color="destructive"
-              onclick={() =>
-                notifier.confirmAction(
-                  "You will clear all transcriptions alongside any customizations you have made. This will take effect AFTER closing the app.",
-                  () => configStore.clearData(),
-                  () => {},
-                  "Are you sure?",
-                )}>Clear App Data</Button
-            >
-          </div>
+          <DangerZone />
         </div>
       </Tab>
     </section>
@@ -137,7 +111,7 @@
     position="top-center"
     richColors
     closeButton
-    theme={configStore.theme}
+    theme={configStore.theme.value}
   />
   <ThemeDropdown
     class="fixed top-0 right-0"
@@ -149,7 +123,6 @@
     <PermissionBar
       setupRecorder={() => micRecorder.setupRecorder()}
       {recordingState}
-      {notifier}
     />
     <div class="flex flex-col place-content-center">
       <MicRecorder
@@ -166,7 +139,6 @@
             micRecorder?.toggleRecording();
           }
         }}
-        {notifier}
       />
       <hr />
       <div class="grid grid-cols-2 my-1">
@@ -194,7 +166,6 @@
         bind:this={audioTranscriber}
         {onFinishProcessing}
         {onError}
-        {notifier}
       />
     </div>
   </div>

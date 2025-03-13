@@ -8,21 +8,22 @@
     } from "@tauri-apps/plugin-global-shortcut";
     import Button from "./ui/button/button.svelte";
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-    import type { NotificationSystem } from "$lib/notificationSystem.svelte";
+    import {
+        notifier,
+        type NotificationSystem,
+    } from "$lib/notificationSystem.svelte";
     import { SvelteSet } from "svelte/reactivity";
     import type { Snippet } from "svelte";
     import { configStore } from "$lib/store.svelte";
     import { events } from "$lib/bindings";
 
     interface CustomShortcutProps {
-        notifier?: NotificationSystem;
         onToggleShortcutEvent: ShortcutHandler;
         class?: string;
         description?: Snippet;
     }
 
     let {
-        notifier,
         onToggleShortcutEvent,
         class: className = "",
         description,
@@ -108,7 +109,7 @@
         modSuper = event.metaKey;
         const keycode = event.code;
         if (!keycode || EXCLUDED_MAIN_KEYS.includes(keycode)) return;
-        configStore.shortcut = formatShortcutWith(keycode);
+        configStore.shortcut.value = formatShortcutWith(keycode);
     }
 
     function mouseNumberToText(button: number): string {
@@ -142,7 +143,7 @@
         modCtrl = event.ctrlKey;
         modShift = event.shiftKey;
         modSuper = event.metaKey;
-        configStore.shortcut = formatShortcutWith(
+        configStore.shortcut.value = formatShortcutWith(
             mouseNumberToText(event.button),
         );
     }
@@ -150,16 +151,24 @@
     function toggleListen() {
         // Set previous shortcut before starting to listen
         if (!isListening) {
-            previousShortcut = configStore.shortcut;
+            previousShortcut = configStore.shortcut.value;
         }
         isListening = !isListening;
         // Register after finish listening
         if (!isListening) {
-            setupShortcut(previousShortcut !== configStore.shortcut);
+            setupShortcut(previousShortcut !== configStore.shortcut.value);
         }
     }
 
-    async function setupShortcut(unregisterOld: boolean = false) {
+    async function setupShortcut(
+        unregisterOld = false,
+        modifierUpdate = false,
+    ) {
+        if (modifierUpdate) {
+            configStore.shortcut.value = formatShortcutWith(
+                configStore.mainKey,
+            );
+        }
         if (
             unregisterOld &&
             tauriRegistered &&
@@ -172,15 +181,17 @@
             );
         }
         // For mouse click, don't register with Tauri's shortcut system
-        if (configStore.shortcut.includes("Click")) {
+        if (configStore.shortcut.value.includes("Click")) {
             tauriRegistered = false;
         } else {
             // Check before registering (prevent re-registration error)
             try {
-                const isShortcutReg = await isRegistered(configStore.shortcut);
+                const isShortcutReg = await isRegistered(
+                    configStore.shortcut.value,
+                );
                 if (!isShortcutReg)
                     await register(
-                        configStore.shortcut,
+                        configStore.shortcut.value,
                         onToggleShortcutEvent,
                     ).then(
                         (_success) => {
@@ -188,16 +199,16 @@
                         },
                         (_failure) =>
                             showShortcutRegistrationError(
-                                configStore.shortcut,
+                                configStore.shortcut.value,
                                 null,
                             ),
                     );
             } catch (error) {
-                showShortcutFindingError(configStore.shortcut, false);
+                showShortcutFindingError(configStore.shortcut.value, false);
                 return;
             }
         }
-        showShortcutRegistrationSuccess(configStore.shortcut, null);
+        showShortcutRegistrationSuccess(configStore.shortcut.value, null);
     }
 
     let clickEventUnlistener: UnlistenFn | null = null;
@@ -224,7 +235,7 @@
                     const payload = response.payload as string;
                     if (
                         checkAllModPressed() &&
-                        configStore.shortcut.includes(payload)
+                        configStore.shortcut.value.includes(payload)
                     ) {
                         onToggleShortcutEvent({
                             shortcut: "MouseClick",
@@ -305,7 +316,7 @@
                 () => {
                     if (numberOfModKyes > 1) {
                         modCtrl = false;
-                        setupShortcut(true);
+                        setupShortcut(true, true);
                     } else {
                         notifier?.showInfo(
                             "Must have at least one modifer key!",
@@ -321,7 +332,7 @@
                 () => {
                     if (numberOfModKyes > 1) {
                         modShift = false;
-                        setupShortcut(true);
+                        setupShortcut(true, true);
                     } else {
                         notifier?.showInfo(
                             "Must have at least one modifer key!",
@@ -337,7 +348,7 @@
                 () => {
                     if (numberOfModKyes > 1) {
                         modAlt = false;
-                        setupShortcut(true);
+                        setupShortcut(true, true);
                     } else {
                         notifier?.showInfo(
                             "Must have at least one modifer key!",
@@ -353,7 +364,7 @@
                 () => {
                     if (numberOfModKyes > 1) {
                         modSuper = false;
-                        setupShortcut(true);
+                        setupShortcut(true, true);
                     } else {
                         notifier?.showInfo(
                             "Must have at least one modifer key!",

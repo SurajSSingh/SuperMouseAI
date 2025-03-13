@@ -9,14 +9,16 @@
     } from "@tauri-apps/plugin-global-shortcut";
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
     import Button from "$lib/components/ui/button/button.svelte";
-    import type { NotificationSystem } from "$lib/notificationSystem.svelte";
+    import {
+        notifier,
+        type NotificationSystem,
+    } from "$lib/notificationSystem.svelte";
 
     interface ShortcutsProps {
-        notifier?: NotificationSystem;
         onToggleShortcutEvent?: () => void;
     }
 
-    let { notifier, onToggleShortcutEvent }: ShortcutsProps = $props();
+    let { onToggleShortcutEvent }: ShortcutsProps = $props();
 
     type ShowShortcutFn = <T>(shortcut: string, returns: T) => T;
 
