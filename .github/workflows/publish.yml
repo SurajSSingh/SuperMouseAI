@@ -14,11 +14,11 @@ jobs:
       matrix:
         include:
           - platform: 'macos-latest' # for Arm based macs (M1 and above).
-            args: '--target aarch64-apple-darwin --features coreml,cpu-opt'
+            args: '--target aarch64-apple-darwin --features coreml'
           - platform: 'macos-latest' # for Intel based macs.
-            args: '--target x86_64-apple-darwin --features cpu-opt'
+            args: '--target x86_64-apple-darwin'
           - platform: 'windows-latest'
-            args: '--features vulkan,cpu-opt'
+            args: '--features vulkan'
           # Linux not currently needed
           # - platform: 'ubuntu-22.04'
           #   args: ''
@@ -37,11 +37,19 @@ jobs:
           export PKG_CONFIG_PATH="/opt/homebrew/opt/openblas/lib/pkgconfig"
         # ^^^^^^ Export based on what brew told me
 
-      - name: install Windows dependencies
+      # - name: install Windows dependencies
+      #   if: matrix.platform == 'windows-latest'
+      #   run: |
+      #     vcpkg install openblas
+      #     choco install vulkan-sdk
+
+      - name: Prepare Vulkan SDK (Windows)
         if: matrix.platform == 'windows-latest'
-        run: |
-          vcpkg install openblas
-          choco install vulkan-sdk
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        with:
+          vulkan-query-version: 1.3.204.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
 
       # - name: install dependencies (ubuntu only)
       #   if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
