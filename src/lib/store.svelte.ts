@@ -39,7 +39,7 @@ class StoreStateOption<T> {
     async loadFrom(store: Store) {
         this.#config = store;
         const value = await this.#config.get<T>(this.#name);
-        if (value) this.#value = value
+        if (value !== undefined) this.#value = value
     }
 
     async saveToStore() {
