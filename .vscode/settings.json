@@ -6,6 +6,7 @@
   "conventionalCommits.scopes": [
     "ui",
     "backend",
-    "frontend"
+    "frontend",
+    "ci/cd"
   ]
 }

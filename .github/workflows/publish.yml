@@ -43,9 +43,10 @@ jobs:
       #     vcpkg install openblas
       #     choco install vulkan-sdk
 
+      # TODO: Update to v1.2.1 when it comes out
       - name: Prepare Vulkan SDK (Windows)
         if: matrix.platform == 'windows-latest'
-        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        uses: humbletim/setup-vulkan-sdk@v523828e49cd4afabce369c39c7ee6543a2b7a735
         with:
           vulkan-query-version: 1.3.204.0
           vulkan-components: Vulkan-Headers, Vulkan-Loader
