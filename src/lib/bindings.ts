@@ -63,7 +63,7 @@ async transcribeWithPostProcess(audioData: number[], transcribeOptions: Transcri
 }
 },
 /**
- * Put window on top
+ * Put window on top, can be overriden by optional parameter
  */
 async setWindowTop(overrideValue: boolean | null) : Promise<Result<null, string>> {
     try {

@@ -65,6 +65,11 @@ pub async fn transcribe(
 pub async fn process_text(text: String, options: Option<TextProcessOptions>) -> Result<String, String> {
     let mut updated_text = text;
     let options = options.unwrap_or_default();
+    log::info!("Processing text with parameters: replace_inter_sentence_newlines={:?}, removed_words={:?}, decorated_words={:?}", 
+        options.removed_words,
+        options.decorated_words,
+        options.replace_inter_sentence_newlines,
+    );
     options.removed_words.unwrap_or_default().iter().for_each(|word| {
         updated_text = updated_text.replace(word, "");
     });
@@ -145,10 +150,10 @@ pub async fn paste_text(text: String) -> Result<(), String>{
 
 #[tauri::command]
 #[specta::specta]
-/// Put window on top
+/// Put window on top, can be overriden by optional parameter
 pub async fn set_window_top(webview_window: tauri::WebviewWindow, override_value: Option<bool>) -> Result<(), String> {
   Ok(webview_window.set_always_on_top(override_value.unwrap_or(true)).map_err(|err| {
-    log::error!("Could not set window to top: {}", err);
+    log::error!("Could not set window to top value: {}", err);
     err.to_string()
   })?)
 }
