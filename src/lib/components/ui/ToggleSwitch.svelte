@@ -26,8 +26,6 @@
         uncheckedClass = "",
         onchange,
     }: ToggleSwitchProps = $props();
-
-    $inspect(checked);
 </script>
 
 <div>
