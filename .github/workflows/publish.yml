@@ -45,11 +45,12 @@ jobs:
       - name: install macOS dependencies
         if: matrix.platform == 'macos-latest'
         run: |
-          brew install openblas
-          export LDFLAGS="-L/opt/homebrew/opt/openblas/lib"
-          export CPPFLAGS="-I/opt/homebrew/opt/openblas/include"
-          export PKG_CONFIG_PATH="/opt/homebrew/opt/openblas/lib/pkgconfig"
-        # ^^^^^^ Export based on what brew told me
+          brew install openblas libomp
+        #  export LDFLAGS="-L/opt/homebrew/opt/openblas/lib"
+        #  export CPPFLAGS="-I/opt/homebrew/opt/openblas/include"
+        #  export LDFLAGS="-L/opt/homebrew/opt/libomp/lib"
+        #  export CPPFLAGS="-I/opt/homebrew/opt/libomp/include"
+        # ^^^^^^ Export based on what brew told me to include, may not be needed
 
       # - name: install Windows dependencies
       #   if: matrix.platform == 'windows-latest'
@@ -63,8 +64,23 @@ jobs:
         uses: humbletim/setup-vulkan-sdk@523828e49cd4afabce369c39c7ee6543a2b7a735
         with:
           vulkan-query-version: 1.3.204.0
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang
           vulkan-use-cache: true
+
+      - name: Set up Vulkan environment variables
+        if: matrix.platform == 'windows-latest'
+        shell: bash
+        run: |
+          echo "VULKAN_SDK=$(VULKAN_SDK)" >> $GITHUB_ENV
+          echo "PATH=$(VULKAN_SDK)/Bin:$PATH" >> $GITHUB_ENV
+      
+      - name: Verify Vulkan installation
+        if: matrix.platform == 'windows-latest'
+        shell: bash
+        run: |
+          echo "VULKAN_SDK: $VULKAN_SDK"
+          echo "PATH: $PATH"
+          ls "$VULKAN_SDK/Bin/glslc.exe"
 
       # - name: install dependencies (ubuntu only)
       #   if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
@@ -76,7 +92,7 @@ jobs:
       - name: download Whisper GGML model
         shell: bash
         run: |
-          curl -O "./src-tauri/resources/whisper-model.bin" https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q8_0.bin
+          curl -o "./src-tauri/resources/whisper-model.bin" https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q8_0.bin
         # TODO: Need to figure out how to use SHA256 validation in GitHub Action, `sha256sum` is not found
         #  echo "317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1 ./src-tauri/resources/whisper-model.bin" | sha256sum -c - || { echo "Failed to verify whisper model!"; exit 1; }
 
