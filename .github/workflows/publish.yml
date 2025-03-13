@@ -13,10 +13,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest' # for Arm based macs (M1 and above).
-            args: '--target aarch64-apple-darwin --features coreml'
-          - platform: 'macos-latest' # for Intel based macs.
-            args: '--target x86_64-apple-darwin'
+          # - platform: 'macos-latest' # for Arm based macs (M1 and above).
+          #   args: '--target aarch64-apple-darwin --features coreml'
+          # - platform: 'macos-latest' # for Intel based macs.
+          #   args: '--target x86_64-apple-darwin'
           - platform: 'windows-latest'
             args: '--features vulkan'
           # Linux not currently needed
@@ -26,6 +26,20 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Echo Info for testing
+        shell: bash
+        run: |
+          echo "Current Dir:\n\t$PWD"
+          echo "\nCurl:"
+          curl --version
+          echo "\wget:"
+          wget --version
+          echo "\Sha-256 Sum:"
+          sha256sum --version
+          echo "\nFiles and Directories"
+          ls -a
+
 
       # Platform-specific dependency installation
       - name: install macOS dependencies
@@ -62,7 +76,7 @@ jobs:
       - name: download Whisper GGML model
         shell: bash
         run: |
-          wget -O "./src-tauri/resources/whisper-model.bin" https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q8_0.bin
+          curl -O "./src-tauri/resources/whisper-model.bin" https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q8_0.bin
         # TODO: Need to figure out how to use SHA256 validation in GitHub Action, `sha256sum` is not found
         #  echo "317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1 ./src-tauri/resources/whisper-model.bin" | sha256sum -c - || { echo "Failed to verify whisper model!"; exit 1; }
 
