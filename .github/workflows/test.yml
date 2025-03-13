@@ -55,7 +55,7 @@ jobs:
         shell: bash
         run: |
           curl -o "./src-tauri/resources/whisper-model.bin" https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny-encoder.mlmodelc.zip
-         echo "c88cbd2648e1f5415092bcf5256add463a0f19943e6938f46e8d4ffdebd47739 ./src-tauri/resources/whisper-model.bin" | sha256sum -c - || { echo "Failed to verify whisper model!"; exit 1; }
+          echo "c88cbd2648e1f5415092bcf5256add463a0f19943e6938f46e8d4ffdebd47739 ./src-tauri/resources/whisper-model.bin" | sha256sum -c - || { echo "Failed to verify whisper model!"; exit 1; }
 
       # - name: install Frontend Dependencies
       #   # If you don't have `beforeBuildCommand` configured you may want to build your frontend here too.
