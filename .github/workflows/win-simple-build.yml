@@ -30,9 +30,7 @@ jobs:
           deno-version: v2.x
       
       - name: Install Rust (Stable)
-        uses: dtolnay/rust-toolchain@stable # Set this to dtolnay/rust-toolchain@nightly
-        with:
-          targets: ''
+        uses: dtolnay/rust-toolchain@stable # Set this to dtolnay/rust-toolchain@nightly 
 
       - name: Rust Cache
         uses: swatinem/rust-cache@v2
@@ -65,6 +63,9 @@ jobs:
           echo ""
           echo "Rustc:"
           rustc --version || echo "No Rust"
+          echo ""
+          echo "Cargo:"
+          cargo --version || echo "No Rust"
           echo ""
           echo "Files and Directories"
           ls -a
