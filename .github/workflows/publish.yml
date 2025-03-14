@@ -1,4 +1,4 @@
-name: 'publish'
+name: "publish"
 
 on:
   push:
@@ -17,8 +17,8 @@ jobs:
           #   args: '--target aarch64-apple-darwin --features coreml'
           # - platform: 'macos-latest' # for Intel based macs.
           #   args: '--target x86_64-apple-darwin'
-          - platform: 'windows-latest'
-            args: '--features vulkan'
+          - platform: "windows-latest"
+            args: "--features vulkan"
           # Linux not currently needed
           # - platform: 'ubuntu-22.04'
           #   args: ''
@@ -39,7 +39,6 @@ jobs:
           sha256sum --version || echo "No sha256sum"
           echo "\nFiles and Directories"
           ls -a
-
 
       # Platform-specific dependency installation
       - name: install macOS dependencies
@@ -64,7 +63,7 @@ jobs:
         with:
           version: latest
           cache: true
-      
+
       - name: Verify Vulkan installation
         if: matrix.platform == 'windows-latest'
         shell: bash
@@ -100,7 +99,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
 
       - name: download Whisper GGML model
         shell: bash
@@ -121,8 +120,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: app-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
-          releaseName: 'Super Mouse AI v__VERSION__'
-          releaseBody: 'See the assets to download this version and install.'
+          releaseName: "Super Mouse AI v__VERSION__"
+          releaseBody: "See the assets to download this version and install."
           releaseDraft: true
           prerelease: true
           tauriScript: "deno task tauri"
