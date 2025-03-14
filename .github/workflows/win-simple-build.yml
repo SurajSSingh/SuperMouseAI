@@ -1,4 +1,4 @@
-name: 'simple-windows-build'
+name: "simple-windows-build"
 # This will do a build without bundling resources
 
 on:
@@ -12,30 +12,30 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'windows-latest'
-            args: '--features vulkan'
-            type: 'gpu'
-          # - platform: 'windows-latest'
-          #   args: '--features cpu-opt'
-          #   type: 'cpu'
+          - platform: "windows-latest"
+            args: "--features vulkan"
+            type: "gpu"
+          - platform: "windows-latest"
+            args: "--features cpu-opt"
+            type: "cpu"
 
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-      
+
       - name: Install Deno
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      
+
       - name: Install Rust (Stable)
-        uses: dtolnay/rust-toolchain@stable # Set this to dtolnay/rust-toolchain@nightly 
+        uses: dtolnay/rust-toolchain@stable # Set this to dtolnay/rust-toolchain@nightly
 
       - name: Rust Cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
 
       - name: Export GitHub Actions cache environment variables
         uses: actions/github-script@v7
@@ -43,11 +43,11 @@ jobs:
           script: |
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
-      
+
       # Install External Depednencies
       # (based on type)
 
-      - name: Install Vulkan SDK 
+      - name: Install Vulkan SDK
         if: matrix.type == 'gpu'
         uses: humbletim/install-vulkan-sdk@c2aa128094d42ba02959a660f03e0a4e012192f9
         with:
@@ -96,7 +96,6 @@ jobs:
         shell: bash
         run: touch ./src-tauri/resources/whisper-model.bin
 
-
       # If tagName and releaseId are omitted tauri-action will only build the app and won't try to upload any assets.
       - uses: tauri-apps/tauri-action@v0
         env:
@@ -104,9 +103,9 @@ jobs:
         with:
           tauriScript: "deno task tauri"
           args: ${{ matrix.args }}
-      
+
       # NOTE: This only uploads the final .exe,
-      #       the `/resources` must be provided 
+      #       the `/resources` must be provided
       #       separately (for build to work)
       - name: Upload Executable
         uses: actions/upload-artifact@v4
@@ -115,5 +114,3 @@ jobs:
           path: ./src-tauri/target/release/*.exe
           retention-days: 1
           compression-level: 6 # TODO: Using default, check if this needs to change
-          
-        
