@@ -54,6 +54,7 @@ jobs:
           vcpkg integrate install
 
       - name: Echo Info
+        if: matrix.type == 'cpu'
         shell: bash
         run: |
           echo "Current Dir = $PWD"
