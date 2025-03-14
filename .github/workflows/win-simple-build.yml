@@ -78,6 +78,10 @@ jobs:
           echo "Files and Directories"
           ls -a
 
+      - name: Install Frontend Dependencies
+        # If you don't have `beforeBuildCommand` configured you may want to build your frontend here too.
+        run: deno install
+
       # If tagName and releaseId are omitted tauri-action will only build the app and won't try to upload any assets.
       - uses: tauri-apps/tauri-action@v0
         env:
