@@ -67,6 +67,13 @@ jobs:
           echo "Cargo:"
           cargo --version || echo "No Rust"
           echo ""
+          echo "OpenBLAS"
+          ls "C:/vcpkg/packages/openblas_x86-windows"
+          echo "  - Inside Includes"
+          ls "C:/vcpkg/packages/openblas_x86-windows/include"
+          echo "  - Inside Bin"
+          ls "C:/vcpkg/packages/openblas_x86-windows/bin"
+          echo ""
           echo "Files and Directories"
           ls -a
 
@@ -74,7 +81,6 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           OPENBLAS_PATH: C:\vcpkg\packages\openblas_x86-windows\include
-          PATH: ${{ env.OPENBLAS_PATH }}\..\bin;$PATH
         with:
           tauriScript: "deno task tauri"
           args: ${{ matrix.args }}
