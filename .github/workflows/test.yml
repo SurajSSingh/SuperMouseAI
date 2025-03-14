@@ -3,7 +3,7 @@ name: 'test-build'
 on:
   push:
     branches:
-      - gh-actions
+      - test-actions
 
 jobs:
   publish-tauri:
