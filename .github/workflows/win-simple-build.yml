@@ -1,0 +1,76 @@
+name: 'simple-windows-build'
+# This will do a build without bundling resources
+
+on:
+  push:
+    branches:
+      - gh-actions
+
+jobs:
+  build-app:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'windows-latest'
+            args: '--features vulkan'
+            type: 'gpu'
+          - platform: 'windows-latest'
+            args: '--features cpu-opt'
+            type: 'cpu'
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout Repository
+      - uses: actions/checkout@v4
+      
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      
+      - name: Install Rust (Stable)
+        uses: dtolnay/rust-toolchain@stable # Set this to dtolnay/rust-toolchain@nightly
+        with:
+          targets: ''
+
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+      
+      # Install External Depednencies
+      # (based on type)
+
+      - name: Install Vulkan SDK 
+        if: matrix.type == 'gpu'
+        uses: humbletim/install-vulkan-sdk@c2aa128094d42ba02959a660f03e0a4e012192f9
+        with:
+          version: latest
+          cache: true
+
+      - name: Setup OpenBLAS
+        if: matrix.type == 'cpu'
+        run: |
+          vcpkg install openblas:x86-windows
+          vcpkg integrate install
+
+      - name: Install Frontend Dependencies
+        run: deno install
+
+      - name: Build App
+        env:
+          OPENBLAS_PATH: C:\vcpkg\packages\openblas_x86-windows\include
+          PATH: ${{ env.OPENBLAS_PATH }}\..\bin;$PATH
+        run: |
+          deno task tauri build ${{ matrix.args }}
+      
+      # NOTE: This only uploads the final .exe,
+      #       the `/resources` must be provided 
+      #       separately (for build to work)
+      - name: Upload Executable
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-${{ matrix.type }}
+          path: target/x86_64-pc-windows-msvc/release/*.exe
+        
