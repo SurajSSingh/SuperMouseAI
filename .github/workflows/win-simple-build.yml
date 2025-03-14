@@ -69,8 +69,11 @@ jobs:
       #       the `/resources` must be provided 
       #       separately (for build to work)
       - name: Upload Executable
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-${{ matrix.type }}
           path: target/x86_64-pc-windows-msvc/release/*.exe
+          retention-days: 1
+          compression-level: 6 # TODO: Using default, check if this needs to change
+          
         
