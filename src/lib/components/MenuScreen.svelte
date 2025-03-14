@@ -25,9 +25,9 @@
     >
     <Dialog.Content class={`${className}`}>
         <div>
-            <Dialog.Title><h2>{title}</h2></Dialog.Title>
+            <Dialog.Title><h2 class="text-primary">{title}</h2></Dialog.Title>
             <Dialog.Description>
-                {description}
+                <span class="text-primary">{description}</span>
             </Dialog.Description>
         </div>
         <div class=" overflow-auto">
