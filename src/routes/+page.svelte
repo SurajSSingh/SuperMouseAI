@@ -80,6 +80,7 @@
         value="tabs"
         label="Configuration"
         class="bg-base-100 border-base-300 p-6"
+        inputClass="not-checked:bg-neutral not-checked:text-accent-content hover:text-primary border-base-300"
         checked
       >
         <div class="h-60 overflow-auto pr-6">
@@ -90,6 +91,7 @@
         value="tabs"
         label="App Options"
         class="bg-base-100 border-base-300 p-6"
+        inputClass="not-checked:bg-neutral not-checked:text-accent-content hover:text-primary border-base-300"
       >
         <div class="h-60 overflow-auto pr-6">
           <AppOptions />
@@ -98,7 +100,7 @@
       <Tab
         value="tabs"
         label="Danger Zone"
-        inputClass="input-ghost p-6 hover:bg-error checked:input-xl checked:text-warning"
+        inputClass="input-ghost p-6 hover:bg-error not-checked:bg-neutral not-checked:text-warning-content checked:input-xl checked:text-warning"
         class="bg-base-100 border-base-300 p-6"
       >
         <div class="h-60 overflow-auto pr-6">
