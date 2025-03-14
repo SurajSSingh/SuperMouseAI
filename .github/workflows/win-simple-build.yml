@@ -55,7 +55,7 @@ jobs:
           vcpkg install openblas:x86-windows
           vcpkg integrate install
 
-    - name: Echo Info
+      - name: Echo Info
         shell: bash
         run: |
           echo "Current Dir = $PWD"
