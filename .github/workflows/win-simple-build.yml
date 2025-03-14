@@ -36,6 +36,13 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
+
+      - name: Export GitHub Actions cache environment variables
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
       
       # Install External Depednencies
       # (based on type)
@@ -49,8 +56,10 @@ jobs:
 
       - name: Setup OpenBLAS
         if: matrix.type == 'cpu'
+        env:
+          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
         run: |
-          vcpkg install openblas:x86-windows
+          vcpkg install openblas
           vcpkg integrate install
 
       - name: Echo Info

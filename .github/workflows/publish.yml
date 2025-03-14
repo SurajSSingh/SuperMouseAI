@@ -102,6 +102,15 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
+      - name: download Whisper GGML model
+        shell: bash
+        env:
+          MODEL_URL: https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en-q5_1.bin
+          MODEL_SHA: c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b
+        run: |
+          curl -o "./src-tauri/resources/whisper-model.bin" -L $MODEL_URL
+          echo "$MODEL_SHA ./src-tauri/resources/whisper-model.bin" | sha256sum -c - || { echo "Failed to verify whisper model!"; exit 1; }
+
       - name: install Frontend Dependencies
         # If you don't have `beforeBuildCommand` configured you may want to build your frontend here too.
         run: deno install
