@@ -74,13 +74,14 @@ jobs:
         run: deno install
       - run: cargo check
 
-      - name: Build App
-        shell: bash
+      # If tagName and releaseId are omitted tauri-action will only build the app and won't try to upload any assets.
+      - uses: tauri-apps/tauri-action@v0
         env:
           OPENBLAS_PATH: C:\vcpkg\packages\openblas_x86-windows\include
           PATH: ${{ env.OPENBLAS_PATH }}\..\bin;$PATH
-        run: |
-          deno task tauri build ${{ matrix.args }}
+        with:
+          tauriScript: "deno task tauri"
+          args: ${{ matrix.args }}
       
       # NOTE: This only uploads the final .exe,
       #       the `/resources` must be provided 
