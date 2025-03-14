@@ -1,0 +1,129 @@
+name: 'publish'
+
+on:
+  push:
+    branches:
+      - test-release
+
+jobs:
+  publish-tauri:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # - platform: 'macos-latest' # for Arm based macs (M1 and above).
+          #   args: '--target aarch64-apple-darwin --features coreml'
+          # - platform: 'macos-latest' # for Intel based macs.
+          #   args: '--target x86_64-apple-darwin'
+          - platform: 'windows-latest'
+            args: '--features vulkan'
+          # Linux not currently needed
+          # - platform: 'ubuntu-22.04'
+          #   args: ''
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Echo Info for testing
+        shell: bash
+        run: |
+          echo "Current Dir:\n\t$PWD"
+          echo "\nCurl:"
+          curl --version || echo "No Curl"
+          echo "\wget:"
+          wget --version || echo "No wget"
+          echo "\Sha-256 Sum:"
+          sha256sum --version || echo "No sha256sum"
+          echo "\nFiles and Directories"
+          ls -a
+
+
+      # Platform-specific dependency installation
+      - name: install macOS dependencies
+        if: matrix.platform == 'macos-latest'
+        run: |
+          brew install openblas libomp
+        #  export LDFLAGS="-L/opt/homebrew/opt/openblas/lib"
+        #  export CPPFLAGS="-I/opt/homebrew/opt/openblas/include"
+        #  export LDFLAGS="-L/opt/homebrew/opt/libomp/lib"
+        #  export CPPFLAGS="-I/opt/homebrew/opt/libomp/include"
+        # ^^^^^^ Export based on what brew told me to include, may not be needed
+
+      # - name: install Windows dependencies
+      #   if: matrix.platform == 'windows-latest'
+      #   run: |
+      #     vcpkg install openblas
+      #     choco install vulkan-sdk
+
+      - name: Install Vulkan SDK (Windows)
+        if: matrix.platform == 'windows-latest'
+        uses: humbletim/install-vulkan-sdk@c2aa128094d42ba02959a660f03e0a4e012192f9
+        with:
+          version: latest
+          cache: true
+      
+      - name: Verify Vulkan installation
+        if: matrix.platform == 'windows-latest'
+        shell: bash
+        run: |
+          echo "VULKAN_SDK: $VULKAN_SDK"
+          echo "PATH: $PATH"
+
+      # - name: install dependencies (ubuntu only)
+      #   if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libvulkan1 libopenblas-dev libomp-dev
+
+      # TODO: Move URL and SHA above for easier access
+      - name: download Whisper GGML model
+        shell: bash
+        run: |
+          curl -o "./src-tauri/resources/whisper-model.bin" https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q8_0.bin
+        # TODO: Need to figure out how to use SHA256 validation in GitHub Action, `sha256sum` is not found
+        #  echo "317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1 ./src-tauri/resources/whisper-model.bin" | sha256sum -c - || { echo "Failed to verify whisper model!"; exit 1; }
+
+      - name: install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable # Set this to dtolnay/rust-toolchain@nightly
+        with:
+          # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: download Whisper GGML model
+        shell: bash
+        env:
+          MODEL_URL: https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.en-q5_1.bin
+          MODEL_SHA: c77c5766f1cef09b6b7d47f21b546cbddd4157886b3b5d6d4f709e91e66c7c2b
+        run: |
+          curl -o "./src-tauri/resources/whisper-model.bin" -L $MODEL_URL
+          echo "$MODEL_SHA ./src-tauri/resources/whisper-model.bin" | sha256sum -c - || { echo "Failed to verify whisper model!"; exit 1; }
+
+      - name: install Frontend Dependencies
+        # If you don't have `beforeBuildCommand` configured you may want to build your frontend here too.
+        run: deno install
+
+      - name: build with Tauri
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: app-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
+          releaseName: 'Super Mouse AI v__VERSION__'
+          releaseBody: 'See the assets to download this version and install.'
+          releaseDraft: true
+          prerelease: true
+          tauriScript: "deno task tauri"
+          args: ${{ matrix.args }}

@@ -47,13 +47,14 @@ regex = "1.11.1"
 whisper-rs = { version = "0.14.2", features = [] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-whisper-rs = { version = "0.14.2", features = ["metal", "coreml"] }
+whisper-rs = { version = "0.14.2", features = ["metal"] }
 
 [features]
 default = ["symphonia-all", "minimp3"]
 
 openblas = ["whisper-rs/openblas"]
 openmp = ["whisper-rs/openmp"]
+coreml = ["whisper-rs/coreml"]
 # For better CPU optimization
 cpu-opt = ["whisper-rs/openblas", "whisper-rs/openmp"]
 # Used generally for GPU
