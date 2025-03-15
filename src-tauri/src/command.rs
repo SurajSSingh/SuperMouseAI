@@ -41,10 +41,10 @@ pub async fn transcribe(
             options.individual_word_timestamps.unwrap_or(false),
             options.initial_prompt.as_deref(),
             options.language.as_deref(),
-            // Make sure not to pass <=0 for CPU thread,
+            // Make sure not to pass 0 for CPU thread,
             // otherwise model crashes
             match options.threads {
-                Some(t) if t <= 0 => None,
+                Some(0) => None,
                 threads => threads,
             },
         )
@@ -139,8 +139,8 @@ pub fn listen_for_mouse_click(app_handle: AppHandle) -> Result<u8, String> {
 #[tauri::command]
 #[specta::specta]
 /// Paste text from clipboard
-pub async fn paste_text(text: String) -> Result<(), String>{
-    log::debug!("Start Paste from clipboard");
+pub async fn write_text(text: String) -> Result<(), String>{
+    log::debug!("Start writing text");
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
     log::trace!("Enigo setup: {:?}", enigo);
     enigo.text(&text).map_err(|e| e.to_string())?;
@@ -150,10 +150,32 @@ pub async fn paste_text(text: String) -> Result<(), String>{
 
 #[tauri::command]
 #[specta::specta]
+/// Paste text from clipboard
+pub fn paste_text() -> Result<(), String>{
+    log::debug!("Start Paste from clipboard");
+    let mut enigo = Enigo::new(&Settings::default()).unwrap();
+    log::trace!("Enigo setup: {:?}", enigo);
+    let cmd_or_ctrl = match std::env::consts::OS {
+        "macos" => enigo::Key::Meta,
+        "windows" | "linux" => enigo::Key::Control,
+        _ => {
+            error!("Pasting from an unsupported/unknown target");
+            return Err("Unsupported action for your machine!".to_string())
+        },
+    };
+    enigo.key(cmd_or_ctrl, enigo::Direction::Press).map_err(|e| {error!("Input error: {}", e); e.to_string()})?;
+    enigo.key(enigo::Key::Unicode('v'), enigo::Direction::Click).map_err(|e| {error!("Input error: {}", e); e.to_string()})?;
+    enigo.key(cmd_or_ctrl, enigo::Direction::Release).map_err(|e| {error!("Input error: {}", e); e.to_string()})?;
+    log::trace!("Enigo Pasted text");
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 /// Put window on top, can be overriden by optional parameter
 pub async fn set_window_top(webview_window: tauri::WebviewWindow, override_value: Option<bool>) -> Result<(), String> {
-  Ok(webview_window.set_always_on_top(override_value.unwrap_or(true)).map_err(|err| {
+  webview_window.set_always_on_top(override_value.unwrap_or(true)).map_err(|err| {
     log::error!("Could not set window to top value: {}", err);
     err.to_string()
-  })?)
+  })
 }
