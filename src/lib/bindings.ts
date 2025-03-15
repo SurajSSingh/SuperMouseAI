@@ -72,6 +72,17 @@ async setWindowTop(overrideValue: boolean | null) : Promise<Result<null, string>
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+/**
+ * Paste text from clipboard
+ */
+async writeText(text: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("write_text", { text }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
