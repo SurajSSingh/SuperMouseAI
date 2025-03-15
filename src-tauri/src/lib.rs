@@ -178,7 +178,9 @@ pub fn run() {
                         .emit(&app_handle_down)
                         .map_err(|err| log::error!("Error for mod key event press: {err}"));
                 });
-                std::thread::yield_now();
+                // Require loop to ensure thread remains active
+                #[allow(clippy::empty_loop)]
+                loop {}
             }));
             Ok(())
         })
