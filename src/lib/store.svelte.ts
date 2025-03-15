@@ -25,6 +25,7 @@ export const ConfigItem = {
     FLOAT_WINDOW: "window_always_on_top",
     INTER_SENTENCE_NEWLINE_REMOVE: "remove_newline_inside_sentence",
     AUTO_PASTE: "paste_after_transcribe",
+    PASTE_VIA_KEYBOARD: "use_keys_to_paste",
 }
 
 class StoreStateOption<T> {
@@ -82,6 +83,7 @@ export class ConfigStore {
     windowFloat = new StoreStateOption<boolean>(false, ConfigItem.FLOAT_WINDOW);
     interNLRemove = new StoreStateOption<boolean>(true, ConfigItem.INTER_SENTENCE_NEWLINE_REMOVE);
     autoPaste = new StoreStateOption<boolean>(true, ConfigItem.AUTO_PASTE);
+    pasteViaKeys = new StoreStateOption<boolean>(true, ConfigItem.PASTE_VIA_KEYBOARD);
 
     /** Array of all fields in class that are configuration optiosn */
     #configFields = [
