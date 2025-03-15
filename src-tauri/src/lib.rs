@@ -11,7 +11,7 @@ use std::{collections::HashMap, path::PathBuf};
 
 use command::{
     listen_for_mouse_click, paste_text, play_sound, process_text, set_window_top, transcribe,
-    transcribe_with_post_process,
+    transcribe_with_post_process, write_text,
 };
 use mutter::Model;
 use tauri::{path::BaseDirectory, Manager};
@@ -60,7 +60,8 @@ pub fn run() {
             paste_text,
             process_text,
             transcribe_with_post_process,
-            set_window_top
+            set_window_top,
+            write_text
         ])
         .events(collect_events![MouseClickEvent, ModKeyEvent]);
     #[cfg(debug_assertions)] // <- Only export on non-release builds
