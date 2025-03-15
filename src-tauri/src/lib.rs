@@ -11,7 +11,7 @@ use std::{collections::HashMap, path::PathBuf};
 
 use command::{
     listen_for_mouse_click, paste_text, play_sound, process_text, set_window_top, transcribe,
-    transcribe_with_post_process,
+    transcribe_with_post_process, write_text,
 };
 use mutter::Model;
 use tauri::{path::BaseDirectory, Manager};
@@ -60,7 +60,8 @@ pub fn run() {
             paste_text,
             process_text,
             transcribe_with_post_process,
-            set_window_top
+            set_window_top,
+            write_text
         ])
         .events(collect_events![MouseClickEvent, ModKeyEvent]);
     #[cfg(debug_assertions)] // <- Only export on non-release builds
@@ -156,7 +157,7 @@ pub fn run() {
             listen_for_mouse_click(app.handle().clone())?;
             let app_key_listener_handler = app.handle().clone();
             // Listen for mod keys directly and emit when found
-            let _ = tauri::async_runtime::spawn_blocking(move || {
+            std::mem::drop(tauri::async_runtime::spawn_blocking(move || {
                 use device_query::{DeviceEvents, DeviceEventsHandler};
                 use std::time::Duration;
 
@@ -177,8 +178,10 @@ pub fn run() {
                         .emit(&app_handle_down)
                         .map_err(|err| log::error!("Error for mod key event press: {err}"));
                 });
+                // Require loop to ensure thread remains active
+                #[allow(clippy::empty_loop)]
                 loop {}
-            });
+            }));
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())

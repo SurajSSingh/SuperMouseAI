@@ -32,9 +32,9 @@ async playSound(soundName: string) : Promise<Result<null, string>> {
 /**
  * Paste text from clipboard
  */
-async pasteText(text: string) : Promise<Result<null, string>> {
+async pasteText() : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("paste_text", { text }) };
+    return { status: "ok", data: await TAURI_INVOKE("paste_text") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -68,6 +68,17 @@ async transcribeWithPostProcess(audioData: number[], transcribeOptions: Transcri
 async setWindowTop(overrideValue: boolean | null) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("set_window_top", { overrideValue }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Paste text from clipboard
+ */
+async writeText(text: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("write_text", { text }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };

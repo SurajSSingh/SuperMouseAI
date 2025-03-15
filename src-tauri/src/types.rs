@@ -103,7 +103,9 @@ pub fn is_modkey(key: &device_query::Keycode) -> bool {
 pub enum TranscriptionFormat {
     #[default]
     Text,
+    #[allow(clippy::upper_case_acronyms)]
     SRT,
+    #[allow(clippy::upper_case_acronyms)]
     VTT,
 }
 

@@ -23,6 +23,7 @@
   // State
   let recordingState: RecordingStates = $state("stopped");
   let hasRecorded = $state(false);
+  let menuOpen = $state(false);
 
   // Helper Functions
   function copyToClipboard() {
@@ -56,9 +57,13 @@
     notifier.showNotification("Transcription Finished!", "", "finish");
     copyToClipboard();
     if (configStore.autoPaste.value) {
-      commands
-        .pasteText(configStore.currentTranscript)
-        .catch((err) => notifier.showError(err));
+      if (configStore.pasteViaKeys.value) {
+        commands.pasteText().catch((err) => notifier.showError(err));
+      } else {
+        commands
+          .writeText(configStore.currentTranscript)
+          .catch((err) => notifier.showError(err));
+      }
     }
   }
   function onError(err: string) {
@@ -74,7 +79,7 @@
 </script>
 
 <main class="">
-  <MenuScreen>
+  <MenuScreen bind:open={menuOpen}>
     <section class="tabs tabs-lift w-full">
       <Tab
         value="tabs"
@@ -104,7 +109,7 @@
         class="bg-base-100 border-base-300 p-6"
       >
         <div class="h-60 overflow-auto pr-6">
-          <DangerZone />
+          <DangerZone bind:isDialogOpen={menuOpen} />
         </div>
       </Tab>
     </section>
