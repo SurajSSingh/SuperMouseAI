@@ -23,6 +23,7 @@
   // State
   let recordingState: RecordingStates = $state("stopped");
   let hasRecorded = $state(false);
+  let menuOpen = $state(false);
 
   // Helper Functions
   function copyToClipboard() {
@@ -72,7 +73,7 @@
 </script>
 
 <main class="">
-  <MenuScreen>
+  <MenuScreen bind:open={menuOpen}>
     <section class="tabs tabs-lift w-full">
       <Tab
         value="tabs"
@@ -102,7 +103,7 @@
         class="bg-base-100 border-base-300 p-6"
       >
         <div class="h-60 overflow-auto pr-6">
-          <DangerZone />
+          <DangerZone bind:isDialogOpen={menuOpen} />
         </div>
       </Tab>
     </section>
