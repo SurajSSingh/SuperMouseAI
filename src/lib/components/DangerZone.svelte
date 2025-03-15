@@ -2,6 +2,12 @@
     import { notifier } from "$lib/notificationSystem.svelte";
     import { configStore } from "$lib/store.svelte";
     import { Button } from "./ui/button";
+
+    interface DangerZoneProps {
+        isDialogOpen?: boolean;
+    }
+
+    let { isDialogOpen = $bindable(false) }: DangerZoneProps = $props();
 </script>
 
 <div
@@ -10,13 +16,15 @@
 >
     <Button
         color="destructive"
-        onclick={() =>
+        onclick={() => {
+            isDialogOpen = false;
             notifier.confirmAction(
                 "You will clear all transcriptions!",
                 () => configStore.clearTranscripts(),
                 () => {},
                 "Are you sure?",
-            )}>Delete All Transcripts</Button
+            );
+        }}>Delete All Transcripts</Button
     >
 </div>
 <br />
@@ -26,12 +34,14 @@
 >
     <Button
         color="destructive"
-        onclick={() =>
+        onclick={() => {
+            isDialogOpen = false;
             notifier.confirmAction(
                 "You will clear all transcriptions alongside any customizations you have made. This will take effect AFTER closing the app.",
                 () => configStore.clearData(),
                 () => {},
                 "Are you sure?",
-            )}>Clear App Data</Button
+            );
+        }}>Clear App Data</Button
     >
 </div>
