@@ -77,12 +77,14 @@ jobs:
           echo "Cargo:"
           cargo --version || echo "No Rust"
           echo ""
-          echo "OpenBLAS"
+          echo "OpenBLAS:"
           ls "C:/vcpkg/packages/openblas_x64-windows"
-          echo "  - Inside Includes"
+          echo "  - Inside Includes:"
           ls "C:/vcpkg/packages/openblas_x64-windows/include"
-          echo "  - Inside Bin"
+          echo "  - Inside Bin:"
           ls "C:/vcpkg/packages/openblas_x64-windows/bin"
+          echo "  - Inside Lib:"
+          ls "C:/vcpkg/packages/openblas_x64-windows/lib"
           echo ""
           echo "Files and Directories"
           ls -a
@@ -95,6 +97,11 @@ jobs:
       - name: Create whisper-model.bin
         shell: bash
         run: touch ./src-tauri/resources/whisper-model.bin
+
+      - name: Add OpenBLAS to PATH
+        if: matrix.type == 'cpu'
+        run: |
+          echo "C:\vcpkg\packages\openblas_x86-windows\bin" >> $GITHUB_PATH
 
       # If tagName and releaseId are omitted tauri-action will only build the app and won't try to upload any assets.
       - uses: tauri-apps/tauri-action@v0
