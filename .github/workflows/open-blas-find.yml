@@ -1,0 +1,36 @@
+name: "find-openblas-dep"
+# This will do a build without bundling resources
+
+on:
+  push:
+    branches:
+      - gh-actions
+
+jobs:
+  find-open-blas:
+    strategy:
+      fail-fast: false
+
+    runs-on: windows-latest
+    steps:
+      - name: Export GitHub Actions cache environment variables
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+      - name: Setup OpenBLAS
+        env:
+          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+        run: |
+          vcpkg install openblas
+          vcpkg integrate install
+
+      - name: Echo Info
+        shell: bash
+        run: |
+          echo "OpenBLAS:"
+          cd "C:/vcpkg/packages/openblas_x64-windows"
+          echo $PWD
+          ls -R
