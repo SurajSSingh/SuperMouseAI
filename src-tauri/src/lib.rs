@@ -157,7 +157,7 @@ pub fn run() {
             listen_for_mouse_click(app.handle().clone())?;
             let app_key_listener_handler = app.handle().clone();
             // Listen for mod keys directly and emit when found
-            let _ = tauri::async_runtime::spawn_blocking(move || {
+            std::mem::drop(tauri::async_runtime::spawn_blocking(move || {
                 use device_query::{DeviceEvents, DeviceEventsHandler};
                 use std::time::Duration;
 
@@ -178,8 +178,8 @@ pub fn run() {
                         .emit(&app_handle_down)
                         .map_err(|err| log::error!("Error for mod key event press: {err}"));
                 });
-                loop {}
-            });
+                std::thread::yield_now();
+            }));
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())

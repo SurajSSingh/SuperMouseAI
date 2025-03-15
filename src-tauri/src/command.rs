@@ -41,10 +41,10 @@ pub async fn transcribe(
             options.individual_word_timestamps.unwrap_or(false),
             options.initial_prompt.as_deref(),
             options.language.as_deref(),
-            // Make sure not to pass <=0 for CPU thread,
+            // Make sure not to pass 0 for CPU thread,
             // otherwise model crashes
             match options.threads {
-                Some(t) if t <= 0 => None,
+                Some(0) => None,
                 threads => threads,
             },
         )
@@ -174,8 +174,8 @@ pub fn paste_text() -> Result<(), String>{
 #[specta::specta]
 /// Put window on top, can be overriden by optional parameter
 pub async fn set_window_top(webview_window: tauri::WebviewWindow, override_value: Option<bool>) -> Result<(), String> {
-  Ok(webview_window.set_always_on_top(override_value.unwrap_or(true)).map_err(|err| {
+  webview_window.set_always_on_top(override_value.unwrap_or(true)).map_err(|err| {
     log::error!("Could not set window to top value: {}", err);
     err.to_string()
-  })?)
+  })
 }
