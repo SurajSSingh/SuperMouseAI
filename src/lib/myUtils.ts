@@ -10,8 +10,8 @@ export async function blobToBytes(blob: Blob): Promise<Uint8Array> {
 /**
    * Convert a blob to array of bytes with a given type
    */
-export async function blobChunksToBytes(chunks: Blob[], type = "audio/wav"): Promise<Uint8Array> {
-    const blob = chunks.length === 1 ? chunks[0]! : new Blob(chunks, { type: type });
+export function blobChunksToBytes(chunks: Blob[], type = "audio/wav"): Promise<Uint8Array> {
+    const blob = chunks.length === 1 ? chunks[0] : new Blob(chunks, { type: type });
     return blobToBytes(blob);
 
 }

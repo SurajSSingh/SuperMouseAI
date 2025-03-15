@@ -1,5 +1,5 @@
-import { load, Store } from '@tauri-apps/plugin-store';
-import type { ThemeKind } from './types';
+import { load, type Store } from '@tauri-apps/plugin-store';
+import type { ThemeKind } from './types.ts';
 import type { UnlistenFn } from '@tauri-apps/api/event';
 import { warn } from '@tauri-apps/plugin-log';
 
@@ -37,13 +37,13 @@ class StoreStateOption<T> {
         this.#name = name;
     }
 
-    async loadFrom(store: Store) {
+    async loadFrom(store: Store): Promise<void> {
         this.#config = store;
         const value = await this.#config.get<T>(this.#name);
         if (value !== undefined) this.#value = value
     }
 
-    async saveToStore() {
+    async saveToStore(): Promise<void> {
         await this.#config?.set(this.#name, this.#value)
     }
 
@@ -105,7 +105,8 @@ export class ConfigStore {
     isTranscriptsEmpty = $derived(this.transcriptions.value.length === 0);
     currentTranscript = $derived(this.transcriptions.value[this.currentIndex.value]);
     ignoredWordsList = $derived(this.ignoredWords.value.split("\n"));
-    // NOTE: A main key will alawy exist for a valid shortcut
+    // NOTE: A main key will alway exist for a valid shortcut
+    // deno-lint-ignore no-non-null-assertion
     mainKey = $derived(this.shortcut.value.split("+").at(-1)!);
     modifierKeys = $derived({
         hasAlt: this.shortcut.value.includes("Alt"),
@@ -114,7 +115,7 @@ export class ConfigStore {
         hasSuper: this.shortcut.value.includes("Super"),
     })
 
-    #isReady: boolean = false;
+    #isReady = false;
     constructor() {
         this.cleanup = $effect.root(() => {
             $effect(() => {
@@ -133,15 +134,16 @@ export class ConfigStore {
     }
 
     /** Wait until store is loaded */
-    async waitForStoreLoaded() {
+    async waitForStoreLoaded(): Promise<void> {
         // HACK: Works, but would be better to follow actual loading resolve
         while (!this.#isReady) {
+            // deno-lint-ignore no-await-in-loop
             await new Promise(resolve => setTimeout(resolve, 100));
         }
     }
 
     /** Load all items from store for states */
-    private async loadAll() {
+    private async loadAll(): Promise<void> {
         if (!this.fileStore) return;
         if (!this.fileStore.has(ConfigItem.VERSION)) {
             await this.fileStore.set(ConfigItem.VERSION, this.#version);
@@ -149,9 +151,10 @@ export class ConfigStore {
         else {
             this.#version = await this.fileStore.get(ConfigItem.VERSION) ?? this.#version;
         }
+        const store = this.fileStore;
         // Load all config from file store
         await Promise.allSettled(
-            this.#configFields.map(field => field.loadFrom(this.fileStore!))
+            this.#configFields.map(field => field.loadFrom(store))
         ).catch((err) => {
             warn("Failed to load from store with given error: ", err)
         })
@@ -159,19 +162,19 @@ export class ConfigStore {
         console.dir(await this.fileStore.entries());
     }
 
-    async saveAll() {
+    saveAll(): Promise<PromiseSettledResult<void>[]> {
         return Promise.allSettled(
             this.#configFields.map(field => field.saveToStore())
         )
     }
 
-    clearTranscripts() {
+    clearTranscripts(): void {
         this.fileStore?.delete(ConfigItem.TRANSCRIPTS);
         this.currentIndex.value = 0;
         this.transcriptions.value = []
     }
 
-    clearData() {
+    clearData(): void {
         this.fileStore?.reset()
     }
 
@@ -181,30 +184,30 @@ export class ConfigStore {
         return this.#version;
     }
 
-    addTranscription(transcript: string) {
+    addTranscription(transcript: string): void {
         // HACK: Issue with proxing array in classes, don't fully understand why yet
         this.transcriptions.value = [...this.transcriptions.value, transcript];
         this.currentIndex.value = this.transcriptLength - 1;
     }
 
-    editTranscription(edited: string) {
+    editTranscription(edited: string): void {
         // HACK: Issue with proxing array in classes, don't fully understand why yet
         this.transcriptions.value = this.transcriptions.value.map((original, index) => index === this.currentIndex.value ? edited : original)
     }
 
-    removeCurrentTranscription() {
+    removeCurrentTranscription(): void {
         // HACK: Issue with proxing array in classes, don't fully understand why yet
         this.transcriptions.value = this.transcriptions.value.filter((_, i) => i !== this.currentIndex.value)
         if (this.currentIndex.value >= this.transcriptLength) this.currentIndex.value = this.transcriptLength - 1;
         if (this.isTranscriptsEmpty) this.currentIndex.value = 0;
     }
 
-    prevIndex() {
+    prevIndex(): void {
         if (this.currentIndex.value <= 0) return;
         this.currentIndex.value--;
     }
 
-    nextIndex() {
+    nextIndex(): void {
         if (this.currentIndex.value >= this.transcriptLength - 1) return;
         this.currentIndex.value++;
     }

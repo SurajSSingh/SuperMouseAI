@@ -1,7 +1,7 @@
 import Root from "./textarea.svelte";
-import TextAreaColor from "./textarea.svelte"
-import TextAreaVariant from "./textarea.svelte"
-import TextAreaSize from "./textarea.svelte"
+import type TextAreaColor from "./textarea.svelte"
+import type TextAreaVariant from "./textarea.svelte"
+import type TextAreaSize from "./textarea.svelte"
 
 type FormTextareaEvent<T extends Event = Event> = T & {
     currentTarget: EventTarget & HTMLTextAreaElement;
