@@ -56,9 +56,7 @@
     notifier.showNotification("Transcription Finished!", "", "finish");
     copyToClipboard();
     if (configStore.autoPaste.value) {
-      commands
-        .pasteText(configStore.currentTranscript)
-        .catch((err) => notifier.showError(err));
+      commands.pasteText().catch((err) => notifier.showError(err));
     }
   }
   function onError(err: string) {
