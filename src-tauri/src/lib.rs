@@ -93,10 +93,16 @@ pub fn run() {
                         file_name: Some("super-mouse-ai-logs".to_string()),
                     },
                 ))
-                .level(if cfg!(debug_assertions) {
+                .level(if cfg!(feature = "log-trace") {
                     log::LevelFilter::max()
-                } else {
+                } else if cfg!(feature = "log-issues-only") {
                     log::LevelFilter::Warn
+                } else if cfg!(feature = "log-none") {
+                    log::LevelFilter::Off
+                } else if cfg!(debug_assertions) {
+                    log::LevelFilter::Debug
+                } else {
+                    log::LevelFilter::Info
                 })
                 .build(),
         )
