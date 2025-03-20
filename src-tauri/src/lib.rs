@@ -4,7 +4,7 @@
 )]
 
 use events::{ModKeyEvent, MouseClickEvent};
-use specta_typescript::Typescript;
+use log::{error, warn, LevelFilter};
 use tauri_specta::{collect_commands, collect_events, Builder, Event};
 
 use std::{collections::HashMap, path::PathBuf};
@@ -52,6 +52,7 @@ const KEY_QUERY_MILLIS: u64 = 100;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 /// Tauri entry point to run app
 pub fn run() {
+    // Setup
     let client = sentry::init((
         "https://e48c5c52c4ca1341de4618624cc0f511@o4509002112958464.ingest.us.sentry.io/4509007972007936",
         sentry::ClientOptions {
@@ -91,15 +92,15 @@ pub fn run() {
                     },
                 ))
                 .level(if cfg!(feature = "log-trace") {
-                    log::LevelFilter::max()
+                    LevelFilter::max()
                 } else if cfg!(feature = "log-issues-only") {
-                    log::LevelFilter::Warn
+                    LevelFilter::Warn
                 } else if cfg!(feature = "log-none") {
-                    log::LevelFilter::Off
+                    LevelFilter::Off
                 } else if cfg!(debug_assertions) {
-                    log::LevelFilter::Debug
+                    LevelFilter::Debug
                 } else {
-                    log::LevelFilter::Info
+                    LevelFilter::Info
                 })
                 .build(),
         )
@@ -157,19 +158,19 @@ pub fn run() {
                         .then(|| {
                             map.insert("start".into(), start_path.clone());
                         })
-                        .unwrap_or_else(|| log::info!("No start path found: {:?}", start_path));
+                        .unwrap_or_else(|| warn!("No start path found: {:?}", start_path));
                     stop_path
                         .exists()
                         .then(|| {
                             map.insert("stop".into(), stop_path.clone());
                         })
-                        .unwrap_or_else(|| log::info!("No stop path found: {:?}", stop_path));
+                        .unwrap_or_else(|| warn!("No stop path found: {:?}", stop_path));
                     magic_path
                         .exists()
                         .then(|| {
                             map.insert("finish".into(), magic_path.clone());
                         })
-                        .unwrap_or_else(|| log::info!("No magic path found: {:?}", magic_path));
+                        .unwrap_or_else(|| warn!("No magic path found: {:?}", magic_path));
                 }
                 map
             };
@@ -190,13 +191,13 @@ pub fn run() {
                     is_modkey(key).then(|| {
                         let _ = ModKeyEvent::with_payload(ModKeyPayload::released(key.to_string()))
                             .emit(&app_handle_up)
-                            .map_err(|err| log::error!("Error for mod key event release: {err}"));
+                            .map_err(|err| error!("Error for mod key event release: {err}"));
                     });
                 });
                 let _down_guard = device_state.on_key_down(move |key| {
                     let _ = ModKeyEvent::with_payload(ModKeyPayload::pressed(key.to_string()))
                         .emit(&app_handle_down)
-                        .map_err(|err| log::error!("Error for mod key event press: {err}"));
+                        .map_err(|err| error!("Error for mod key event press: {err}"));
                 });
                 // Require loop to ensure thread remains active
                 #[allow(clippy::empty_loop)]
