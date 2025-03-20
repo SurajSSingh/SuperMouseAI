@@ -3,23 +3,27 @@
     windows_subsystem = "windows"
 )]
 
-use events::{get_collected_events, ModKeyEvent};
+// External Crates
 use log::{error, warn, LevelFilter};
-use tauri_specta::{Builder, Event};
-
 use std::{collections::HashMap, path::PathBuf};
-
-use command::{get_collected_commands, listen_for_mouse_click};
-use mutter::Model;
 use tauri::{path::BaseDirectory, Manager};
 use tauri_plugin_sentry::{minidump, sentry};
-use types::{is_modkey, AppState, ModKeyPayload};
+use tauri_specta::{Builder, Event};
 
+// Internal Modules
 mod command;
 mod events;
 mod mutter;
 mod transcript;
 mod types;
+
+use command::listen_for_mouse_click;
+use events::ModKeyEvent;
+use mutter::Model;
+use types::{is_modkey, AppState, ModKeyPayload};
+
+pub use crate::command::get_collected_commands;
+pub use crate::events::get_collected_events;
 
 /// Macro to load audio path into the app's map with given name.
 ///
