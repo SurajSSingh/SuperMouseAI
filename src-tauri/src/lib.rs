@@ -79,10 +79,7 @@ pub fn run() {
             write_text
         ])
         .events(collect_events![MouseClickEvent, ModKeyEvent]);
-    #[cfg(debug_assertions)] // <- Only export on non-release builds
-    builder
-        .export(Typescript::default(), "../src/lib/bindings.ts")
-        .expect("Failed to export typescript bindings");
+    export_bindings(&builder);
     tauri::Builder::default()
         .plugin(tauri_plugin_sentry::init(&client))
         .plugin(tauri_plugin_process::init())
@@ -210,4 +207,15 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+/// Export TypeScript bindings for the application
+pub fn export_bindings(builder: &Builder) {
+    #[cfg(debug_assertions)] // <- Only export on non-release builds
+    builder
+        .export(
+            specta_typescript::Typescript::default(),
+            "../src/lib/bindings.ts",
+        )
+        .expect("Failed to export typescript bindings");
 }
