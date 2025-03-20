@@ -3,16 +3,13 @@
     windows_subsystem = "windows"
 )]
 
-use events::{ModKeyEvent, MouseClickEvent};
+use events::{get_collected_events, ModKeyEvent};
 use log::{error, warn, LevelFilter};
-use tauri_specta::{collect_commands, collect_events, Builder, Event};
+use tauri_specta::{Builder, Event};
 
 use std::{collections::HashMap, path::PathBuf};
 
-use command::{
-    listen_for_mouse_click, paste_text, play_sound, process_text, set_window_top, transcribe,
-    transcribe_with_post_process, write_text,
-};
+use command::{get_collected_commands, listen_for_mouse_click};
 use mutter::Model;
 use tauri::{path::BaseDirectory, Manager};
 use tauri_plugin_sentry::{minidump, sentry};
@@ -70,16 +67,8 @@ pub fn run() {
     // Following <https://docs.rs/tauri-specta/2.0.0-rc.21/tauri_specta/index.html>
     let builder = Builder::<tauri::Wry>::new()
         // Then register them (separated by a comma)
-        .commands(collect_commands![
-            transcribe,
-            play_sound,
-            paste_text,
-            process_text,
-            transcribe_with_post_process,
-            set_window_top,
-            write_text
-        ])
-        .events(collect_events![MouseClickEvent, ModKeyEvent]);
+        .commands(get_collected_commands())
+        .events(get_collected_events());
     export_bindings(&builder);
     tauri::Builder::default()
         .plugin(tauri_plugin_sentry::init(&client))

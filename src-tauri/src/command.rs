@@ -11,8 +11,8 @@ use log::error;
 use mouce::{common::MouseEvent, Mouse, MouseActions};
 use rodio::{Decoder, OutputStream, Sink};
 use std::{fs::File, io::BufReader};
-use tauri::{AppHandle, State};
-use tauri_specta::Event;
+use tauri::{AppHandle, State, Wry};
+use tauri_specta::{collect_commands, Commands, Event};
 
 #[tauri::command]
 #[specta::specta]
@@ -213,4 +213,17 @@ pub async fn set_window_top(
             log::error!("Could not set window to top value: {}", err);
             err.to_string()
         })
+}
+
+/// Gets all collected commands for Super Mouse AI application to be used by builder
+pub fn get_collected_commands() -> Commands<Wry> {
+    collect_commands![
+        transcribe,
+        play_sound,
+        paste_text,
+        process_text,
+        transcribe_with_post_process,
+        set_window_top,
+        write_text
+    ]
 }
