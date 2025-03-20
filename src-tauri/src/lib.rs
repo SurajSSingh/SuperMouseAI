@@ -15,6 +15,7 @@ use command::{
 };
 use mutter::Model;
 use tauri::{path::BaseDirectory, Manager};
+use tauri_plugin_sentry::{minidump, sentry};
 use types::{is_modkey, AppState, ModKeyPayload};
 
 mod command;
@@ -51,6 +52,20 @@ const KEY_QUERY_MILLIS: u64 = 100;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 /// Tauri entry point to run app
 pub fn run() {
+    let client = sentry::init((
+        "https://e48c5c52c4ca1341de4618624cc0f511@o4509002112958464.ingest.us.sentry.io/4509007972007936",
+        sentry::ClientOptions {
+            release: sentry::release_name!(),
+            auto_session_tracking: true,
+            ..Default::default()
+        },
+    ));
+
+    // Caution! Everything before here runs in both app and crash reporter processes
+    #[cfg(not(target_os = "ios"))]
+    let _guard = minidump::init(&client);
+    // Everything after here runs in only the app process
+
     // Following <https://docs.rs/tauri-specta/2.0.0-rc.21/tauri_specta/index.html>
     let builder = Builder::<tauri::Wry>::new()
         // Then register them (separated by a comma)
@@ -69,6 +84,7 @@ pub fn run() {
         .export(Typescript::default(), "../src/lib/bindings.ts")
         .expect("Failed to export typescript bindings");
     tauri::Builder::default()
+        .plugin(tauri_plugin_sentry::init(&client))
         .plugin(tauri_plugin_process::init())
         .plugin(
             tauri_plugin_log::Builder::new()
