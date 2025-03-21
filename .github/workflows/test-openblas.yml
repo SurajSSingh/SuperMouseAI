@@ -1,0 +1,26 @@
+name: "test-openblas-dep"
+
+on:
+  push:
+    branches:
+      - gh-actions
+
+jobs:
+  find-open-blas:
+    strategy:
+      fail-fast: false
+
+    runs-on: windows-latest
+    steps:
+      - name: Setup OpenBLAS
+        run: |
+          wget "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.26/OpenBLAS-0.3.26-x64.zip"
+          7z x OpenBLAS-0.3.26-x64.zip -oopenblas
+
+      - name: Echo Info
+        shell: bash
+        env:
+          OPENBLAS_PATH: "./openblas"
+        run: |
+          echo "OpenBLAS:" $OPENBLAS_PATH
+          ls -R $OPENBLAS_PATH
