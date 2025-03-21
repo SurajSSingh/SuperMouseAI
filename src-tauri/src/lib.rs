@@ -188,9 +188,11 @@ pub fn run() {
                     });
                 });
                 let _down_guard = device_state.on_key_down(move |key| {
-                    let _ = ModKeyEvent::with_payload(ModKeyPayload::pressed(key.to_string()))
-                        .emit(&app_handle_down)
-                        .map_err(|err| error!("Error for mod key event press: {err}"));
+                    is_modkey(key).then(|| {
+                        let _ = ModKeyEvent::with_payload(ModKeyPayload::pressed(key.to_string()))
+                            .emit(&app_handle_down)
+                            .map_err(|err| error!("Error for mod key event press: {err}"));
+                    });
                 });
                 // Require loop to ensure thread remains active
                 #[allow(clippy::empty_loop)]
