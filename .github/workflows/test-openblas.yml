@@ -15,7 +15,7 @@ jobs:
           #   args: "--features vulkan"
           #   type: "gpu"
           - platform: "windows-latest"
-            args: "--features openmp"
+            args: "--features cpu-opt"
             type: "cpu"
 
     runs-on: ${{ matrix.platform }}
@@ -49,8 +49,8 @@ jobs:
       - name: Setup OpenBLAS
         if: matrix.type == 'cpu'
         run: |
-          Invoke-WebRequest -Uri "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.26/OpenBLAS-0.3.26-x64.zip" -OutFile "OpenBLAS-0.3.26-x64.zip"
-          Expand-Archive -Path "OpenBLAS-0.3.26-x64.zip" -DestinationPath "openblas"
+          Invoke-WebRequest -Uri "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.29/OpenBLAS-0.3.29-x64.zip" -OutFile "OpenBLAS-0.3.26-x64.zip"
+          Expand-Archive -Path "OpenBLAS-0.3.29-x64.zip" -DestinationPath "openblas"
 
       - name: Echo Info
         if: matrix.type == 'cpu'
