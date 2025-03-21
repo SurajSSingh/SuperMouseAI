@@ -18,6 +18,7 @@
   import AppOptions from "$lib/components/AppOptions.svelte";
   import { exit } from "@tauri-apps/plugin-process";
   import { error, info } from "@tauri-apps/plugin-log";
+  import { getVersion } from "@tauri-apps/api/app";
 
   // Component Bindings
   let micRecorder: MicRecorder;
@@ -26,6 +27,7 @@
   let recordingState: RecordingStates = $state("stopped");
   let hasRecorded = $state(false);
   let menuOpen = $state(false);
+  let appVersion = $state("unknown");
 
   // Helper Functions
   function copyToClipboard() {
@@ -88,6 +90,10 @@
       "I Agree",
       "Quit App",
     );
+    getVersion().then(
+      (version) =>
+        (appVersion = version.startsWith("v") ? version : `v${version}`),
+    );
     return () => {
       configStore.cleanup();
     };
@@ -142,7 +148,9 @@
     direction="bottom"
   />
   <div class="mx-2 sm:mx-24 md:mx-32">
-    <h1 class="text-3xl text-center pt-12 sm:pt-0">SuperMouse AI</h1>
+    <h1 class="text-3xl text-center pt-12 sm:pt-0">
+      SuperMouse AI ({appVersion})
+    </h1>
     <PermissionBar
       setupRecorder={() => micRecorder.setupRecorder()}
       {recordingState}
