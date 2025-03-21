@@ -6,21 +6,99 @@ on:
       - gh-actions
 
 jobs:
-  find-open-blas:
+  test-open-blas:
     strategy:
       fail-fast: false
+      matrix:
+        include:
+          # - platform: "windows-latest"
+          #   args: "--features vulkan"
+          #   type: "gpu"
+          - platform: "windows-latest"
+            args: "--features cpu-opt"
+            type: "cpu"
 
-    runs-on: windows-latest
+    runs-on: ${{ matrix.platform }}
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install Rust (Stable)
+        uses: dtolnay/rust-toolchain@stable # Set this to dtolnay/rust-toolchain@nightly
+
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      # Install External Depednencies
+      # (based on type)
+
+      - name: Install Vulkan SDK
+        if: matrix.type == 'gpu'
+        uses: humbletim/install-vulkan-sdk@c2aa128094d42ba02959a660f03e0a4e012192f9
+        with:
+          version: latest
+          cache: true
+
       - name: Setup OpenBLAS
+        if: matrix.type == 'cpu'
         run: |
           Invoke-WebRequest -Uri "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.26/OpenBLAS-0.3.26-x64.zip" -OutFile "OpenBLAS-0.3.26-x64.zip"
           Expand-Archive -Path "OpenBLAS-0.3.26-x64.zip" -DestinationPath "openblas"
 
       - name: Echo Info
+        if: matrix.type == 'cpu'
         shell: bash
         env:
           OPENBLAS_PATH: "./openblas"
         run: |
+          echo "Current Dir = $PWD"
+          echo ""
+          echo "Deno:"
+          deno --version || echo "No Deno"
+          echo ""
+          echo "Rustc:"
+          rustc --version || echo "No Rust"
+          echo ""
+          echo "Cargo:"
+          cargo --version || echo "No Rust"
+          echo ""
           echo "OpenBLAS:" $OPENBLAS_PATH
           ls -R $OPENBLAS_PATH
+          echo ""
+          echo "Files and Directories"
+          ls -a
+
+      - name: Install Frontend Dependencies
+        # If you don't have `beforeBuildCommand` configured you may want to build your frontend here too.
+        run: deno install
+
+      # Create file without actual data so build does not fail to find
+      - name: Create whisper-model.bin
+        shell: bash
+        run: touch ./src-tauri/resources/whisper-model.bin
+
+      # If tagName and releaseId are omitted tauri-action will only build the app and won't try to upload any assets.
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          OPENBLAS_PATH: "./openblas"
+        with:
+          tauriScript: "deno task tauri"
+          args: ${{ matrix.args }}
+
+      # NOTE: This only uploads the final .exe,
+      #       the `/resources` must be provided
+      #       separately (for build to work)
+      - name: Upload Executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.type }}
+          path: ./src-tauri/target/release/*.exe
+          retention-days: 1
+          compression-level: 6 # TODO: Using default, check if this needs to change
