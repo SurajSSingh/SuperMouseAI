@@ -14,10 +14,7 @@ jobs:
     steps:
       - name: Setup OpenBLAS
         run: |
-          
-        # Download OpenBLAS
-          Invoke-WebRequest -Uri "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.26/OpenBLAS-0.3.26-x64.zip" -OutFile "OpenBLAS-0.3.26-x64.zip"          
-        # Extract using Compress-Archive
+          Invoke-WebRequest -Uri "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.26/OpenBLAS-0.3.26-x64.zip" -OutFile "OpenBLAS-0.3.26-x64.zip"
           Expand-Archive -Path "OpenBLAS-0.3.26-x64.zip" -DestinationPath "openblas"
 
       - name: Echo Info
