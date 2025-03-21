@@ -14,8 +14,11 @@ jobs:
     steps:
       - name: Setup OpenBLAS
         run: |
-          wget "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.26/OpenBLAS-0.3.26-x64.zip"
-          7z x OpenBLAS-0.3.26-x64.zip -oopenblas
+          
+        # Download OpenBLAS
+          Invoke-WebRequest -Uri "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.26/OpenBLAS-0.3.26-x64.zip" -OutFile "OpenBLAS-0.3.26-x64.zip"          
+        # Extract using Compress-Archive
+          Expand-Archive -Path "OpenBLAS-0.3.26-x64.zip" -DestinationPath "openblas"
 
       - name: Echo Info
         shell: bash
