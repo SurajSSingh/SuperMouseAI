@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "rebind": "echo \"Refreshing ./src/lib/bindings.ts\"; deno task tauri dev --no-dev-server-wait --no-dev-server --no-watch -f export-bindings-only"
   },
   "license": "FSL-1.1-MIT OR FSL-1.1-ALv2",
   "dependencies": {
