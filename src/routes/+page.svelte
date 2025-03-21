@@ -16,6 +16,9 @@
   import { commands } from "$lib/bindings";
   import DangerZone from "$lib/components/DangerZone.svelte";
   import AppOptions from "$lib/components/AppOptions.svelte";
+  import { exit } from "@tauri-apps/plugin-process";
+  import { error, info } from "@tauri-apps/plugin-log";
+  import { getVersion } from "@tauri-apps/api/app";
 
   // Component Bindings
   let micRecorder: MicRecorder;
@@ -24,6 +27,7 @@
   let recordingState: RecordingStates = $state("stopped");
   let hasRecorded = $state(false);
   let menuOpen = $state(false);
+  let appVersion = $state("unknown");
 
   // Helper Functions
   function copyToClipboard() {
@@ -67,11 +71,29 @@
     }
   }
   function onError(err: string) {
-    alert(err);
+    error(`Got error: ${error}`);
+    notifier.showError(err);
   }
 
   // Top-level clean-up ONLY (for store)
   $effect(() => {
+    notifier.confirmAction(
+      "We collect basic error and crash reports by default using Sentry. We DO NOT collect your private data (such as audio data or transcripts), only information related to OS (like which GPU you use) and actions that lead to the app showing an error or crashing. This cannot be turned off for pre-release builds of this app. By continuing, you agree to the terms.",
+      () => {
+        info("User has explicitly accepted to use the app.");
+      },
+      () => {
+        // Exit immediately
+        exit(0);
+      },
+      "Telemetry notice",
+      "I Agree",
+      "Quit App",
+    );
+    getVersion().then(
+      (version) =>
+        (appVersion = version.startsWith("v") ? version : `v${version}`),
+    );
     return () => {
       configStore.cleanup();
     };
@@ -126,7 +148,9 @@
     direction="bottom"
   />
   <div class="mx-2 sm:mx-24 md:mx-32">
-    <h1 class="text-3xl text-center pt-12 sm:pt-0">SuperMouse AI</h1>
+    <h1 class="text-3xl text-center pt-12 sm:pt-0">
+      SuperMouse AI ({appVersion})
+    </h1>
     <PermissionBar
       setupRecorder={() => micRecorder.setupRecorder()}
       {recordingState}

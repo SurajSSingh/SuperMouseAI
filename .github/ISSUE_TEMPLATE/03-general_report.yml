@@ -1,0 +1,25 @@
+name: General Report
+description: Provide general feedback or inquiries
+title: "[General]: "
+labels: ["general"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for providing your feedback!
+  - type: textarea
+    id: feedback-inquiry
+    attributes:
+      label: Feedback or Inquiry
+      description: Provide your feedback or inquiry
+      placeholder: Share your thoughts here
+    validations:
+      required: true
+  - type: textarea
+    id: additional-information
+    attributes:
+      label: Additional Information
+      description: Add any other relevant details
+      placeholder: Add any supporting information

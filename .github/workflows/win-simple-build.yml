@@ -13,11 +13,11 @@ jobs:
       matrix:
         include:
           - platform: "windows-latest"
-            args: "--features vulkan"
+            args: "--features vulkan,openmp"
             type: "gpu"
-          - platform: "windows-latest"
-            args: "--features cpu-opt"
-            type: "cpu"
+          # - platform: "windows-latest"
+          #   args: "--features cpu-opt"
+          #   type: "cpu"
 
     runs-on: ${{ matrix.platform }}
     steps:

@@ -16,6 +16,7 @@
     import type { Snippet } from "svelte";
     import { configStore } from "$lib/store.svelte";
     import { events } from "$lib/bindings";
+    import { debug, error, info, trace } from "@tauri-apps/plugin-log";
 
     interface CustomShortcutProps {
         onToggleShortcutEvent: ShortcutHandler;
@@ -149,13 +150,19 @@
     }
 
     function toggleListen() {
+        info(`Toggle listen for new shortcut`);
         // Set previous shortcut before starting to listen
         if (!isListening) {
+            trace(`Set previous shortcut`);
             previousShortcut = configStore.shortcut.value;
         }
         isListening = !isListening;
+        debug(
+            `${isListening ? "Start listening for new shortcut" : "Stop listening for new shortcut"}`,
+        );
         // Register after finish listening
         if (!isListening) {
+            trace(`Setup new shortcut`);
             setupShortcut(previousShortcut !== configStore.shortcut.value);
         }
     }
@@ -164,7 +171,12 @@
         unregisterOld = false,
         modifierUpdate = false,
     ) {
+        info(`Setting up new shortcut`);
+        debug(
+            `Unregistering old = ${unregisterOld}; same main key, new modifers = ${modifierUpdate}`,
+        );
         if (modifierUpdate) {
+            trace(`Updating shortcut with new modifier`);
             configStore.shortcut.value = formatShortcutWith(
                 configStore.mainKey,
             );
@@ -176,19 +188,26 @@
                 showShortcutFindingError(previousShortcut, false),
             ))
         ) {
+            debug(`Unregistering old shortcut: ${previousShortcut}`);
             await unregister(previousShortcut).catch((e) =>
                 showShortcutUnregistrationError(previousShortcut, null),
             );
+            trace(`Unregistered old shortcut`);
         }
         // For mouse click, don't register with Tauri's shortcut system
         if (configStore.shortcut.value.includes("Click")) {
+            trace(`Register modified mouse click shortcut`);
             tauriRegistered = false;
         } else {
             // Check before registering (prevent re-registration error)
             try {
+                debug(
+                    `Attempting to register new shortcut: ${configStore.shortcut.value}`,
+                );
                 const isShortcutReg = await isRegistered(
                     configStore.shortcut.value,
                 );
+                trace(`Shortcut already registered = ${isShortcutReg}`);
                 if (!isShortcutReg)
                     await register(
                         configStore.shortcut.value,
@@ -197,17 +216,23 @@
                         (_success) => {
                             tauriRegistered = true;
                         },
-                        (_failure) =>
-                            showShortcutRegistrationError(
+                        (_failure) => {
+                            error(
+                                `Could not register shortcut: ${configStore.shortcut.value}`,
+                            );
+                            return showShortcutRegistrationError(
                                 configStore.shortcut.value,
                                 null,
-                            ),
+                            );
+                        },
                     );
-            } catch (error) {
+            } catch (err) {
+                error(`Shortcut registration error: ${err}`);
                 showShortcutFindingError(configStore.shortcut.value, false);
                 return;
             }
         }
+        info(`Registed new shortcut: ${configStore.shortcut.value}`);
         showShortcutRegistrationSuccess(configStore.shortcut.value, null);
     }
 
@@ -229,6 +254,7 @@
         addEventListener("keydown", onKeyDown);
         addEventListener("mousedown", onMouseDown);
         const asyncSetup = async () => {
+            debug(`Setup Shortcut event listeners`);
             clickEventUnlistener = await events.mouseClickEvent.listen(
                 (response) => {
                     if (isListening || tauriRegistered) return;
@@ -245,6 +271,7 @@
                     }
                 },
             );
+            trace(`Mouse click event listener set up`);
             modKeyEventUnlistener = await events.modKeyEvent.listen(
                 (response) => {
                     if (isListening || tauriRegistered) return;
@@ -259,17 +286,22 @@
                     }
                 },
             );
+            trace(`Mod key event listener set up`);
             await configStore.waitForStoreLoaded();
+            trace(`configStore is fully loaded`);
             const storedModKeys = configStore.modifierKeys;
             modAlt = storedModKeys.hasAlt;
             modCtrl = storedModKeys.hasControl;
             modShift = storedModKeys.hasShift;
             modSuper = storedModKeys.hasSuper;
+            trace(`Loaded modifier key from config`);
             setupShortcut(previousShortcut === "");
         };
+        debug(`Start Custom Shortcut component setup`);
         asyncSetup();
 
         return () => {
+            debug(`Start Custom Shortcut component clean up`);
             removeEventListener("keydown", onKeyDown);
             removeEventListener("mousedown", onMouseDown);
             try {
