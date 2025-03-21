@@ -9,6 +9,7 @@
     import { connect } from "extendable-media-recorder-wav-encoder";
     import Button from "$lib/components/ui/button/button.svelte";
     import Loading from "$lib/components/ui/Loading.svelte";
+    import { debug, info, trace, warn } from "@tauri-apps/plugin-log";
 
     interface RecorderProps {
         id?: string;
@@ -58,17 +59,24 @@
         setupRecorder();
 
         return async () => {
-            // Clean-up code
+            debug(`Running clean-up code for MicRecorder component`);
             audioRecorder = null;
             audioStream = null;
-            if (wavRecorderConnection) deregister(wavRecorderConnection);
+            if (wavRecorderConnection) {
+                deregister(wavRecorderConnection);
+                trace(`Deregister WAV recorder connection`);
+            }
         };
     });
 
     export async function setupRecorder() {
         try {
+            debug(`Setting up audio recorder`);
+            trace(`Creating WAV connection`);
             wavRecorderConnection = await connect();
+            trace(`Registering WAV connection`);
             await register(wavRecorderConnection);
+            trace(`Getting audio media stream`);
             audioStream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                     autoGainControl: false,
@@ -77,13 +85,16 @@
                 },
                 video: false,
             });
+            debug(`Finished up audio recorder setup`);
         } catch (error) {
             onError?.(`Error on setting up recorder: ${error}`);
         }
     }
 
     function startRecording() {
+        info(`Start audio recording`);
         if (isProcessing) {
+            warn(`Attempted to start audio, but is currently processing`);
             return;
         }
         if (!audioStream) {
@@ -91,26 +102,31 @@
             return;
         }
         try {
+            debug(`Create audio recorder and start it`);
             // Create a new audio to start recording
             // REASON: Maybe better security as only
             // record when user want to start recording
             audioRecorder = new ExtendedMediaRecorder(audioStream, {
                 mimeType: "audio/wav",
             });
+            trace(`Create audio recorder with WAV mime type`);
             audioRecorder.ondataavailable = (blobEvent) => {
+                trace(`Pushing audio chunk of size: ${blobEvent.data.size}`);
                 audioChunks.push(blobEvent.data);
             };
             audioRecorder.onstart = (_e) => {
+                debug(`Start recording audio data`);
                 // Clear old recording
                 audioChunks = [];
             };
             audioRecorder.onstop = (_e) => {
+                debug(`Stop recording audio data`);
                 // Delete audio recorder to stop listening
                 audioRecorder = null;
 
                 onRecordingEnd?.(audioChunks);
             };
-
+            trace(`Finsh setup for all audio recorder event callbacks`);
             // Call callback function to start recording
             // REASON: If error occurs in callback function,
             // can prevent recording from starting,
@@ -126,7 +142,9 @@
     }
 
     function stopRecording() {
+        info(`Stop audio recording`);
         if (!isRecording) {
+            warn(`Cannot stop recording, as app is not recording`);
             return;
         }
         if (audioRecorder === null) {
@@ -137,6 +155,7 @@
     }
 
     export function toggleRecording() {
+        debug(`Toggling audio recording`);
         if (isRecording) {
             stopRecording();
         } else if (!isProcessing) {

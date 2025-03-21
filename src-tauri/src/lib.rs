@@ -4,7 +4,7 @@
 )]
 
 // External Crates
-use log::{error, warn, LevelFilter};
+use log::{debug, error, info, trace, warn, LevelFilter};
 use std::{collections::HashMap, path::PathBuf};
 use tauri::{path::BaseDirectory, Manager};
 use tauri_plugin_sentry::{minidump, sentry};
@@ -53,6 +53,8 @@ const KEY_QUERY_MILLIS: u64 = 100;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 /// Tauri entry point to run app
 pub fn run() {
+    info!("Start running Super Mouse AI");
+    debug!("Start Sentry Setup");
     // Setup
     let client = sentry::init((
         "https://e48c5c52c4ca1341de4618624cc0f511@o4509002112958464.ingest.us.sentry.io/4509007972007936",
@@ -68,12 +70,15 @@ pub fn run() {
     let _guard = minidump::init(&client);
     // Everything after here runs in only the app process
 
+    debug!("Finish Sentry Setup");
+
     // Following <https://docs.rs/tauri-specta/2.0.0-rc.21/tauri_specta/index.html>
     let builder = Builder::<tauri::Wry>::new()
         // Then register them (separated by a comma)
         .commands(get_collected_commands())
         .events(get_collected_events());
     export_bindings(&builder);
+    info!("Start app building");
     tauri::Builder::default()
         .plugin(tauri_plugin_sentry::init(&client))
         .plugin(tauri_plugin_process::init())
@@ -108,27 +113,37 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
+            debug!("Start app setup function");
             // This is also required if you want to use events
             builder.mount_events(app);
+            trace!("Mounted events for app");
             // Initialize Shortcuts plugin
             #[cfg(desktop)]
             app.handle()
                 .plugin(tauri_plugin_global_shortcut::Builder::new().build())?;
+            trace!("Initialized shortcut plugins.");
+            debug!("Start loading model path");
             //  Load the model
             let resource_path = app
                 .path()
                 .resolve("resources/whisper-model.bin", BaseDirectory::Resource)?;
+            trace!("Resolved resource model path.");
             let model_path = resource_path
                 .into_os_string()
                 .into_string()
                 .map_err(|os_str| format!("\"{:?}\" cannot be convered to string!", os_str))?;
+            trace!("Converted model path");
             let model = Model::new(&model_path)?;
+            trace!("Created new model");
+            debug!("Start loading sound paths");
             let sound_map = {
                 let mut map = HashMap::with_capacity(8);
+                trace!("Created new sound map");
                 load_audio!(app, map, alert);
                 load_audio!(app, map, start_record, start);
                 load_audio!(app, map, stop_record, stop);
                 load_audio!(app, map, transcribed, finish);
+                trace!("Loaded all default sounds");
                 {
                     // TEMP: Add client sound paths, see reference
                     //       Must be configurable after release
@@ -164,12 +179,18 @@ pub fn run() {
                             map.insert("finish".into(), magic_path.clone());
                         })
                         .unwrap_or_else(|| warn!("No magic path found: {:?}", magic_path));
+                    trace!("Finished looking for extra sounds");
                 }
+                debug!("Finished creating sound map");
                 map
             };
             app.manage(AppState::new(model, sound_map));
+            trace!("Created initial app state");
+            debug!("Setup mouse click listener");
             listen_for_mouse_click(app.handle().clone())?;
+            debug!("Setup modifier key listener");
             let app_key_listener_handler = app.handle().clone();
+            trace!("Cloned app handle for new listener thread");
             // Listen for mod keys directly and emit when found
             std::mem::drop(tauri::async_runtime::spawn_blocking(move || {
                 use device_query::{DeviceEvents, DeviceEventsHandler};
@@ -178,31 +199,39 @@ pub fn run() {
                 let device_state =
                     DeviceEventsHandler::new(Duration::from_millis(KEY_QUERY_MILLIS))
                         .expect("Failed to start event loop");
+                trace!("Created device state");
                 let app_handle_up = app_key_listener_handler.clone();
                 let app_handle_down = app_key_listener_handler.clone();
+                trace!("Created clones for app handlers");
                 let _up_guard = device_state.on_key_up(move |key| {
                     is_modkey(key).then(|| {
+                        trace!("Mod Key UP Event with {:?}", key);
                         let _ = ModKeyEvent::with_payload(ModKeyPayload::released(key.to_string()))
                             .emit(&app_handle_up)
                             .map_err(|err| error!("Error for mod key event release: {err}"));
                     });
                 });
+                trace!("Start listening for key up events");
                 let _down_guard = device_state.on_key_down(move |key| {
                     is_modkey(key).then(|| {
+                        trace!("Mod Key Event DOWN with {:?}", key);
                         let _ = ModKeyEvent::with_payload(ModKeyPayload::pressed(key.to_string()))
                             .emit(&app_handle_down)
                             .map_err(|err| error!("Error for mod key event press: {err}"));
                     });
                 });
+                trace!("Start listening for key down events");
                 // Require loop to ensure thread remains active
                 #[allow(clippy::empty_loop)]
                 loop {}
             }));
+            debug!("Finish app setup function");
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+    info!("Finish app building");
 }
 
 /// Export TypeScript bindings for the application
@@ -214,4 +243,5 @@ pub fn export_bindings(builder: &Builder) {
             "../src/lib/bindings.ts",
         )
         .expect("Failed to export typescript bindings");
+    debug!("Exported TypeScript bindings");
 }

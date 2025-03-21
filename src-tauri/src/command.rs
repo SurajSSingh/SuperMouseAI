@@ -7,7 +7,7 @@ use crate::{
     types::{AppState, MouseButtonType, TextProcessOptions, TranscribeOptions},
 };
 use enigo::{Enigo, Keyboard, Settings};
-use log::error;
+use log::{error, info, trace};
 use mouce::{common::MouseEvent, Mouse, MouseActions};
 use rodio::{Decoder, OutputStream, Sink};
 use std::{fs::File, io::BufReader};
@@ -33,6 +33,7 @@ pub async fn transcribe(
     options.language,
     options.format,
 );
+    info!("Running transcription command");
     let transcription = app_state
         .model
         .transcribe_audio(
@@ -68,6 +69,7 @@ pub async fn process_text(
     text: String,
     options: Option<TextProcessOptions>,
 ) -> Result<String, String> {
+    info!("Running processing text command");
     let mut updated_text = text;
     let options = options.unwrap_or_default();
     log::info!("Processing text with parameters: replace_inter_sentence_newlines={:?}, removed_words={:?}, decorated_words={:?}", 
@@ -101,6 +103,7 @@ pub async fn transcribe_with_post_process(
     transcribe_options: Option<TranscribeOptions>,
     processing_options: Option<TextProcessOptions>,
 ) -> Result<String, String> {
+    info!("Running transcription & processing command");
     process_text(
         transcribe(app_state, audio_data, transcribe_options).await?,
         processing_options,
@@ -112,6 +115,7 @@ pub async fn transcribe_with_post_process(
 #[specta::specta]
 /// Play the provided sound given its name that is stored in the app_state
 pub async fn play_sound(app_state: State<'_, AppState>, sound_name: String) -> Result<(), String> {
+    info!("Running play sound command");
     // Get sound source
     let source = app_state
         .get_sound_path(&sound_name)
@@ -155,11 +159,12 @@ pub fn listen_for_mouse_click(app_handle: AppHandle) -> Result<u8, String> {
 #[specta::specta]
 /// Paste text from clipboard
 pub async fn write_text(text: String) -> Result<(), String> {
-    log::debug!("Start writing text");
+    info!("Running auto-write text command");
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
-    log::trace!("Enigo setup: {:?}", enigo);
+    trace!("Enigo setup: {:?}", enigo);
     enigo.text(&text).map_err(|e| e.to_string())?;
-    log::trace!("Enigo Wrote: `{}`", text);
+    // Use len rather then actual text to prevent leaking info in logs
+    trace!("Enigo Wrote {} bytes", text.len());
     Ok(())
 }
 
@@ -167,9 +172,9 @@ pub async fn write_text(text: String) -> Result<(), String> {
 #[specta::specta]
 /// Paste text from clipboard
 pub fn paste_text() -> Result<(), String> {
-    log::debug!("Start Paste from clipboard");
+    info!("Running paste from clipboard command");
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
-    log::trace!("Enigo setup: {:?}", enigo);
+    trace!("Enigo setup: {:?}", enigo);
     let cmd_or_ctrl = match std::env::consts::OS {
         "macos" => enigo::Key::Meta,
         "windows" | "linux" => enigo::Key::Control,
@@ -196,7 +201,7 @@ pub fn paste_text() -> Result<(), String> {
             error!("Input error: {}", e);
             e.to_string()
         })?;
-    log::trace!("Enigo Pasted text");
+    trace!("Enigo Pasted text");
     Ok(())
 }
 
@@ -207,6 +212,7 @@ pub async fn set_window_top(
     webview_window: tauri::WebviewWindow,
     override_value: Option<bool>,
 ) -> Result<(), String> {
+    info!("Running set window float command");
     webview_window
         .set_always_on_top(override_value.unwrap_or(true))
         .map_err(|err| {
