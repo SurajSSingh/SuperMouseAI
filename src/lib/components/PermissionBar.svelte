@@ -6,6 +6,7 @@
     import { type RecordingStates } from "$lib/types";
     import PermissionButton from "$lib/components/PermissionButton.svelte";
     import { configStore } from "$lib/store.svelte";
+    import { debug, trace } from "@tauri-apps/plugin-log";
 
     interface PermissionsBarProps {
         setupRecorder: () => Promise<void>;
@@ -37,16 +38,23 @@
             notificationPermission = await notifier.checkPermissionGranted();
             await updateMicrophonePermissions();
         };
+        debug(`Update permissions for Permission Bar component`);
         queryPermissions();
+        trace(`Permissions allowed
+        - Notifications = ${notificationPermission}
+        - Mircophone = ${explicitMicrophonePermission}
+        `);
     });
 
     async function updateMicrophonePermissions() {
+        debug(`Update microphone permission`);
         explicitMicrophonePermission =
             // @ts-ignore 'microphone' should be querable for permissions
             (await navigator.permissions.query({ name: "microphone" })).state;
     }
 
     async function resetPermission() {
+        debug(`Resetting microphone permission`);
         let devices = await navigator.mediaDevices.enumerateDevices();
         if (devices.length > 0) {
             await updateMicrophonePermissions();
@@ -74,12 +82,15 @@
             icon={showIcons ? "🔔" : ""}
             status={notificationPermission}
             onclick={() => {
+                debug(`Activate notification permission`);
                 notifier.getPermissionToNotify(configStore.testNotify.value);
+                trace(`Sent notification permission request`);
                 notifier
                     .checkPermissionGranted()
                     .then(
                         (permission) => (notificationPermission = permission),
                     );
+                trace(`Updated notification permission`);
             }}
             showName={showNames}
         />

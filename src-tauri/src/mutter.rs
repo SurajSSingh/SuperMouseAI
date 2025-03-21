@@ -108,8 +108,9 @@ impl Model {
         language: Option<&str>,
         threads: Option<u16>,
     ) -> Result<Transcript, ModelError> {
+        debug!("Start transcribing audio");
         trace!(
-            "Transcribing audio: {} with translate: {translate} and timestamps: {word_timestamps}",
+            "Transcribing audio (len = {}) with translate: {translate} and timestamps: {word_timestamps}",
             audio.len()
         );
 
@@ -203,10 +204,12 @@ impl Model {
                 });
             }
         }
-
+        let processing_time = Instant::now().duration_since(st);
+        debug!("Finished transcription");
+        trace!("Processing Time = {processing_time:?}");
         Ok(Transcript {
             utterances,
-            processing_time: Instant::now().duration_since(st),
+            processing_time,
             word_utterances: if word_timestamps { Some(words) } else { None },
         })
     }

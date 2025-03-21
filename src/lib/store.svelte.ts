@@ -1,7 +1,7 @@
 import { load, type Store } from '@tauri-apps/plugin-store';
 import type { ThemeKind } from './types.ts';
 import type { UnlistenFn } from '@tauri-apps/api/event';
-import { warn } from '@tauri-apps/plugin-log';
+import { debug, error, info, trace, warn } from '@tauri-apps/plugin-log';
 
 /** Auto-save every given millisecond, or never if set to `false` */
 const AUTO_SAVE_FREQUENCY: false | number = 2000;
@@ -36,12 +36,15 @@ class StoreStateOption<T> {
     constructor(initial: T, name: string) {
         this.#value = initial;
         this.#name = name;
+        trace(`Construct new runic store named ${this.#name} with value = ${this.#value}`);
     }
 
     async loadFrom(store: Store): Promise<void> {
+        debug(`Load value from new store`)
         this.#config = store;
         const value = await this.#config.get<T>(this.#name);
         if (value !== undefined) this.#value = value
+
     }
 
     async saveToStore(): Promise<void> {
@@ -122,12 +125,14 @@ export class ConfigStore {
         this.cleanup = $effect.root(() => {
             $effect(() => {
                 const loadFile = async () => {
+                    debug(`Load store from file`)
                     this.fileStore = await load('super-mouse-ai.json', { autoSave: AUTO_SAVE_FREQUENCY });
                     await this.loadAll();
                     this.#isReady = true;
                 }
                 loadFile();
                 return () => {
+                    debug(`Clean up store to file`)
                     this.keyChangeUnlistener?.();
                     this.fileStore?.close()
                 }
@@ -141,42 +146,53 @@ export class ConfigStore {
         while (!this.#isReady) {
             // deno-lint-ignore no-await-in-loop
             await new Promise(resolve => setTimeout(resolve, 100));
+            trace(`Waiting for store to load`)
         }
     }
 
     /** Load all items from store for states */
     private async loadAll(): Promise<void> {
-        if (!this.fileStore) return;
+        if (!this.fileStore) {
+            error(`No store provided`);
+            return;
+        }
         if (!this.fileStore.has(ConfigItem.VERSION)) {
+            warn(`Store is unversioned, this may not be valid, setting to current version`);
             await this.fileStore.set(ConfigItem.VERSION, this.#version);
         }
         else {
             this.#version = await this.fileStore.get(ConfigItem.VERSION) ?? this.#version;
+            info(`Loading store with version = ${this.#version}`)
         }
         const store = this.fileStore;
+
+        debug(`Load values in config into each field in store`)
         // Load all config from file store
         await Promise.allSettled(
             this.#configFields.map(field => field.loadFrom(store))
         ).catch((err) => {
-            warn("Failed to load from store with given error: ", err)
+            error("Failed to load from store with given error: ", err)
         })
-        this.keyChangeUnlistener = await this.fileStore.onChange((k, v) => console.log(`STORE CHANGE: ${k} => ${v}`));
-        console.dir(await this.fileStore.entries());
+        this.keyChangeUnlistener = await this.fileStore.onChange((k, v) => trace(`STORE CHANGE: ${k} => ${v}`));
+        trace(`Current store data: ${JSON.stringify(await this.fileStore.entries(), null, 2)}`);
     }
 
     saveAll(): Promise<PromiseSettledResult<void>[]> {
+        debug(`Save all configured options to file`)
         return Promise.allSettled(
             this.#configFields.map(field => field.saveToStore())
         )
     }
 
     clearTranscripts(): void {
+        debug(`Clear all transcripts`)
         this.fileStore?.delete(ConfigItem.TRANSCRIPTS);
         this.currentIndex.value = 0;
         this.transcriptions.value = []
     }
 
     clearData(): void {
+        debug(`Clear all app data`)
         this.fileStore?.reset()
     }
 
@@ -187,17 +203,20 @@ export class ConfigStore {
     }
 
     addTranscription(transcript: string): void {
+        debug(`Add new transcript with size: ${transcript.length}`)
         // HACK: Issue with proxing array in classes, don't fully understand why yet
         this.transcriptions.value = [...this.transcriptions.value, transcript];
         this.currentIndex.value = this.transcriptLength - 1;
     }
 
     editTranscription(edited: string): void {
+        debug(`Update transcript at ${this.currentIndex.value}`)
         // HACK: Issue with proxing array in classes, don't fully understand why yet
         this.transcriptions.value = this.transcriptions.value.map((original, index) => index === this.currentIndex.value ? edited : original)
     }
 
     removeCurrentTranscription(): void {
+        debug(`Remove transcript at ${this.currentIndex.value}`)
         // HACK: Issue with proxing array in classes, don't fully understand why yet
         this.transcriptions.value = this.transcriptions.value.filter((_, i) => i !== this.currentIndex.value)
         if (this.currentIndex.value >= this.transcriptLength) this.currentIndex.value = this.transcriptLength - 1;
@@ -205,12 +224,20 @@ export class ConfigStore {
     }
 
     prevIndex(): void {
-        if (this.currentIndex.value <= 0) return;
+        if (this.currentIndex.value <= 0) {
+            warn(`Cannot go to a previous index before the first index`)
+            return;
+        }
+        debug(`Set current index from ${this.currentIndex.value} to ${this.currentIndex.value - 1}`)
         this.currentIndex.value--;
     }
 
     nextIndex(): void {
-        if (this.currentIndex.value >= this.transcriptLength - 1) return;
+        if (this.currentIndex.value >= this.transcriptLength - 1) {
+            warn(`Cannot go to a next index after the last index`)
+            return;
+        }
+        debug(`Set current index from ${this.currentIndex.value} to ${this.currentIndex.value + 1}`)
         this.currentIndex.value++;
     }
 }
