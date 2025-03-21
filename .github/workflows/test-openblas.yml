@@ -51,6 +51,7 @@ jobs:
         run: |
           Invoke-WebRequest -Uri "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.29/OpenBLAS-0.3.29_x64.zip" -OutFile "OpenBLAS-0.3.29_x64.zip"
           Expand-Archive -Path "OpenBLAS-0.3.29_x64.zip" -DestinationPath "openblas"
+          Copy-Item "./openblas/lib/libopenblas.lib" "./libopenblas.lib"
 
       - name: Echo Info
         if: matrix.type == 'cpu'
@@ -71,6 +72,10 @@ jobs:
           echo ""
           echo "OpenBLAS:" $OPENBLAS_PATH
           ls -R $OPENBLAS_PATH
+          echo ""
+          echo "OpenBLAS lib file (top-copy):"
+          size=$(stat -c%s "./libopenblas.lib")
+          echo "The size of the file is ${size} bytes."
           echo ""
           echo "Files and Directories"
           ls -a
