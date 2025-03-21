@@ -8,6 +8,7 @@
         type NotificationSystem,
     } from "$lib/notificationSystem.svelte";
     import { commands } from "$lib/bindings";
+    import { debug, error } from "@tauri-apps/plugin-log";
 
     interface TranscriberProps {
         onFinishProcessing?: (text: string) => void;
@@ -22,6 +23,9 @@
         try {
             workingChunks = blobChunks ?? workingChunks;
             if (workingChunks.length > 0) {
+                debug(
+                    `Call command to transcribe audio and then process text.`,
+                );
                 let result = await commands.transcribeWithPostProcess(
                     // @ts-ignore Uint8Array should be number[]-like
                     await blobChunksToBytes(workingChunks),
@@ -38,17 +42,20 @@
                             configStore.interNLRemove.value,
                     },
                 );
+                debug(`Finish `);
                 if (result.status === "error") {
                     onError?.(
-                        `An error occured while transcribing: ${result.error}`,
+                        `An error occured while transcribing/processing data: ${result.error}`,
                     );
                     return;
                 }
                 configStore.addTranscription(result.data);
             }
             onFinishProcessing?.(configStore.currentTranscript);
-        } catch (error) {
-            onError?.(`An error occured while transcribing: ${error}`);
+        } catch (err) {
+            onError?.(
+                `An error occured while transcribing/processing data: ${err}`,
+            );
         }
     }
 </script>
@@ -103,10 +110,12 @@
         size="md"
         class="rounded-md border-4 min-h-32 placeholder:text-center placeholder:text-xl placeholder:italic text-lg"
         placeholder="Record voice to transcribe..."
-        bind:value={() => configStore.currentTranscript,
-        (v) => {
-            configStore.editTranscription(v);
-        }}
+        bind:value={
+            () => configStore.currentTranscript,
+            (v) => {
+                configStore.editTranscription(v);
+            }
+        }
         disabled={configStore.isTranscriptsEmpty}
     />
 </fieldset>

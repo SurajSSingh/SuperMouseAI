@@ -1,6 +1,6 @@
 [package]
 name = "super-mouse-ai"
-version = "0.6.2"
+version = "0.6.3"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -41,6 +41,8 @@ specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
 enigo = "0.3.0"
 regex = "1.11.1"
+tauri-plugin-sentry = "0.4"
+tauri-plugin-process = "2"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 # NOTE: CUDA feature separate feature flag
@@ -67,6 +69,12 @@ symphonia-mp3 = ["rodio/symphonia-mp3"]
 symphonia-vorbis = ["rodio/symphonia-vorbis"]
 symphonia-wav = ["rodio/symphonia-wav"]
 minimp3 = ["rodio/minimp3"]
+
+log-trace = []       # Feature to log everything
+log-issues-only = [] # Feature to log only issue (warn and error)
+log-none = []        # Feature to log nothing
+
+export-bindings-only = []
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-global-shortcut = "2"

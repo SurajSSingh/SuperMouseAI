@@ -1,6 +1,7 @@
 //! Data types and associated functions for those types.
 
 use crate::mutter::Model;
+use log::{debug, warn};
 use mouce::common::MouseButton;
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -25,9 +26,14 @@ impl AppState {
 
     /// Get sound by the provided name or by prepending `default_` to the beginning.
     pub fn get_sound_path(&self, sound_name: &str) -> Option<&PathBuf> {
-        self.sound_map
-            .get(sound_name)
-            .or_else(|| self.sound_map.get(&format!("default_{}", &sound_name)))
+        debug!("Getting sound: {}", sound_name);
+        self.sound_map.get(sound_name).or_else(|| {
+            warn!(
+                "No sound with name '{}', falling back to 'default_{}'",
+                sound_name, sound_name
+            );
+            self.sound_map.get(&format!("default_{}", &sound_name))
+        })
     }
 }
 

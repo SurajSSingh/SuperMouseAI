@@ -7,12 +7,12 @@ use crate::{
     types::{AppState, MouseButtonType, TextProcessOptions, TranscribeOptions},
 };
 use enigo::{Enigo, Keyboard, Settings};
-use log::error;
+use log::{error, info, trace};
 use mouce::{common::MouseEvent, Mouse, MouseActions};
 use rodio::{Decoder, OutputStream, Sink};
 use std::{fs::File, io::BufReader};
-use tauri::{AppHandle, State};
-use tauri_specta::Event;
+use tauri::{AppHandle, State, Wry};
+use tauri_specta::{collect_commands, Commands, Event};
 
 #[tauri::command]
 #[specta::specta]
@@ -33,6 +33,7 @@ pub async fn transcribe(
     options.language,
     options.format,
 );
+    info!("Running transcription command");
     let transcription = app_state
         .model
         .transcribe_audio(
@@ -55,14 +56,20 @@ pub async fn transcribe(
                 ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
             }
         })?;
-        Ok(options.format.unwrap_or_default().convert_transcript(transcription))
+    Ok(options
+        .format
+        .unwrap_or_default()
+        .convert_transcript(transcription))
 }
-
 
 #[tauri::command]
 #[specta::specta]
 /// Process the text
-pub async fn process_text(text: String, options: Option<TextProcessOptions>) -> Result<String, String> {
+pub async fn process_text(
+    text: String,
+    options: Option<TextProcessOptions>,
+) -> Result<String, String> {
+    info!("Running processing text command");
     let mut updated_text = text;
     let options = options.unwrap_or_default();
     log::info!("Processing text with parameters: replace_inter_sentence_newlines={:?}, removed_words={:?}, decorated_words={:?}", 
@@ -70,11 +77,18 @@ pub async fn process_text(text: String, options: Option<TextProcessOptions>) -> 
         options.decorated_words,
         options.replace_inter_sentence_newlines,
     );
-    options.removed_words.unwrap_or_default().iter().for_each(|word| {
-        updated_text = updated_text.replace(word, "");
-    });
+    options
+        .removed_words
+        .unwrap_or_default()
+        .iter()
+        .for_each(|word| {
+            updated_text = updated_text.replace(word, "");
+        });
     if options.replace_inter_sentence_newlines.unwrap_or(true) {
-        let regex = regex::Regex::new(r"(\w)[ \t]*\n").map_err(|e| {log::error!("Regex error: {e}"); e.to_string()})?;
+        let regex = regex::Regex::new(r"(\w)[ \t]*\n").map_err(|e| {
+            log::error!("Regex error: {e}");
+            e.to_string()
+        })?;
         updated_text = regex.replace_all(&updated_text, "$1 ").to_string();
     }
     Ok(updated_text.trim().to_string())
@@ -87,15 +101,21 @@ pub async fn transcribe_with_post_process(
     app_state: State<'_, AppState>,
     audio_data: Vec<u8>,
     transcribe_options: Option<TranscribeOptions>,
-    processing_options: Option<TextProcessOptions>
+    processing_options: Option<TextProcessOptions>,
 ) -> Result<String, String> {
-    process_text(transcribe(app_state, audio_data, transcribe_options).await?, processing_options).await
+    info!("Running transcription & processing command");
+    process_text(
+        transcribe(app_state, audio_data, transcribe_options).await?,
+        processing_options,
+    )
+    .await
 }
 
 #[tauri::command]
 #[specta::specta]
 /// Play the provided sound given its name that is stored in the app_state
 pub async fn play_sound(app_state: State<'_, AppState>, sound_name: String) -> Result<(), String> {
+    info!("Running play sound command");
     // Get sound source
     let source = app_state
         .get_sound_path(&sound_name)
@@ -123,8 +143,7 @@ pub async fn play_sound(app_state: State<'_, AppState>, sound_name: String) -> R
 pub fn listen_for_mouse_click(app_handle: AppHandle) -> Result<u8, String> {
     Mouse::new()
         .hook(Box::new(move |e| match e {
-            MouseEvent::Press(button) => 
-            MouseClickEvent::with_payload(MouseButtonType::from(button))
+            MouseEvent::Press(button) => MouseClickEvent::with_payload(MouseButtonType::from(button))
                 .emit(&app_handle)
                 .map_err(|e| {
                     error!("App Handle expected to emit press event with button playload but could not: {}", e);
@@ -139,43 +158,78 @@ pub fn listen_for_mouse_click(app_handle: AppHandle) -> Result<u8, String> {
 #[tauri::command]
 #[specta::specta]
 /// Paste text from clipboard
-pub async fn write_text(text: String) -> Result<(), String>{
-    log::debug!("Start writing text");
+pub async fn write_text(text: String) -> Result<(), String> {
+    info!("Running auto-write text command");
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
-    log::trace!("Enigo setup: {:?}", enigo);
+    trace!("Enigo setup: {:?}", enigo);
     enigo.text(&text).map_err(|e| e.to_string())?;
-    log::trace!("Enigo Wrote: `{}`", text);
+    // Use len rather then actual text to prevent leaking info in logs
+    trace!("Enigo Wrote {} bytes", text.len());
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 /// Paste text from clipboard
-pub fn paste_text() -> Result<(), String>{
-    log::debug!("Start Paste from clipboard");
+pub fn paste_text() -> Result<(), String> {
+    info!("Running paste from clipboard command");
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
-    log::trace!("Enigo setup: {:?}", enigo);
+    trace!("Enigo setup: {:?}", enigo);
     let cmd_or_ctrl = match std::env::consts::OS {
         "macos" => enigo::Key::Meta,
         "windows" | "linux" => enigo::Key::Control,
         _ => {
             error!("Pasting from an unsupported/unknown target");
-            return Err("Unsupported action for your machine!".to_string())
-        },
+            return Err("Unsupported action for your machine!".to_string());
+        }
     };
-    enigo.key(cmd_or_ctrl, enigo::Direction::Press).map_err(|e| {error!("Input error: {}", e); e.to_string()})?;
-    enigo.key(enigo::Key::Unicode('v'), enigo::Direction::Click).map_err(|e| {error!("Input error: {}", e); e.to_string()})?;
-    enigo.key(cmd_or_ctrl, enigo::Direction::Release).map_err(|e| {error!("Input error: {}", e); e.to_string()})?;
-    log::trace!("Enigo Pasted text");
+    enigo
+        .key(cmd_or_ctrl, enigo::Direction::Press)
+        .map_err(|e| {
+            error!("Input error: {}", e);
+            e.to_string()
+        })?;
+    enigo
+        .key(enigo::Key::Unicode('v'), enigo::Direction::Click)
+        .map_err(|e| {
+            error!("Input error: {}", e);
+            e.to_string()
+        })?;
+    enigo
+        .key(cmd_or_ctrl, enigo::Direction::Release)
+        .map_err(|e| {
+            error!("Input error: {}", e);
+            e.to_string()
+        })?;
+    trace!("Enigo Pasted text");
     Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 /// Put window on top, can be overriden by optional parameter
-pub async fn set_window_top(webview_window: tauri::WebviewWindow, override_value: Option<bool>) -> Result<(), String> {
-  webview_window.set_always_on_top(override_value.unwrap_or(true)).map_err(|err| {
-    log::error!("Could not set window to top value: {}", err);
-    err.to_string()
-  })
+pub async fn set_window_top(
+    webview_window: tauri::WebviewWindow,
+    override_value: Option<bool>,
+) -> Result<(), String> {
+    info!("Running set window float command");
+    webview_window
+        .set_always_on_top(override_value.unwrap_or(true))
+        .map_err(|err| {
+            log::error!("Could not set window to top value: {}", err);
+            err.to_string()
+        })
+}
+
+/// Gets all collected commands for Super Mouse AI application to be used by builder
+pub fn get_collected_commands() -> Commands<Wry> {
+    collect_commands![
+        transcribe,
+        play_sound,
+        paste_text,
+        process_text,
+        transcribe_with_post_process,
+        set_window_top,
+        write_text
+    ]
 }

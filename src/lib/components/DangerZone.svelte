@@ -1,6 +1,7 @@
 <script lang="ts">
     import { notifier } from "$lib/notificationSystem.svelte";
     import { configStore } from "$lib/store.svelte";
+    import { debug, info } from "@tauri-apps/plugin-log";
     import { Button } from "./ui/button";
 
     interface DangerZoneProps {
@@ -18,6 +19,7 @@
         color="destructive"
         onclick={() => {
             isDialogOpen = false;
+            debug("User attempting to clear transcript data");
             notifier.confirmAction(
                 "You will clear all transcriptions!",
                 () => configStore.clearTranscripts(),
@@ -35,6 +37,7 @@
     <Button
         color="destructive"
         onclick={() => {
+            debug("User attempting to clear all data");
             isDialogOpen = false;
             notifier.confirmAction(
                 "You will clear all transcriptions alongside any customizations you have made. This will take effect AFTER closing the app.",

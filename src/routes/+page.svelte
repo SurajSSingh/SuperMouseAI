@@ -16,6 +16,8 @@
   import { commands } from "$lib/bindings";
   import DangerZone from "$lib/components/DangerZone.svelte";
   import AppOptions from "$lib/components/AppOptions.svelte";
+  import { exit } from "@tauri-apps/plugin-process";
+  import { error, info } from "@tauri-apps/plugin-log";
 
   // Component Bindings
   let micRecorder: MicRecorder;
@@ -67,11 +69,25 @@
     }
   }
   function onError(err: string) {
-    alert(err);
+    error(`Got error: ${error}`);
+    notifier.showError(err);
   }
 
   // Top-level clean-up ONLY (for store)
   $effect(() => {
+    notifier.confirmAction(
+      "We collect basic error and crash reports by default using Sentry. We DO NOT collect your private data (such as audio data or transcripts), only information related to OS (like which GPU you use) and actions that lead to the app showing an error or crashing. This cannot be turned off for pre-release builds of this app. By continuing, you agree to the terms.",
+      () => {
+        info("User has explicitly accepted to use the app.");
+      },
+      () => {
+        // Exit immediately
+        exit(0);
+      },
+      "Telemetry notice",
+      "I Agree",
+      "Quit App",
+    );
     return () => {
       configStore.cleanup();
     };

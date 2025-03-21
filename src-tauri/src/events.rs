@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use specta::Type;
-use tauri_specta::Event;
+use tauri_specta::{collect_events, Event, Events};
 
 use crate::types::{ModKeyPayload, MouseButtonType};
 
@@ -32,4 +32,8 @@ impl ModKeyEvent {
     pub fn with_payload(payload: ModKeyPayload) -> Self {
         ModKeyEvent(payload)
     }
+}
+
+pub fn get_collected_events() -> Events {
+    collect_events![MouseClickEvent, ModKeyEvent]
 }
