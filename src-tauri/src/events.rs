@@ -34,6 +34,24 @@ impl ModKeyEvent {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+/// Tauri event representing mouse movement
+///
+/// ### Payload
+///
+/// x [i32] : Absolute X value of mosue (from 0 to SCREEN_WIDTH)
+/// y [i32] : Absolute Y value of mouse (from 0 to SCREEN_HEIGHT)
+pub struct MouseMoveEvent {
+    x: i32,
+    y: i32,
+}
+
+impl MouseMoveEvent {
+    pub fn with_payload(x: &i32, y: &i32) -> Self {
+        Self { x: *x, y: *y }
+    }
+}
+
 pub fn get_collected_events() -> Events {
-    collect_events![MouseClickEvent, ModKeyEvent]
+    collect_events![MouseClickEvent, ModKeyEvent, MouseMoveEvent]
 }
