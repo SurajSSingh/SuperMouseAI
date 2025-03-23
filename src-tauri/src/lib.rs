@@ -225,6 +225,10 @@ pub fn run() {
                 #[allow(clippy::empty_loop)]
                 loop {}
             }));
+            app.get_webview_window("overlay")
+                .expect("Overlay should exist")
+                .set_ignore_cursor_events(true)
+                .expect("Setting to ignore cursor should work");
             debug!("Finish app setup function");
             Ok(())
         })
