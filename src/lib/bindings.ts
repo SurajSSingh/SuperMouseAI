@@ -91,10 +91,12 @@ async writeText(text: string) : Promise<Result<null, string>> {
 
 export const events = __makeEvents__<{
 modKeyEvent: ModKeyEvent,
-mouseClickEvent: MouseClickEvent
+mouseClickEvent: MouseClickEvent,
+mouseMoveEvent: MouseMoveEvent
 }>({
 modKeyEvent: "mod-key-event",
-mouseClickEvent: "mouse-click-event"
+mouseClickEvent: "mouse-click-event",
+mouseMoveEvent: "mouse-move-event"
 })
 
 /** user-defined constants **/
@@ -129,6 +131,15 @@ export type MouseButtonType = "Left" | "Middle" | "Right"
  * [MouseButtonType] : Which button was pressed
  */
 export type MouseClickEvent = MouseButtonType
+/**
+ * Tauri event representing mouse movement
+ * 
+ * ### Payload
+ * 
+ * x [i32] : Absolute X value of mosue (from 0 to SCREEN_WIDTH)
+ * y [i32] : Absolute Y value of mouse (from 0 to SCREEN_HEIGHT)
+ */
+export type MouseMoveEvent = { x: number; y: number }
 /**
  * Ways a text can be decorated
  */
