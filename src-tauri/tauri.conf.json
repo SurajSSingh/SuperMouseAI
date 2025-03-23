@@ -10,11 +10,25 @@
     "frontendDist": "../build"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "title": "super-mouse-ai",
         "width": 800,
-        "height": 600
+        "height": 600,
+        "url": "app/"
+      },
+      {
+        "title": "super-mouse-ai-overlay",
+        "transparent": true,
+        "visibleOnAllWorkspaces": true,
+        "hiddenTitle": true,
+        "label": "overlay",
+        "resizable": false, 
+        "decorations": false,
+        "alwaysOnTop": true,
+        "maximized": true,
+        "url": "empty/"
       }
     ],
     "security": {
