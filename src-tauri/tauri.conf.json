@@ -28,7 +28,7 @@
         "decorations": false,
         "alwaysOnTop": true,
         "maximized": true,
-        "url": "empty/"
+        "url": "overlay/"
       }
     ],
     "security": {
