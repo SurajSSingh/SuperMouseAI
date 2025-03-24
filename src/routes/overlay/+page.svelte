@@ -1,28 +1,37 @@
 <script lang="ts">
     import { events } from "$lib/bindings";
-    import type { UnlistenFn } from "@tauri-apps/api/event";
+    import { type RecordingStates } from "$lib/types";
+    import { listen, type UnlistenFn } from "@tauri-apps/api/event";
     import { debug } from "@tauri-apps/plugin-log";
 
     let follower: HTMLElement;
 
+    let xOffset = $state(0);
+    let yOffset = $state(-20);
+
+    let currentState: RecordingStates | undefined = $state();
+
     $effect(() => {
-        let unlisten: UnlistenFn | undefined;
+        let unlistenMoveEvent: UnlistenFn | undefined;
         const run = async () => {
-            unlisten = await events.mouseMoveEvent.listen((e) => {
-                debug(`Mouse Move to ${JSON.stringify(e.payload)}`);
-                follower.style.left = `${e.payload.x}px`;
-                follower.style.top = `${e.payload.y}px`;
-                // follower.style.setProperty("--mouse-y", e.payload.y.toString());
+            unlistenMoveEvent = await events.mouseMoveEvent.listen((e) => {
+                follower.style.left = `${e.payload.x + xOffset}px`;
+                follower.style.top = `${e.payload.y + yOffset}px`;
+            });
+            listen("stateUpdate", (e) => {
+                debug(`State of recording updated: ${JSON.stringify(e)}`);
+                currentState = (e.payload as { state: RecordingStates }).state;
             });
         };
         run();
         return () => {
-            unlisten?.();
+            debug("Close overlay");
+            unlistenMoveEvent?.();
         };
     });
 </script>
 
-<div id="follower" bind:this={follower}>
+<div id="follower" bind:this={follower} class={currentState}>
     <div id="circle1"></div>
     <div id="circle2"></div>
 </div>
@@ -38,7 +47,66 @@
         /* top: calc(var(--mouse-y, 0) * 100%); */
         /* left: calc(var(--mouse-x, 0) * 100%); */
     }
+
     #follower #circle1 {
+        position: absolute;
+        background: #fff;
+        border-radius: 50%;
+        height: 0em;
+        width: 0em;
+        margin-top: 0em;
+        margin-left: 0em;
+        opacity: 0.2;
+        height: 1em;
+        width: 1em;
+        margin-top: -0.5em;
+        margin-left: -0.5em;
+    }
+    #follower #circle2 {
+        position: absolute;
+        background: rgba(247, 231, 52, 0.8);
+        border-radius: 50%;
+        height: 0em;
+        width: 0em;
+        margin-top: 0em;
+        margin-left: 0em;
+        opacity: 0.2;
+        height: 1em;
+        width: 1em;
+        margin-top: -0.5em;
+        margin-left: -0.5em;
+    }
+    #follower.processing #circle1 {
+        position: absolute;
+        background: #fff;
+        border-radius: 50%;
+        height: 0em;
+        width: 0em;
+        margin-top: 0em;
+        margin-left: 0em;
+        opacity: 0.2;
+        height: 1em;
+        width: 1em;
+        margin-top: -0.5em;
+        margin-left: -0.5em;
+    }
+    #follower.processing #circle2 {
+        position: absolute;
+        background: rgba(20, 104, 239, 0.8);
+        border-radius: 50%;
+        height: 0em;
+        width: 0em;
+        margin-top: 0em;
+        margin-left: 0em;
+        opacity: 0.2;
+        height: 1em;
+        width: 1em;
+        margin-top: -0.5em;
+        margin-left: -0.5em;
+        -webkit-animation: pulse 1s infinite; /* Chrome, Safari, Opera */
+        animation: pulse 1s infinite;
+    }
+    #follower.recording #circle1 {
         position: absolute;
         -webkit-animation: pulse 2s infinite; /* Chrome, Safari, Opera */
         animation: pulse 2s infinite;
@@ -49,10 +117,10 @@
         margin-top: 0em;
         margin-left: 0em;
     }
-    #follower #circle2 {
+    #follower.recording #circle2 {
         position: absolute;
         -webkit-animation: pulse 4s infinite; /* Chrome, Safari, Opera */
-        animation: pulse 4s infinite;
+        animation: pulse 2s infinite;
         background: rgba(200, 0, 0, 0.8);
         border-radius: 50%;
         height: 0em;

@@ -22,6 +22,7 @@
     import { exit } from "@tauri-apps/plugin-process";
     import { error, info } from "@tauri-apps/plugin-log";
     import { getVersion } from "@tauri-apps/api/app";
+    import { emitTo } from "@tauri-apps/api/event";
 
     // Component Bindings
     let micRecorder: MicRecorder;
@@ -41,6 +42,7 @@
 
     function transcribe(chunks?: Blob[]) {
         recordingState = "processing";
+        emitTo("overlay", "stateUpdate", { state: recordingState });
         // Force a microtask to allow rendering before transcribing,
         // fixes issue with "processing" state not updating during processing
         new Promise((resolve) => requestAnimationFrame(resolve)).finally(() => {
@@ -51,16 +53,19 @@
     // Callback functions
     function onRecordingStart() {
         recordingState = "recording";
+        emitTo("overlay", "stateUpdate", { state: recordingState });
         notifier.showNotification("Recording Started!", "", "start");
     }
     function onRecordingEnd(chunks: Blob[]) {
         recordingState = "processing";
+        emitTo("overlay", "stateUpdate", { state: recordingState });
         notifier.showNotification("Recording Stopped!", "", "stop");
         hasRecorded = true;
         transcribe(chunks);
     }
     function onFinishProcessing() {
         recordingState = "stopped";
+        emitTo("overlay", "stateUpdate", { state: recordingState });
         notifier.showNotification("Transcription Finished!", "", "finish");
         copyToClipboard();
         if (configStore.autoPaste.value) {
