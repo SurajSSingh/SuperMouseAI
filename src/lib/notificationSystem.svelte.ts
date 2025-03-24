@@ -1,4 +1,5 @@
-import { warn } from '@tauri-apps/plugin-log';
+import { debug, info, warn } from '@tauri-apps/plugin-log';
+import type { ConfirmActionType } from './types.ts'
 import {
     isPermissionGranted,
     requestPermission,
@@ -156,25 +157,34 @@ export class NotificationSystem {
         subtitle = "",
         confirm = "Yes",
         cancel = "No",
-        sound = "default_alert",
-        confirmButtonStyle = "btn btn-success",
-        cancelButtonStyle = "btn btn-error",
+        options: ConfirmActionType = {},
     ): void {
+        options = {
+            sound: "default_alert",
+            confirmButtonStyle: "btn btn-success",
+            cancelButtonStyle: "btn btn-error",
+            mustRetry: false,
+            ...options
+        }
+        debug(`Confirmation Action options given: ${JSON.stringify(options)}`)
         toast.warning(subtitle ? subtitle : message, {
             duration: Number.POSITIVE_INFINITY, action: {
                 label: confirm,
                 onClick: onConfirm,
             },
-            actionButtonStyle: confirmButtonStyle,
+            actionButtonStyle: options.confirmButtonStyle,
             cancel: {
                 label: cancel,
                 onClick: onCancel,
             },
-            cancelButtonStyle,
+            cancelButtonStyle: options.cancelButtonStyle,
             important: true,
             description: subtitle ? message : undefined,
+            onDismiss: (t) => options.mustRetry && (options.mustRetry === true || +options.mustRetry > 0)
+                ? this.confirmAction(message, onConfirm, onCancel, subtitle, confirm, cancel, { ...options, mustRetry: typeof options.mustRetry === "boolean" ? true : options.mustRetry - 1 })
+                : info(`Toast with id ${t.id} has been dismissed`),
         });
-        this.playSound(sound);
+        this.playSound(options.sound);
     }
 
     playSound(sound = "default_alert"): void {

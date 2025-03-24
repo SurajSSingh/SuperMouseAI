@@ -32,6 +32,7 @@
     let hasRecorded = $state(false);
     let menuOpen = $state(false);
     let appVersion = $state("unknown");
+    let acceptTelemetry: boolean = $state(false);
 
     // Helper Functions
     function copyToClipboard() {
@@ -88,7 +89,8 @@
         notifier.confirmAction(
             "We collect basic error and crash reports by default using Sentry. We DO NOT collect your private data (such as audio data or transcripts), only information related to OS (like which GPU you use) and actions that lead to the app showing an error or crashing. This cannot be turned off for pre-release builds of this app. By continuing, you agree to the terms.",
             () => {
-                info("User has explicitly accepted to use the app.");
+                info("User has accepted to use the app.");
+                acceptTelemetry = true;
             },
             () => {
                 // Exit immediately
@@ -97,6 +99,7 @@
             "Telemetry notice",
             "I Agree",
             "Quit App",
+            { mustRetry: true },
         );
         getVersion().then(
             (version) =>
@@ -161,60 +164,62 @@
         <h1 class="text-3xl text-center pt-12 sm:pt-0">
             SuperMouse AI ({appVersion})
         </h1>
-        <PermissionBar
-            setupRecorder={() => micRecorder.setupRecorder()}
-            {recordingState}
-        />
-        <div class="flex flex-col place-content-center">
-            <MicRecorder
-                bind:this={micRecorder}
+        {#if acceptTelemetry}
+            <PermissionBar
+                setupRecorder={() => micRecorder.setupRecorder()}
                 {recordingState}
-                {onRecordingStart}
-                {onRecordingEnd}
-                {onError}
             />
-            <CustomShortcut
-                class="w-3/4 mb-2"
-                onToggleShortcutEvent={(e) => {
-                    if (e.state === "Pressed") {
-                        micRecorder?.toggleRecording();
-                    }
-                }}
-            />
-            <hr />
-            <div class="grid grid-cols-2 my-1">
-                <Button
-                    color={recordingState === "processing"
-                        ? "neutral"
-                        : "warning"}
-                    size="sm"
-                    class="m-2"
-                    onclick={() => {
-                        notifier.showNotification(
-                            "Re-transcribing data.",
-                            "",
-                            "stop",
-                        );
-                        transcribe();
+            <div class="flex flex-col place-content-center">
+                <MicRecorder
+                    bind:this={micRecorder}
+                    {recordingState}
+                    {onRecordingStart}
+                    {onRecordingEnd}
+                    {onError}
+                />
+                <CustomShortcut
+                    class="w-3/4 mb-2"
+                    onToggleShortcutEvent={(e) => {
+                        if (e.state === "Pressed") {
+                            micRecorder?.toggleRecording();
+                        }
                     }}
-                    disabled={!hasRecorded || recordingState !== "stopped"}
-                    >(✏️) Re-transcribe</Button
-                >
-                <Button
-                    color="info"
-                    size="sm"
-                    class="m-2"
-                    onclick={copyToClipboard}
-                    disabled={!configStore.currentTranscript ||
-                        recordingState !== "stopped"}
-                    >(📋) Copy to Clipboard</Button
-                >
+                />
+                <hr />
+                <div class="grid grid-cols-2 my-1">
+                    <Button
+                        color={recordingState === "processing"
+                            ? "neutral"
+                            : "warning"}
+                        size="sm"
+                        class="m-2"
+                        onclick={() => {
+                            notifier.showNotification(
+                                "Re-transcribing data.",
+                                "",
+                                "stop",
+                            );
+                            transcribe();
+                        }}
+                        disabled={!hasRecorded || recordingState !== "stopped"}
+                        >(✏️) Re-transcribe</Button
+                    >
+                    <Button
+                        color="info"
+                        size="sm"
+                        class="m-2"
+                        onclick={copyToClipboard}
+                        disabled={!configStore.currentTranscript ||
+                            recordingState !== "stopped"}
+                        >(📋) Copy to Clipboard</Button
+                    >
+                </div>
+                <AudioTranscriber
+                    bind:this={audioTranscriber}
+                    {onFinishProcessing}
+                    {onError}
+                />
             </div>
-            <AudioTranscriber
-                bind:this={audioTranscriber}
-                {onFinishProcessing}
-                {onError}
-            />
-        </div>
+        {/if}
     </div>
 </main>
