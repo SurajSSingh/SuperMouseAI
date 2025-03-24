@@ -50,10 +50,8 @@
 
     #follower #circle1 {
         position: absolute;
-        background: #fff;
+        background: #206fee;
         border-radius: 50%;
-        height: 0em;
-        width: 0em;
         margin-top: 0em;
         margin-left: 0em;
         opacity: 0.2;
@@ -64,13 +62,11 @@
     }
     #follower #circle2 {
         position: absolute;
-        background: rgba(247, 231, 52, 0.8);
+        background: rgba(59, 131, 10, 0.8);
         border-radius: 50%;
-        height: 0em;
-        width: 0em;
         margin-top: 0em;
         margin-left: 0em;
-        opacity: 0.2;
+        opacity: 0.9;
         height: 1em;
         width: 1em;
         margin-top: -0.5em;
@@ -80,8 +76,6 @@
         position: absolute;
         background: #fff;
         border-radius: 50%;
-        height: 0em;
-        width: 0em;
         margin-top: 0em;
         margin-left: 0em;
         opacity: 0.2;
@@ -94,8 +88,6 @@
         position: absolute;
         background: rgba(20, 104, 239, 0.8);
         border-radius: 50%;
-        height: 0em;
-        width: 0em;
         margin-top: 0em;
         margin-left: 0em;
         opacity: 0.2;
