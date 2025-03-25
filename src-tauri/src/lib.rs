@@ -225,6 +225,31 @@ pub fn run() {
                 #[allow(clippy::empty_loop)]
                 loop {}
             }));
+            info!("Ignoring mouse events in overlay");
+            app.get_webview_window("overlay")
+                .expect("Overlay should exist")
+                .set_ignore_cursor_events(true)
+                .expect("Setting to ignore cursor should work");
+
+            info!("Add close all windows event when main window is closed");
+            let windows = app.webview_windows();
+            app.get_webview_window("main")
+                .expect("Main window should exist")
+                .on_window_event(move |event| match event {
+                    tauri::WindowEvent::CloseRequested { api: _api, .. } => {
+                        debug!("Main window requested to be closed!");
+                        windows.iter().for_each(|(label, window)| {
+                            // NOTE: Only do non-main window, otherwise will get stuck in loop
+                            if !label.eq_ignore_ascii_case("main") {
+                                debug!("Window {label} will also be closed.");
+                                window
+                                    .close()
+                                    .expect(&format!("Window {label} should be closable"));
+                            }
+                        });
+                    }
+                    _ => { /* Do nothing*/ }
+                });
             debug!("Finish app setup function");
             Ok(())
         })
