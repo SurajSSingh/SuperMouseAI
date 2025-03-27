@@ -52,9 +52,7 @@ whisper-rs = { version = "0.14.2", features = [] }
 whisper-rs = { version = "0.14.2", features = ["metal", "coreml"] }
 
 [features]
-default = ["symphonia-all", "minimp3", "sentry-logging"]
-
-sentry-logging = ["tauri-plugin-sentry/default", "sentry/log"]
+default = ["symphonia-all", "minimp3"]
 
 openblas = ["whisper-rs/openblas"]
 openmp = ["whisper-rs/openmp"]

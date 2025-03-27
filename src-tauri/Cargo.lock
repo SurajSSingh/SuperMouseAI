@@ -4657,7 +4657,6 @@ dependencies = [
  "sentry-contexts",
  "sentry-core",
  "sentry-debug-images",
- "sentry-log",
  "sentry-panic",
  "sentry-tracing",
  "tokio",
@@ -4711,16 +4710,6 @@ checksum = "2a60bc2154e6df59beed0ac13d58f8dfaf5ad20a88548a53e29e4d92e8e835c2"
 dependencies = [
  "findshlibs",
  "once_cell",
- "sentry-core",
-]
-
-[[package]]
-name = "sentry-log"
-version = "0.36.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c96d796cba1b3a0793e7f53edc420c61f9419fba8fb34ad5519f5c7d01af6b2"
-dependencies = [
- "log",
  "sentry-core",
 ]
 
@@ -5204,7 +5193,6 @@ dependencies = [
  "num_cpus",
  "regex",
  "rodio",
- "sentry",
  "serde",
  "serde_json",
  "specta",
