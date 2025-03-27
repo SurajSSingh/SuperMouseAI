@@ -6,7 +6,7 @@
 
     let follower: HTMLElement;
 
-    let xOffset = $state(0);
+    let xOffset = $state(-20);
     let yOffset = $state(-20);
 
     let currentState: RecordingStates | undefined = $state();
