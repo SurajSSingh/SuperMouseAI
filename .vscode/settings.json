@@ -6,6 +6,8 @@
   "conventionalCommits.scopes": [
     "ui",
     "backend",
-    "frontend"
+    "frontend",
+    "notes",
+    "overlay"
   ]
 }

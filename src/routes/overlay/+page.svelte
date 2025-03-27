@@ -37,179 +37,100 @@
 </div>
 
 <style>
-    /* :root {
-        --mouse-x: 50;
-        --mouse-y: 50;
-    } */
-
     #follower {
         position: absolute;
-        /* top: calc(var(--mouse-y, 0) * 100%); */
-        /* left: calc(var(--mouse-x, 0) * 100%); */
+        height: 3rem;
+        width: 3rem;
     }
 
-    #follower #circle1 {
+    #follower div {
         position: absolute;
-        background: #206fee;
         border-radius: 50%;
-        margin-top: 0em;
-        margin-left: 0em;
-        opacity: 0.2;
-        height: 1em;
-        width: 1em;
-        margin-top: -0.5em;
-        margin-left: -0.5em;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100%;
+        height: 100%;
     }
-    #follower #circle2 {
-        position: absolute;
-        background: rgba(59, 131, 10, 0.8);
-        border-radius: 50%;
-        margin-top: 0em;
-        margin-left: 0em;
-        opacity: 0.9;
-        height: 1em;
-        width: 1em;
-        margin-top: -0.5em;
-        margin-left: -0.5em;
+
+    /* Stopped state - no animations */
+    #follower.stopped div {
+        background: transparent;
     }
-    #follower.processing #circle1 {
-        position: absolute;
-        background: #fff;
-        border-radius: 50%;
-        margin-top: 0em;
-        margin-left: 0em;
-        opacity: 0.2;
-        height: 1em;
-        width: 1em;
-        margin-top: -0.5em;
-        margin-left: -0.5em;
-    }
-    #follower.processing #circle2 {
-        position: absolute;
-        background: rgba(20, 104, 239, 0.8);
-        border-radius: 50%;
-        margin-top: 0em;
-        margin-left: 0em;
-        opacity: 0.2;
-        height: 1em;
-        width: 1em;
-        margin-top: -0.5em;
-        margin-left: -0.5em;
-        -webkit-animation: pulse 1s infinite; /* Chrome, Safari, Opera */
-        animation: pulse 1s infinite;
-    }
+
+    /* Recording state */
     #follower.recording #circle1 {
-        position: absolute;
-        -webkit-animation: pulse 2s infinite; /* Chrome, Safari, Opera */
-        animation: pulse 2s infinite;
-        background: #fff;
-        border-radius: 50%;
-        height: 0em;
-        width: 0em;
-        margin-top: 0em;
-        margin-left: 0em;
+        background: transparent;
+        outline-style: solid;
+        outline-color: #fc5185;
+        animation: pulse-record-1 1s infinite;
     }
+
     #follower.recording #circle2 {
-        position: absolute;
-        -webkit-animation: pulse 4s infinite; /* Chrome, Safari, Opera */
-        animation: pulse 2s infinite;
-        background: rgba(200, 0, 0, 0.8);
-        border-radius: 50%;
-        height: 0em;
-        width: 0em;
-        margin-top: 0em;
-        margin-left: 0em;
+        background: transparent;
+        outline-style: solid;
+        outline-color: #fc5185;
+        animation: pulse-record-2 1s infinite;
     }
-    @-moz-keyframes pulse {
-        0% {
-            opacity: 0.2;
-            height: 1em;
-            width: 1em;
-            margin-top: -0.5em;
-            margin-left: -0.5em;
+
+    /* Processing state */
+    #follower.processing #circle1 {
+        background: rgba(255, 255, 255, 0.2);
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-left-color: #7983ff;
+        animation: spin 1.25s linear infinite;
+    }
+
+    #follower.processing #circle2 {
+        background: rgba(20, 104, 239, 0.1);
+    }
+
+    /* Keyframe animations */
+
+    @keyframes spin {
+        from {
+            transform: translate(-50%, -50%) rotate(0deg);
         }
-        50% {
-            opacity: 0.9;
-            height: 3em;
-            width: 3em;
-            margin-top: -1.5em;
-            margin-left: -1.5em;
-        }
-        100% {
-            opacity: 0.2;
-            height: 1em;
-            width: 1em;
-            margin-top: -0.5em;
-            margin-left: -0.5em;
+        to {
+            transform: translate(-50%, -50%) rotate(360deg);
         }
     }
-    @-webkit-keyframes pulse {
+
+    @keyframes pulse-record-1 {
         0% {
-            opacity: 0.2;
-            height: 1em;
-            width: 1em;
-            margin-top: -0.5em;
-            margin-left: -0.5em;
+            outline-width: 0px;
+            transform: translate(-50%, -50%) rotate(0deg) scale(1);
         }
-        50% {
-            opacity: 0.9;
-            height: 3em;
-            width: 3em;
-            margin-top: -1.5em;
-            margin-left: -1.5em;
+        20% {
+            outline-width: 0px;
+            transform: translate(-50%, -50%) rotate(0deg) scale(1);
+        }
+        60% {
+            outline-width: 4px;
+            transform: translate(-50%, -50%) rotate(180deg) scale(1.25);
         }
         100% {
-            opacity: 0.2;
-            height: 1em;
-            width: 1em;
-            margin-top: -0.5em;
-            margin-left: -0.5em;
+            outline-width: 0px;
+            transform: translate(-50%, -50%) rotate(360deg) scale(1);
         }
     }
-    @-o-keyframes pulse {
+
+    @keyframes pulse-record-2 {
         0% {
-            opacity: 0.2;
-            height: 1em;
-            width: 1em;
-            margin-top: -0.5em;
-            margin-left: -0.5em;
+            outline-width: 0px;
+            transform: translate(-50%, -50%) scale(0);
         }
-        50% {
-            opacity: 0.9;
-            height: 3em;
-            width: 3em;
-            margin-top: -1.5em;
-            margin-left: -1.5em;
+        30% {
+            outline-width: 2px;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        60% {
+            outline-width: 4px;
+            transform: translate(-50%, -50%) scale(1);
         }
         100% {
-            opacity: 0.2;
-            height: 1em;
-            width: 1em;
-            margin-top: -0.5em;
-            margin-left: -0.5em;
-        }
-    }
-    @keyframes pulse {
-        0% {
-            opacity: 0.2;
-            height: 1em;
-            width: 1em;
-            margin-top: -0.5em;
-            margin-left: -0.5em;
-        }
-        50% {
-            opacity: 0.9;
-            height: 3em;
-            width: 3em;
-            margin-top: -1.5em;
-            margin-left: -1.5em;
-        }
-        100% {
-            opacity: 0.2;
-            height: 1em;
-            width: 1em;
-            margin-top: -0.5em;
-            margin-left: -0.5em;
+            outline-width: 0px;
+            transform: translate(-50%, -50%) scale(0);
         }
     }
 </style>
