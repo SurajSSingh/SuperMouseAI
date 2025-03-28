@@ -60,7 +60,7 @@ jobs:
 
       - name: Install Vulkan SDK
         if: matrix.type == 'gpu'
-        uses: humbletim/install-vulkan-sdk@1.2
+        uses: humbletim/install-vulkan-sdk@v1.2
         with:
           version: latest
           cache: true
