@@ -13,11 +13,11 @@ jobs:
       matrix:
         include:
           - platform: "windows-latest"
-            args: "--features vulkan"
+            args: "--features vulkan,openmp"
             name: "vulkan"
             type: "gpu"
           - platform: "windows-latest"
-            args: ""
+            args: "--features openmp"
             name: "cpu-only"
             type: "cpu"
 
