@@ -1,0 +1,27 @@
+name: Deno Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  frontend-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # Setup Deno
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # Run checks
+      - name: Check Deno Formatting
+        run: |-
+          deno fmt --check ./src
+
+      - name: Run Deno Lints
+        run: |-
+          deno lint .
