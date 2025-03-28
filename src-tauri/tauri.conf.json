@@ -28,6 +28,7 @@
         "decorations": false,
         "alwaysOnTop": true,
         "maximized": true,
+        "shadow": false,
         "url": "overlay/"
       }
     ],
