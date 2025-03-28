@@ -1,0 +1,124 @@
+name: "windows-simple-build"
+# This will do a build without bundling resources (i.e., create the .exe file)
+
+on:
+  push:
+    branches:
+      - gh-workflows # TODO: Change to `main`
+
+jobs:
+  build-app:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "windows-latest"
+            args: "--features vulkan"
+            name: "vulkan"
+            type: "gpu"
+          - platform: "windows-latest"
+            args: ""
+            name: "cpu-only"
+            type: "cpu"
+          # - platform: "windows-latest"
+          #   args: "--features vulkan,no-overlay"
+          #   name: "vulkan-no-overlay"
+          #   type: "gpu"
+          # - platform: "windows-latest"
+          #   args: "--features no-overlay"
+          #   name: "cpu-only-no-overlay"
+          #   type: "cpu"
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install Rust (Stable)
+        uses: dtolnay/rust-toolchain@stable # Set this to dtolnay/rust-toolchain@nightly
+
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      # OpenBLAS not used
+      # - name: Export GitHub Actions cache environment variables
+      #   uses: actions/github-script@v7
+      #   with:
+      #     script: |
+      #       core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+      #       core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+      # Install External Depednencies
+      # (based on type)
+
+      - name: Install Vulkan SDK
+        if: matrix.type == 'gpu'
+        uses: humbletim/install-vulkan-sdk@c2aa128094d42ba02959a660f03e0a4e012192f9
+        with:
+          version: latest
+          cache: true
+
+      # NOTE: Does not currently work
+      # - name: Setup OpenBLAS
+      #   if: matrix.type == 'cpu'
+      #   env:
+      #     VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+      #   run: |
+      #     vcpkg install openblas
+      #     vcpkg integrate install
+
+      - name: Echo Info
+        shell: bash
+        run: |
+          echo "Current Dir = $PWD"
+          echo ""
+          echo "Deno:"
+          deno --version || echo "No Deno"
+          echo ""
+          echo "Rustc:"
+          rustc --version || echo "No Rust"
+          echo ""
+          echo "Cargo:"
+          cargo --version || echo "No Rust"
+          echo ""
+          echo "Files and Directories"
+          ls -a
+
+      - name: Install Frontend Dependencies
+        # If you don't have `beforeBuildCommand` configured you may want to build your frontend here too.
+        run: deno install
+
+      # Create file without actual data so build does not fail to find
+      - name: Create whisper-model.bin
+        shell: bash
+        run: touch ./src-tauri/resources/whisper-model.bin
+
+      # OpenBLAS not used
+      # - name: Add OpenBLAS to PATH
+      #   if: matrix.type == 'cpu'
+      #   run: |
+      #     echo "C:\vcpkg\packages\openblas_x86-windows\bin" >> $GITHUB_PATH
+
+      # If tagName and releaseId are omitted tauri-action will only build the app and won't try to upload any assets.
+      - uses: tauri-apps/tauri-action@v0
+        with:
+          tauriScript: "deno task tauri"
+          args: --no-bundle ${{ matrix.args }}
+
+      # NOTE: This only uploads the final .exe,
+      #       the `/resources` must be provided
+      #       separately (for build to work)
+      - name: Upload Executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.type }}
+          path: ./src-tauri/target/release/*.exe
+          retention-days: 1
+          compression-level: 6 # TODO: Using default, check if this needs to change
