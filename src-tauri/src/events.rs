@@ -1,5 +1,6 @@
 //! Module holding all events for Super Mouse AI, as well as all associated functions that either react to or emit events.
 
+use log::trace;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri_specta::{collect_events, Event, Events};
@@ -16,6 +17,7 @@ pub struct MouseClickEvent(MouseButtonType);
 
 impl MouseClickEvent {
     pub fn with_payload(payload: MouseButtonType) -> Self {
+        trace!("Mouse click EVENT with following payload: {payload:?}");
         MouseClickEvent(payload)
     }
 }
@@ -30,6 +32,7 @@ pub struct ModKeyEvent(ModKeyPayload);
 
 impl ModKeyEvent {
     pub fn with_payload(payload: ModKeyPayload) -> Self {
+        trace!("Modifier key EVENT with following payload: {payload:?}");
         ModKeyEvent(payload)
     }
 }
@@ -48,6 +51,7 @@ pub struct MouseMoveEvent {
 
 impl MouseMoveEvent {
     pub fn with_payload(x: &i32, y: &i32) -> Self {
+        trace!("Mouse move EVENT with following payload: ({x}, {y})");
         Self { x: *x, y: *y }
     }
 }

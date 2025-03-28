@@ -3,30 +3,23 @@
     import { type RecordingStates } from "$lib/types";
     import MicRecorder from "$lib/components/MicRecorder.svelte";
     import AudioTranscriber from "$lib/components/AudioTranscriber.svelte";
-    import {
-        NotificationSystem,
-        notifier,
-    } from "$lib/notificationSystem.svelte";
+    import { notifier } from "$lib/notificationSystem.svelte";
     import { writeText } from "@tauri-apps/plugin-clipboard-manager";
-    import WhisperOptions from "$lib/components/WhisperOptions.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
-    import Tab from "$lib/components/ui/Tab.svelte";
     import ThemeDropdown from "$lib/components/ui/ThemeDropdown.svelte";
     import CustomShortcut from "$lib/components/CustomShortcut.svelte";
     import MenuScreen from "$lib/components/MenuScreen.svelte";
     import PermissionBar from "$lib/components/PermissionBar.svelte";
     import { configStore } from "$lib/store.svelte";
     import { commands } from "$lib/bindings";
-    import DangerZone from "$lib/components/DangerZone.svelte";
-    import AppOptions from "$lib/components/AppOptions.svelte";
     import { exit } from "@tauri-apps/plugin-process";
     import { error, info } from "@tauri-apps/plugin-log";
     import { getVersion } from "@tauri-apps/api/app";
     import { emitTo } from "@tauri-apps/api/event";
 
     // Component Bindings
-    let micRecorder: MicRecorder;
-    let audioTranscriber: AudioTranscriber;
+    let micRecorder: MicRecorder = $state() as MicRecorder;
+    let audioTranscriber: AudioTranscriber = $state() as AudioTranscriber;
     // State
     let recordingState: RecordingStates = $state("stopped");
     let hasRecorded = $state(false);
@@ -114,41 +107,7 @@
 </script>
 
 <main class="">
-    <MenuScreen bind:open={menuOpen}>
-        <section class="tabs tabs-lift w-full">
-            <Tab
-                value="tabs"
-                label="Configuration"
-                class="bg-base-100 border-base-300 p-6"
-                inputClass="not-checked:bg-neutral not-checked:text-accent-content hover:text-primary border-base-300"
-                checked
-            >
-                <div class="h-60 overflow-auto pr-6">
-                    <WhisperOptions />
-                </div>
-            </Tab>
-            <Tab
-                value="tabs"
-                label="App Options"
-                class="bg-base-100 border-base-300 p-6"
-                inputClass="not-checked:bg-neutral not-checked:text-accent-content hover:text-primary border-base-300"
-            >
-                <div class="h-60 overflow-auto pr-6">
-                    <AppOptions />
-                </div>
-            </Tab>
-            <Tab
-                value="tabs"
-                label="Danger Zone"
-                inputClass="input-ghost p-6 hover:bg-error not-checked:bg-neutral not-checked:text-warning-content checked:input-xl checked:text-warning"
-                class="bg-base-100 border-base-300 p-6"
-            >
-                <div class="h-60 overflow-auto pr-6">
-                    <DangerZone bind:isDialogOpen={menuOpen} />
-                </div>
-            </Tab>
-        </section>
-    </MenuScreen>
+    <MenuScreen bind:open={menuOpen} />
     <Toaster
         position="top-center"
         richColors
