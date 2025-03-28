@@ -249,9 +249,9 @@ pub fn run() {
                             // NOTE: Only do non-main window, otherwise will get stuck in loop
                             if !label.eq_ignore_ascii_case("main") {
                                 debug!("Window {label} will also be closed.");
-                                window
-                                    .close()
-                                    .unwrap_or_else(|_| panic!("Window {label} should be closable"));
+                                window.close().unwrap_or_else(|_| {
+                                    panic!("Window {label} should be closable")
+                                });
                             }
                         });
                     }
