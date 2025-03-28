@@ -20,14 +20,14 @@ jobs:
             args: ""
             name: "cpu-only"
             type: "cpu"
-          # - platform: "windows-latest"
-          #   args: "--features vulkan,no-overlay"
-          #   name: "vulkan-no-overlay"
-          #   type: "gpu"
-          # - platform: "windows-latest"
-          #   args: "--features no-overlay"
-          #   name: "cpu-only-no-overlay"
-          #   type: "cpu"
+          - platform: "windows-latest"
+            args: "--features vulkan,no-overlay"
+            name: "vulkan-no-overlay"
+            type: "gpu"
+          - platform: "windows-latest"
+            args: "--features no-overlay"
+            name: "cpu-only-no-overlay"
+            type: "cpu"
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -40,7 +40,7 @@ jobs:
           deno-version: v2.x
 
       - name: Install Rust (Stable)
-        uses: dtolnay/rust-toolchain@stable # Set this to dtolnay/rust-toolchain@nightly
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Rust Cache
         uses: swatinem/rust-cache@v2
@@ -60,7 +60,7 @@ jobs:
 
       - name: Install Vulkan SDK
         if: matrix.type == 'gpu'
-        uses: humbletim/install-vulkan-sdk@c2aa128094d42ba02959a660f03e0a4e012192f9
+        uses: humbletim/install-vulkan-sdk@1.2
         with:
           version: latest
           cache: true
@@ -118,7 +118,7 @@ jobs:
       - name: Upload Executable
         uses: actions/upload-artifact@v4
         with:
-          name: windows-${{ matrix.type }}
+          name: windows-${{ matrix.name }}
           path: ./src-tauri/target/release/*.exe
-          retention-days: 1
+          retention-days: 4
           compression-level: 6 # TODO: Using default, check if this needs to change
