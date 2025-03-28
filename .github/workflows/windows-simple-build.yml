@@ -20,14 +20,6 @@ jobs:
             args: ""
             name: "cpu-only"
             type: "cpu"
-          - platform: "windows-latest"
-            args: "--features vulkan,no-overlay"
-            name: "vulkan-no-overlay"
-            type: "gpu"
-          - platform: "windows-latest"
-            args: "--features no-overlay"
-            name: "cpu-only-no-overlay"
-            type: "cpu"
 
     runs-on: ${{ matrix.platform }}
     steps:
