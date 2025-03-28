@@ -11,21 +11,21 @@ const Close = DialogPrimitive.Close;
 const Portal = DialogPrimitive.Portal;
 
 export {
-    Root,
-    Title,
-    Portal,
-    Trigger,
-    Overlay,
-    Content,
-    Description,
-    Close,
-    //
-    Root as Dialog,
-    Title as DialogTitle,
-    Portal as DialogPortal,
-    Trigger as DialogTrigger,
-    Overlay as DialogOverlay,
-    Content as DialogContent,
-    Description as DialogDescription,
-    Close as DialogClose,
+  Close,
+  Close as DialogClose,
+  Content,
+  Content as DialogContent,
+  Description,
+  Description as DialogDescription,
+  Overlay,
+  Overlay as DialogOverlay,
+  Portal,
+  Portal as DialogPortal,
+  Root,
+  //
+  Root as Dialog,
+  Title,
+  Title as DialogTitle,
+  Trigger,
+  Trigger as DialogTrigger,
 };
