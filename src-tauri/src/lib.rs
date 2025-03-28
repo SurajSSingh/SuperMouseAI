@@ -251,7 +251,7 @@ pub fn run() {
                                 debug!("Window {label} will also be closed.");
                                 window
                                     .close()
-                                    .expect(&format!("Window {label} should be closable"));
+                                    .unwrap_or_else(|_| panic!("Window {label} should be closable"));
                             }
                         });
                     }
