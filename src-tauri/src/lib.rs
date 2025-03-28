@@ -266,6 +266,7 @@ pub fn run() {
     info!("Finish app building");
 }
 
+#[allow(unused_variables)]
 /// Export TypeScript bindings for the application
 pub fn export_bindings(builder: &Builder) {
     #[cfg(debug_assertions)] // <- Only export on non-release builds
