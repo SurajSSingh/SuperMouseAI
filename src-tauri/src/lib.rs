@@ -125,23 +125,23 @@ pub fn run() {
             trace!("Initialized shortcut plugins.");
             debug!("Start loading model path");
             //  Load the model
-            let resource_path = app
-                .path()
-                .resolve("resources/whisper-model.bin", BaseDirectory::Resource)?;
-            trace!("Resolved resource model path.");
-            let model_path = resource_path
-                .into_os_string()
-                .into_string()
-                .map_err(|os_str| format!("\"{:?}\" cannot be convered to string!", os_str))?;
-            debug!("Create new param");
-            info!("Forcing use of CPU for model");
-            let params = {
-                let mut params_builder = WhisperContextParameters::new();
-                params_builder.use_gpu(false);
-                params_builder
-            };
-            trace!("Converted model using {model_path:?}");
-            let model = Model::new_with_params(&model_path, Some(params))?;
+            // let resource_path = app
+            //     .path()
+            //     .resolve("resources/whisper-model.bin", BaseDirectory::Resource)?;
+            // trace!("Resolved resource model path.");
+            // let model_path = resource_path
+            //     .into_os_string()
+            //     .into_string()
+            //     .map_err(|os_str| format!("\"{:?}\" cannot be convered to string!", os_str))?;
+            // debug!("Create new param");
+            // info!("Forcing use of CPU for model");
+            // let params = {
+            //     let mut params_builder = WhisperContextParameters::new();
+            //     params_builder.use_gpu(false);
+            //     params_builder
+            // };
+            // trace!("Converted model using {model_path:?}");
+            // let model = Model::new_with_params(&model_path, Some(params))?;
             trace!("Created new model");
             debug!("Start loading sound paths");
             let sound_map = {
@@ -192,7 +192,7 @@ pub fn run() {
                 debug!("Finished creating sound map");
                 map
             };
-            app.manage(AppState::new(model, sound_map));
+            app.manage(AppState::new(None, sound_map));
             trace!("Created initial app state");
             debug!("Setup mouse click listener");
             listen_for_mouse_click(app.handle().clone())?;

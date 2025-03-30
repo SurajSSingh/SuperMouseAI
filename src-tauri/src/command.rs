@@ -34,8 +34,11 @@ pub async fn transcribe(
     options.format,
 );
     info!("Running transcription command");
-    let transcription = app_state
-        .model
+    let Some(ref model) = app_state.model else {
+        error!("No model is provided in App State");
+        return Err("No model found".into());
+    };
+    let transcription = model
         .transcribe_audio(
             &audio_data,
             options.translate.unwrap_or(false),

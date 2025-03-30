@@ -12,12 +12,12 @@ use std::{collections::HashMap, path::PathBuf};
 /// This holds all data that is expected to
 /// persist throughout the app's runtime.
 pub struct AppState {
-    pub(crate) model: Model,
+    pub(crate) model: Option<Model>,
     pub(crate) sound_map: HashMap<String, PathBuf>,
 }
 
 impl AppState {
-    pub fn new(model: Model, sound_map: HashMap<String, PathBuf>) -> Self {
+    pub fn new(model: Option<Model>, sound_map: HashMap<String, PathBuf>) -> Self {
         // Load model into memory by evaluating short silence
         // FIXME: Need to do this in another thread, otherwise UI freezes
         // let _ = model.transcribe_pcm_s16le(&[0.0; 20_000], false, false, None, None, None);
