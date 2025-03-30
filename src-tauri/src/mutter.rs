@@ -26,6 +26,13 @@ impl Model {
     /// # Errors
     /// - [`WhisperError`]
     pub fn new(path: &str) -> Result<Self, WhisperError> {
+        Self::new_with_params(path, None)
+    }
+
+    pub fn new_with_params(
+        path: &str,
+        params: Option<WhisperContextParameters>,
+    ) -> Result<Self, WhisperError> {
         trace!("Loading model {}", path);
         // Sanity check - make sure the path exists
         let path_converted = std::path::Path::new(path);
@@ -33,10 +40,10 @@ impl Model {
             return Err(WhisperError::InitError);
         }
 
-        let params: WhisperContextParameters = WhisperContextParameters::default();
         Ok({
             Self {
-                context: WhisperContext::new_with_params(path, params)?,
+                // NOTE: default params = WhisperContextParameters::default()
+                context: WhisperContext::new_with_params(path, params.unwrap_or_default())?,
             }
         })
     }
