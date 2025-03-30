@@ -9,6 +9,7 @@ use std::{collections::HashMap, path::PathBuf};
 use tauri::{path::BaseDirectory, Manager};
 use tauri_plugin_sentry::{minidump, sentry};
 use tauri_specta::{Builder, Event};
+use whisper_rs::WhisperContextParameters;
 
 // Internal Modules
 mod command;
@@ -132,8 +133,15 @@ pub fn run() {
                 .into_os_string()
                 .into_string()
                 .map_err(|os_str| format!("\"{:?}\" cannot be convered to string!", os_str))?;
-            trace!("Converted model path");
-            let model = Model::new(&model_path)?;
+            debug!("Create new param");
+            info!("Forcing use of CPU for model");
+            let params = {
+                let mut params_builder = WhisperContextParameters::new();
+                params_builder.use_gpu(false);
+                params_builder
+            };
+            trace!("Converted model using {model_path:?}");
+            let model = Model::new_with_params(&model_path, Some(params))?;
             trace!("Created new model");
             debug!("Start loading sound paths");
             let sound_map = {
