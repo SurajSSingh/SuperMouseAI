@@ -80,6 +80,7 @@ pub fn run() {
     export_bindings(&builder);
     info!("Start app building");
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_sentry::init(&client))
         .plugin(tauri_plugin_process::init())
         .plugin(
