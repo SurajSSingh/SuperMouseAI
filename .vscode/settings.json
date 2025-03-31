@@ -8,6 +8,7 @@
     "backend",
     "frontend",
     "notes",
-    "overlay"
+    "overlay",
+    "installer"
   ]
 }

@@ -80,7 +80,10 @@
       ]
     },
     "windows": {
-      "installMode": "passive"
+      "installMode": "passive",
+      "nsis": {
+        "installerHooks": "./windows/hooks.nsi"
+      }
     }
   }
 }
