@@ -1,0 +1,14 @@
+!include Errors.nsh
+
+Function .onInit
+    !insertmacro MULTI_USER_INIT
+    InitProgress "" "Preparing Installation..."
+EndFunction
+
+Function .onInstSuccess
+    MessageBox MB_OK "Installation completed successfully!"
+EndFunction
+
+Function .onInstFailed
+    MessageBox MB_ICONERROR "Installation failed. Please check your internet connection and try again."
+EndFunction

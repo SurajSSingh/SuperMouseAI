@@ -1,0 +1,22 @@
+Name "Whisper App Installer"
+
+Section "Main"
+    SetOutPath $INSTDIR
+    File /r dist\*.*
+    
+    ; Simple resource download
+    nsisdl::download_quiet "https://example.com/model.bin" "$PLUGINSDIR\model.bin"
+    
+    ; Basic Vulkan check
+    ReadRegStr $0 HKLM "SOFTWARE\Khronos\Vulkan\CurrentVersion" ""
+    IfErrors 0 SkipVulkan
+    ExecWait 'vulkan-sdk.exe /S'
+    SkipVulkan:
+    
+    ; Simple cleanup
+    Delete "$PLUGINSDIR\model.bin"
+SectionEnd
+
+Section "Uninstall"
+    RMDir /r /s "$INSTDIR"
+SectionEnd

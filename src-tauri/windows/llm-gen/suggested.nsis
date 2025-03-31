@@ -1,0 +1,45 @@
+Name "Whisper App Installer"
+
+Section "Main"
+    SetOutPath $INSTDIR
+    File /r dist\*.*
+    
+    ; Resource Download Section
+    nsisdl::download "https://example.com/model.bin" "$PLUGINSDIR\model.bin"
+    Pop $0
+    StrCmp $0 "success" +3
+    MessageBox MB_OK "Failed to download model file!"
+    Abort
+    
+    ; Vulkan Check and Install
+    ClearErrors
+    ReadRegStr $0 HKLM "SOFTWARE\Khronos\Vulkan\CurrentVersion" ""
+    IfErrors 0 NoInstallVulkan
+    ExecWait 'vulkan-sdk.exe /S' $0
+    NoInstallVulkan:
+    
+    ; Model Verification
+    FileOpen $0 "$PLUGINSDIR\model.bin" r
+    FileReadByte $1
+    FileClose $0
+    IntOp $1 $1 << 24 | ($1 >> 24)
+    IntOp $1 $1 << 16 | ($1 >> 16)
+    StrCmp $1 "GGML" ModelValid
+    MessageBox MB_OK "Invalid GGML model file!"
+    Abort
+    ModelValid:
+    
+    ; Cleanup
+    Delete "$PLUGINSDIR\model.bin"
+SectionEnd
+
+Section "Uninstall"
+    ; Preserve Vulkan installation
+    ReadRegStr $0 HKLM "SOFTWARE\Khronos\Vulkan\CurrentVersion" ""
+    IfErrors SkipVulkan
+    WriteRegStr HKLM "SOFTWARE\Khronos\Vulkan\CurrentVersion" "" $0
+    SkipVulkan:
+    
+    ; Remove application files
+    RMDir /r /s "$INSTDIR"
+SectionEnd

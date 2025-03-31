@@ -1,0 +1,17 @@
+Var DownloadProgress
+Var TotalSize
+Var CurrentSize
+
+Function DownloadCallback
+    Exch $CurrentSize
+    Exch
+    Push $TotalSize
+    FloatOp.F$0 float($CurrentSize) / float($TotalSize)
+    IntOp $DownloadProgress int($0 * 100)
+    SetAutoClose true
+    ShowInstProg $DownloadProgress "Downloading Model File..."
+EndFunction
+
+Section "Main"
+    nsisdl::download_callback "DownloadCallback" "https://example.com/model.bin" "$PLUGINSDIR\model.bin"
+EndSection
