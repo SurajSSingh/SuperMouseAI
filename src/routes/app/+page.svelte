@@ -16,6 +16,7 @@
     import { error, info } from "@tauri-apps/plugin-log";
     import { getVersion } from "@tauri-apps/api/app";
     import { emitTo } from "@tauri-apps/api/event";
+    import UpdateChecker from "$lib/components/UpdateChecker.svelte";
 
     // Component Bindings
     let micRecorder: MicRecorder = $state() as MicRecorder;
@@ -123,6 +124,9 @@
         <h1 class="text-3xl text-center pt-12 sm:pt-0">
             SuperMouse AI ({appVersion})
         </h1>
+        <div class="flex flex-col place-content-center p-1">
+            <UpdateChecker class="mx-8" />
+        </div>
         {#if acceptTelemetry}
             <PermissionBar
                 setupRecorder={() => micRecorder.setupRecorder()}
