@@ -70,7 +70,23 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "allowDowngrades": true,
+      "certificateThumbprint": null,
+      "digestAlgorithm": null,
+      "nsis": {
+        "installerHooks": "./windows/hooks.nsi"
+      },
+      "signCommand": null,
+      "timestampUrl": null,
+      "tsp": false,
+      "webviewInstallMode": {
+        "silent": true,
+        "type": "downloadBootstrapper"
+      },
+      "wix": null
+    }
   },
   "plugins": {
     "updater": {
@@ -80,10 +96,7 @@
       ]
     },
     "windows": {
-      "installMode": "passive",
-      "nsis": {
-        "installerHooks": "./windows/hooks.nsi"
-      }
+      "installMode": "passive"
     }
   }
 }
