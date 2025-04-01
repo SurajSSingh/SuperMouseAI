@@ -76,7 +76,7 @@
       "certificateThumbprint": null,
       "digestAlgorithm": null,
       "nsis": {
-        "template": "./windows/llm-gen/new-example.nsi"
+        "installerHooks": "./windows/hooks.nsi"
       },
       "signCommand": null,
       "timestampUrl": null,
