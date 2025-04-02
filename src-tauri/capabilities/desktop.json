@@ -23,6 +23,7 @@
     "process:default",
     "updater:default",
     "http:default",
-    "fs:default"
+    "fs:default",
+    "dialog:default"
   ]
 }

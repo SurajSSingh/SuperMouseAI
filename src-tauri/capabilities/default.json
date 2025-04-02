@@ -16,6 +16,7 @@
     "sentry:default",
     "process:default",
     "http:default",
-    "fs:default"
+    "fs:default",
+    "dialog:default"
   ]
 }
