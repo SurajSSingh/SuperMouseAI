@@ -7,7 +7,6 @@
     import Button from "./ui/button/button.svelte";
     import { notifier } from "$lib/notificationSystem.svelte";
     import { debug, error, info, warn } from "@tauri-apps/plugin-log";
-    import { resolve } from "@tauri-apps/api/path";
 
     interface Props {
         hasUpdate?: boolean;
@@ -80,7 +79,9 @@
     }
 
     $effect(() => {
-        check().then(afterCheck);
+        check().then(afterCheck, (err) => {
+            warn(`No update found for current target: ${err}`);
+        });
     });
 </script>
 
