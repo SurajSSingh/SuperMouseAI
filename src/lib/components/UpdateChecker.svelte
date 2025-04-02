@@ -6,7 +6,12 @@
     } from "@tauri-apps/plugin-updater";
     import Button from "./ui/button/button.svelte";
     import { notifier } from "$lib/notificationSystem.svelte";
-    import { debug, error, info, warn } from "@tauri-apps/plugin-log";
+    import { debug, error, info, trace, warn } from "@tauri-apps/plugin-log";
+    import { configStore } from "$lib/store.svelte";
+    import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+
+    //                           min | s  | ms
+    const UPDATE_CHECK_FREQUENCY = 5 * 60 * 1000;
 
     interface Props {
         hasUpdate?: boolean;
@@ -20,6 +25,9 @@
     let isUpdating = $state(false);
     let totalUpdateCount = $state(0);
     let currentUpdateCount = $state(0);
+
+    let updateIntervalId: number | undefined;
+    let skipped = false;
 
     function progressCallback(event: DownloadEvent) {
         switch (event.event) {
@@ -62,14 +70,25 @@
     }
 
     function afterCheck(updateInfo: Update | null) {
-        if (updateInfo) {
-            autoUpdater = updateInfo;
-            hasUpdate = updateInfo.available;
-            if (hasUpdate) {
+        if (updateInfo === null) {
+            warn("There was no update given, ignoring update");
+            return;
+        }
+        debug(`Update Info: ${JSON.stringify(updateInfo)}`);
+        autoUpdater = updateInfo;
+        hasUpdate = updateInfo.available;
+        if (hasUpdate && !skipped) {
+            if (configStore.autoApplyUpdates.value) {
+                debug("Applying update immediately");
+                applyUpdate();
+            } else if (configStore.notifyOfUpdates.value) {
                 notifier.confirmAction(
                     `Current version is ${updateInfo.currentVersion}, new version is ${updateInfo.version}`,
                     applyUpdate,
-                    () => {},
+                    () => {
+                        info("Skip new update");
+                        skipped = true;
+                    },
                     "New Update Available",
                     "Install",
                     "Skip",
@@ -78,10 +97,47 @@
         }
     }
 
+    function onCheckError(err: any) {
+        warn(`No update found for current target: ${err}`);
+    }
+
+    function createAutoChecker() {
+        debug("Creating auto update checker");
+        // Clear already running if there is one,
+        // this prevents duplicates
+        if (updateIntervalId !== undefined) {
+            debug("Remove old auto checker");
+            clearInterval(updateIntervalId);
+        }
+        updateIntervalId = setInterval(async () => {
+            debug("Check again for update");
+            check().then(afterCheck, onCheckError);
+        }, UPDATE_CHECK_FREQUENCY);
+    }
+
     $effect(() => {
-        check().then(afterCheck, (err) => {
-            warn(`No update found for current target: ${err}`);
-        });
+        let unListenAutoCheckUpdate: UnlistenFn | undefined;
+        const runCheck = async () => {
+            await configStore.waitForStoreLoaded();
+            await check().then(afterCheck, onCheckError);
+            unListenAutoCheckUpdate = await listen("autoCheckUpdate", (e) => {
+                const checked = e.payload as boolean;
+                if (checked) {
+                    createAutoChecker();
+                } else {
+                    debug("Removing update checker interval");
+                    clearInterval(updateIntervalId);
+                }
+            });
+            if (configStore.autoCheckForUpdates.value) {
+                createAutoChecker();
+            }
+        };
+        runCheck();
+        return () => {
+            clearInterval(updateIntervalId);
+            unListenAutoCheckUpdate?.();
+        };
     });
 </script>
 
@@ -96,7 +152,7 @@
     <div class={`text-center ${className}`}>
         <i class=" loading loading-bars"></i>
         Downloading Update{totalUpdateCount > 0
-            ? `: ${((currentUpdateCount / totalUpdateCount) * 100).toFixed(2)}% (${currentUpdateCount}/${totalUpdateCount})`
+            ? `: ${((currentUpdateCount / totalUpdateCount) * 100).toFixed(2)}%`
             : "..."}
     </div>
 {/if}

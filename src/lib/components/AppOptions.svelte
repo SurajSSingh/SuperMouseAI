@@ -1,6 +1,7 @@
 <script lang="ts">
     import { commands } from "$lib/bindings";
     import { configStore } from "$lib/store.svelte";
+    import { emit } from "@tauri-apps/api/event";
     import CollapseableFieldSet from "./ui/CollapseableFieldSet.svelte";
     import ToggleSwitch from "./ui/ToggleSwitch.svelte";
 
@@ -63,17 +64,29 @@
     titleTag="h3"
     subtitle="Configure how app updates itself"
 >
-    <!-- TODO(@): Add and use config -->
     <div class="mb-4">
-        <ToggleSwitch label="Notify about updates:" checked={true} />
+        <ToggleSwitch
+            label="Notify about updates:"
+            bind:checked={configStore.notifyOfUpdates.value}
+        />
         <p class="fieldset-label">Notify of update when they are available.</p>
     </div>
     <div class="mb-4">
-        <ToggleSwitch label="Auto check for updates:" checked={true} />
+        <ToggleSwitch
+            label="Auto check for updates:"
+            bind:checked={configStore.autoCheckForUpdates.value}
+            onchange={(e) =>
+                // FIXME: This hack is to send an event to updater,
+                //         should use proper JS event dispatching
+                emit("autoCheckUpdate", e.currentTarget.checked)}
+        />
         <p class="fieldset-label">Periodically check for update (~5 min.)</p>
     </div>
     <div class="mb-4">
-        <ToggleSwitch label="Auto-install" checked={true} />
+        <ToggleSwitch
+            label="Auto-install"
+            bind:checked={configStore.autoApplyUpdates.value}
+        />
         <p class="fieldset-label">
             Automatically download and install update if one is available.
         </p>
