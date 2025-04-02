@@ -1,4 +1,10 @@
 import { debug, info, warn } from "@tauri-apps/plugin-log";
+import {
+  ask,
+  confirm,
+  type ConfirmDialogOptions,
+  message as dialogMessage,
+} from "@tauri-apps/plugin-dialog";
 import type { ConfirmActionType } from "./types.ts";
 import {
   isPermissionGranted,
@@ -114,6 +120,26 @@ export class NotificationSystem {
       error,
       finally: final,
     });
+  }
+
+  async showDialog(
+    type: "message" | "ask" | "confirm",
+    message: string,
+    options?: ConfirmDialogOptions,
+  ): Promise<boolean> {
+    switch (type) {
+      case "message":
+        await dialogMessage(message, options);
+        return true;
+      case "ask":
+        return await ask(message, options);
+      case "confirm":
+        return await confirm(message, options);
+      default:
+        warn("Reached unreachable case in showDialog, skipping action.");
+        break;
+    }
+    return false;
   }
 
   // TEMP
