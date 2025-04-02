@@ -21,6 +21,7 @@
     "log:default",
     "sentry:default",
     "process:default",
-    "updater:default"
+    "updater:default",
+    "http:default"
   ]
 }
