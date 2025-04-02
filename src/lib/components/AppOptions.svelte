@@ -58,3 +58,24 @@
         </p>
     </div>
 </CollapseableFieldSet>
+<CollapseableFieldSet
+    title="Update Configuration"
+    titleTag="h3"
+    subtitle="Configure how app updates itself"
+>
+    <!-- TODO(@): Add and use config -->
+    <div class="mb-4">
+        <ToggleSwitch label="Notify about updates:" checked={true} />
+        <p class="fieldset-label">Notify of update when they are available.</p>
+    </div>
+    <div class="mb-4">
+        <ToggleSwitch label="Auto check for updates:" checked={true} />
+        <p class="fieldset-label">Periodically check for update (~5 min.)</p>
+    </div>
+    <div class="mb-4">
+        <ToggleSwitch label="Auto-install" checked={true} />
+        <p class="fieldset-label">
+            Automatically download and install update if one is available.
+        </p>
+    </div>
+</CollapseableFieldSet>
