@@ -26,6 +26,9 @@ export const ConfigItem = {
   INTER_SENTENCE_NEWLINE_REMOVE: "remove_newline_inside_sentence",
   AUTO_PASTE: "paste_after_transcribe",
   PASTE_VIA_KEYBOARD: "use_keys_to_paste",
+  UPDATES_NOTIFY: "notify_of_updates",
+  AUTO_CHECK_UPDATES: "check_for_updates",
+  AUTO_APPLY_UPDATES: "auto_download_and_install_update",
 };
 
 class StoreStateOption<T> {
@@ -103,6 +106,18 @@ export class ConfigStore {
     true,
     ConfigItem.PASTE_VIA_KEYBOARD,
   );
+  notifyOfUpdates = new StoreStateOption<boolean>(
+    true,
+    ConfigItem.UPDATES_NOTIFY,
+  );
+  autoCheckForUpdates = new StoreStateOption<boolean>(
+    true,
+    ConfigItem.AUTO_CHECK_UPDATES,
+  );
+  autoApplyUpdates = new StoreStateOption<boolean>(
+    false,
+    ConfigItem.AUTO_APPLY_UPDATES,
+  );
 
   /** Array of all fields in class that are configuration optiosn */
   #configFields = [
@@ -119,6 +134,9 @@ export class ConfigStore {
     this.windowFloat,
     this.interNLRemove,
     this.autoPaste,
+    this.notifyOfUpdates,
+    this.autoCheckForUpdates,
+    this.autoApplyUpdates,
   ] as const;
 
   // Derived values
