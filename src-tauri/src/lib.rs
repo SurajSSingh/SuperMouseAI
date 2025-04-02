@@ -7,6 +7,7 @@
 use log::{debug, error, info, trace, warn, LevelFilter};
 use std::{collections::HashMap, path::PathBuf};
 use tauri::{path::BaseDirectory, Manager};
+#[allow(unused_imports)]
 use tauri_plugin_sentry::{minidump, sentry};
 use tauri_specta::{Builder, Event};
 
