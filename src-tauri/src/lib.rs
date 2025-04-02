@@ -54,23 +54,23 @@ const KEY_QUERY_MILLIS: u64 = 100;
 /// Tauri entry point to run app
 pub fn run() {
     info!("Start running Super Mouse AI");
-    debug!("Start Sentry Setup");
-    // Setup
-    let client = sentry::init((
-        "https://e48c5c52c4ca1341de4618624cc0f511@o4509002112958464.ingest.us.sentry.io/4509007972007936",
-        sentry::ClientOptions {
-            release: sentry::release_name!(),
-            auto_session_tracking: true,
-            ..Default::default()
-        },
-    ));
+    // debug!("Start Sentry Setup");
+    // // Setup
+    // let client = sentry::init((
+    //     "https://e48c5c52c4ca1341de4618624cc0f511@o4509002112958464.ingest.us.sentry.io/4509007972007936",
+    //     sentry::ClientOptions {
+    //         release: sentry::release_name!(),
+    //         auto_session_tracking: true,
+    //         ..Default::default()
+    //     },
+    // ));
 
-    // Caution! Everything before here runs in both app and crash reporter processes
-    #[cfg(not(target_os = "ios"))]
-    let _guard = minidump::init(&client);
-    // Everything after here runs in only the app process
+    // // Caution! Everything before here runs in both app and crash reporter processes
+    // #[cfg(not(target_os = "ios"))]
+    // let _guard = minidump::init(&client);
+    // // Everything after here runs in only the app process
 
-    debug!("Finish Sentry Setup");
+    // debug!("Finish Sentry Setup");
 
     // Following <https://docs.rs/tauri-specta/2.0.0-rc.21/tauri_specta/index.html>
     let builder = Builder::<tauri::Wry>::new()
@@ -81,7 +81,7 @@ pub fn run() {
     info!("Start app building");
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_sentry::init(&client))
+        // .plugin(tauri_plugin_sentry::init(&client))
         .plugin(tauri_plugin_process::init())
         .plugin(
             tauri_plugin_log::Builder::new()
