@@ -124,10 +124,10 @@
         <h1 class="text-3xl text-center pt-12 sm:pt-0">
             SuperMouse AI ({appVersion})
         </h1>
-        <div class="flex flex-col place-content-center p-1">
-            <UpdateChecker class="mx-8" />
-        </div>
         {#if acceptTelemetry}
+            <div class="flex flex-col place-content-center p-1">
+                <UpdateChecker class="mx-8" />
+            </div>
             <PermissionBar
                 setupRecorder={() => micRecorder.setupRecorder()}
                 {recordingState}
