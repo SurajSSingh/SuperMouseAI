@@ -15,6 +15,7 @@
     "log:default",
     "sentry:default",
     "process:default",
-    "http:default"
+    "http:default",
+    "fs:default"
   ]
 }
