@@ -28,4 +28,4 @@ jobs:
           touch ./src-tauri/resources/whisper-model.bin
 
       - name: Run Rust Lints
-        run: cd ./src-tauri; cargo clippy -- -D warnings
+        run: cd ./src-tauri; cargo clippy --all-targets -- -D warnings
