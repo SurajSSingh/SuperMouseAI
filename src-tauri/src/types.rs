@@ -78,9 +78,7 @@ impl InnerAppState {
 
     pub fn get_model_info(&self) -> String {
         match &self.model {
-            ModelHolder { custom: None, .. } => {
-                format!("Default Model")
-            }
+            ModelHolder { custom: None, .. } => "Default Model".to_string(),
             ModelHolder {
                 custom: Some((_, path)),
                 ..
