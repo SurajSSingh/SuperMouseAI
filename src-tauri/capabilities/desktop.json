@@ -24,6 +24,33 @@
     "updater:default",
     "http:default",
     "fs:default",
-    "dialog:default"
+    "dialog:default",
+    "fs:scope-applocaldata",
+    "fs:scope-applocaldata-recursive",
+    "fs:scope-applocaldata-index",
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [
+        {"path": "$APPLOCALDATA"},
+        {"path": "$APPLOCALDATA/models"},
+        {"path": "$APPLOCALDATA/models/*"}
+      ]
+    },
+    {
+      "identifier": "fs:allow-create",
+      "allow": [
+        {"path": "$APPLOCALDATA"},
+        {"path": "$APPLOCALDATA/models"},
+        {"path": "$APPLOCALDATA/models/*"}
+      ]
+    },
+    {
+      "identifier": "fs:allow-remove",
+      "allow": [
+        {"path": "$APPLOCALDATA"},
+        {"path": "$APPLOCALDATA/models"},
+        {"path": "$APPLOCALDATA/models/*"}
+      ]
+    }
   ]
 }
