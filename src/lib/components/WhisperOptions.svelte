@@ -47,12 +47,6 @@
             0 = Use all, otherwise, limited to the provided number
         </p>
     </div>
-</CollapseableFieldSet>
-<CollapseableFieldSet
-    title="Post-Processing Configuration"
-    titleTag="h3"
-    subtitle="Configure how the text is processed after finishing transcription."
->
     <div class="mb-4">
         <label for="prompt-option" class=" font-semibold">Initial Prompt</label>
         <input
@@ -65,6 +59,12 @@
         />
         <p class="fieldset-label">Can use to define style or fix spelling.</p>
     </div>
+</CollapseableFieldSet>
+<CollapseableFieldSet
+    title="Post-Processing Configuration"
+    titleTag="h3"
+    subtitle="Configure how the text is processed after finishing transcription."
+>
     <div class="mb-4">
         <label for="ignored-words-option" class=" font-semibold"
             >Ignore Words</label
