@@ -5,18 +5,34 @@
         MODELS_DIR,
     } from "$lib/constants";
     import type { WhisperModelInfo } from "$lib/types";
-    import { exists, mkdir, remove, writeFile } from "@tauri-apps/plugin-fs";
-    import { debug, error, info } from "@tauri-apps/plugin-log";
+    import {
+        create as createFile,
+        exists,
+        mkdir,
+        remove as removeFile,
+    } from "@tauri-apps/plugin-fs";
+    import { debug, error, info, warn } from "@tauri-apps/plugin-log";
     import Button from "./ui/button/button.svelte";
     import Loading from "./ui/Loading.svelte";
-    import { fetch } from "@tauri-apps/plugin-http";
-    import { blobToBytes, checkDownloadedModels } from "$lib/myUtils";
+    import { checkDownloadedModels } from "$lib/myUtils";
     import { configStore } from "$lib/store.svelte";
+    import { download } from "@tauri-apps/plugin-upload";
+    import { notifier } from "$lib/notificationSystem.svelte";
+    import { appLocalDataDir } from "@tauri-apps/api/path";
+
+    // HACK: This is because it is not exported from types
+    interface ProgressPayload {
+        progress: number;
+        progressTotal: number;
+        total: number;
+        transferSpeed: number;
+    }
 
     let downloadedModels: WhisperModelInfo[] = $state([]);
     let notDownloadedModels: WhisperModelInfo[] = $state([]);
     let value = $state("default");
     let isProcessingModel = $state(false);
+    let downloadProgress: ProgressPayload | null = $state(null);
 
     const isDefault = $derived(value === "default");
     const isDownloaded = $derived(
@@ -27,7 +43,7 @@
     $effect(() => {
         const onMount = async () => {
             info("Checking for models");
-            debug("Make sure models directory exists");
+            debug("Making sure models directory exists");
             const modelsExists = await exists(MODELS_DIR, BASE_LOCAL_APP_DIR);
             if (!modelsExists) {
                 debug("Making models directory");
@@ -62,42 +78,69 @@
             );
             return;
         }
-        debug(`Downloading Model: ${addedModel.relativePath}`);
-        const response = await fetch(
-            `${MODEL_BASE_URL}/${addedModel.relativePath}`,
-        );
-        console.dir(response);
-        const file = await response.blob();
-        await writeFile(
+        debug(`Creating file at: ${MODELS_DIR}/${addedModel.relativePath}`);
+        await createFile(
             `${MODELS_DIR}/${addedModel.relativePath}`,
-            await blobToBytes(file),
             BASE_LOCAL_APP_DIR,
         );
-        downloadedModels.push(addedModel);
-        configStore.addModel(addedModel);
-        notDownloadedModels = notDownloadedModels.filter(
-            (model) => model.relativePath !== value,
-        );
-        isProcessingModel = false;
-        info(
-            `New model ${addedModel.name} (${addedModel.relativePath}) ready to use`,
-        );
+        debug(`Downloading Model: ${addedModel.relativePath}`);
+        try {
+            await download(
+                `${MODEL_BASE_URL}/${addedModel.relativePath}`,
+                `${await appLocalDataDir()}/${MODELS_DIR}/${addedModel.relativePath}`,
+                (progress) => {
+                    downloadProgress = progress;
+                },
+            );
+            downloadedModels.push(addedModel);
+            configStore.addModel(addedModel);
+            notDownloadedModels = notDownloadedModels.filter(
+                (model) => model.relativePath !== value,
+            );
+            info(
+                `New model ${addedModel.name} (${addedModel.relativePath}) ready to use`,
+            );
+            notifier.showToast(
+                "Model has been downloaded, and is ready to use",
+                "",
+                "success",
+                "",
+                5_000,
+            );
+        } catch (err: any) {
+            removeFile(
+                `${MODELS_DIR}/${addedModel.relativePath}`,
+                BASE_LOCAL_APP_DIR,
+            );
+            error(err.toString());
+            notifier.showToast(
+                "Could not download the model",
+                "",
+                "error",
+                "alert",
+                10_000,
+            );
+        } finally {
+            isProcessingModel = false;
+            downloadProgress = null;
+        }
     }
 
     async function removeModel() {
         info("Removing a model");
+        downloadProgress = null;
         isProcessingModel = true;
         const removingModel = downloadedModels.find(
             (model) => model.relativePath === value,
         );
         if (removingModel === undefined) {
-            error(
-                "Model cannot be downloaded because it is not found in downloadable models.",
+            warn(
+                "Model cannot be removed because it is not found in models folder.",
             );
             return;
         }
         debug(`Removing Model: ${removingModel.relativePath}`);
-        await remove(
+        await removeFile(
             `${MODELS_DIR}/${removingModel.relativePath}`,
             BASE_LOCAL_APP_DIR,
         );
@@ -163,5 +206,15 @@
             {/if}
             Download
         </Button>
+        {#if downloadProgress}
+            <progress
+                class={`progress w-full ${isProcessingModel ? "progress-primary" : "progress-error"}`}
+                value={downloadProgress.progressTotal}
+                max={downloadProgress.total}
+            ></progress>
+            <span
+                >{downloadProgress.progress} ({downloadProgress.transferSpeed})</span
+            >
+        {/if}
     {/if}
 </fieldset>
