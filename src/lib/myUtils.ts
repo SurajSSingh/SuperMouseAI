@@ -48,3 +48,26 @@ export function checkDownloadedModels(): Promise<
     }),
   );
 }
+
+const units = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+
+export function convertBPSToHuman(
+  bytesPerSecond: number,
+  precision = 2,
+): string {
+  // Convert as bytes, then add per second to the end
+  return `${convertBytesToHuman(bytesPerSecond, precision)}ps`;
+}
+
+export function convertBytesToHuman(bytes: number, precision = 2): string {
+  if (!Number.isFinite(bytes) || Number.isNaN(bytes) || bytes <= 0) {
+    return "0 B";
+  }
+  const powerBy10 = Math.log10(bytes);
+  const powerBy1000 = Math.floor(powerBy10 / 3);
+  const bytesUnit = units[powerBy1000];
+  const formattedBytes = (bytes / Math.pow(1000, powerBy1000)).toFixed(
+    precision,
+  );
+  return `${formattedBytes} ${bytesUnit}`;
+}
