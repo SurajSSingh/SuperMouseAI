@@ -1,4 +1,11 @@
 import { debug, trace, warn } from "@tauri-apps/plugin-log";
+import {
+  BASE_LOCAL_APP_DIR,
+  MODELS_DIR,
+  WHISPER_GGML_MODELS,
+} from "./constants.ts";
+import { exists } from "@tauri-apps/plugin-fs";
+import type { WhisperModelInfo } from "./types.ts";
 
 /**
  * Convert a blob to array of bytes
@@ -24,4 +31,20 @@ export function blobChunksToBytes(
     : new Blob(chunks, { type: type });
   trace(`Made a blob to convert`);
   return blobToBytes(blob);
+}
+
+export function checkDownloadedModels(): Promise<
+  { model: WhisperModelInfo; downloaded: boolean }[]
+> {
+  return Promise.all(
+    WHISPER_GGML_MODELS.map(async (model) => {
+      return {
+        model,
+        downloaded: await exists(
+          `${MODELS_DIR}/${model.relativePath}`,
+          BASE_LOCAL_APP_DIR,
+        ),
+      };
+    }),
+  );
 }
