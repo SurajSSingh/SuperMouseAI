@@ -14,7 +14,11 @@
     import { debug, error, info, warn } from "@tauri-apps/plugin-log";
     import Button from "./ui/button/button.svelte";
     import Loading from "./ui/Loading.svelte";
-    import { checkDownloadedModels } from "$lib/myUtils";
+    import {
+        checkDownloadedModels,
+        convertBPSToHuman,
+        convertBytesToHuman,
+    } from "$lib/myUtils";
     import { configStore } from "$lib/store.svelte";
     import { download } from "@tauri-apps/plugin-upload";
     import { notifier } from "$lib/notificationSystem.svelte";
@@ -92,6 +96,9 @@
                     downloadProgress = progress;
                 },
             );
+            // NOTE: Because JS does not have `else`, this must
+            //       be placed inside the try block, even though
+            //       below code should not throw error.
             downloadedModels.push(addedModel);
             configStore.addModel(addedModel);
             notDownloadedModels = notDownloadedModels.filter(
@@ -140,10 +147,22 @@
             return;
         }
         debug(`Removing Model: ${removingModel.relativePath}`);
-        await removeFile(
-            `${MODELS_DIR}/${removingModel.relativePath}`,
-            BASE_LOCAL_APP_DIR,
-        );
+        try {
+            await removeFile(
+                `${MODELS_DIR}/${removingModel.relativePath}`,
+                BASE_LOCAL_APP_DIR,
+            );
+        } catch (err) {
+            error(`Could not remove model: ${err}`);
+            notifier.showToast(
+                "Could not remove the given model",
+                "",
+                "error",
+                "alert",
+                10_000,
+            );
+            return;
+        }
         notDownloadedModels.push(removingModel);
         downloadedModels = downloadedModels.filter(
             (model) => model.relativePath !== value,
@@ -153,6 +172,7 @@
         info(
             `Model ${removingModel.name} (${removingModel.relativePath}) removed successfully`,
         );
+        notifier.showToast("Model has been removed", "", "success", "", 5_000);
     }
 </script>
 
@@ -197,7 +217,7 @@
     {:else if !isDefault}
         <Button
             onclick={downloadModel}
-            color="neutral"
+            color="info"
             variant="soft"
             disabled={isProcessingModel}
         >
@@ -213,7 +233,11 @@
                 max={downloadProgress.total}
             ></progress>
             <span
-                >{downloadProgress.progress} ({downloadProgress.transferSpeed})</span
+                >Speed: {convertBPSToHuman(
+                    downloadProgress.transferSpeed /
+                        1000 /* HACK: Not sure why it is multiplied by 1000, but it now give corrected speed */,
+                )} (Recieved:
+                {convertBytesToHuman(downloadProgress.progress)})</span
             >
         {/if}
     {/if}
