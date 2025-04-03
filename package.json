@@ -29,6 +29,7 @@
     "@tauri-apps/plugin-process": "~2.2.0",
     "@tauri-apps/plugin-store": "~2.2.0",
     "@tauri-apps/plugin-updater": "~2.6.1",
+    "@tauri-apps/plugin-upload": "~2.2.1",
     "extendable-media-recorder": "^9.2.23",
     "extendable-media-recorder-wav-encoder": "^7.0.127",
     "tailwind-variants": "^1.0.0",

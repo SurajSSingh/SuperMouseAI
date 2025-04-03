@@ -81,6 +81,7 @@ pub fn run() {
     export_bindings(&builder);
     info!("Start app building");
     tauri::Builder::default()
+        .plugin(tauri_plugin_upload::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_http::init())

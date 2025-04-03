@@ -20,6 +20,7 @@
     "npm:@tauri-apps/plugin-process@2.2": "2.2.0",
     "npm:@tauri-apps/plugin-store@2.2": "2.2.0",
     "npm:@tauri-apps/plugin-updater@~2.6.1": "2.6.1",
+    "npm:@tauri-apps/plugin-upload@~2.2.1": "2.2.1",
     "npm:bits-ui@^1.3.15": "1.3.15_svelte@5.25.3__acorn@8.14.1",
     "npm:clsx@^2.1.1": "2.1.1",
     "npm:daisyui@^5.0.9": "5.0.9",
@@ -479,6 +480,12 @@
     },
     "@tauri-apps/plugin-updater@2.6.1": {
       "integrity": "sha512-iiOevw4kc12Ok99J9KthXwUqwPv1sYjG+tNEDZqPmwvOmIq7s58nKMRz6NJPKXT4U16NzMPffFcP/LUOsz6c4A==",
+      "dependencies": [
+        "@tauri-apps/api@2.4.0"
+      ]
+    },
+    "@tauri-apps/plugin-upload@2.2.1": {
+      "integrity": "sha512-2EyVhJYLAp2mJH0UzO3QGU0vPk/YWvAfdI2wXbczyzEZY/AZVa9wConyB1TV/NGhyJRim4LwWgkmnEvcKLkECw==",
       "dependencies": [
         "@tauri-apps/api@2.4.0"
       ]
@@ -1021,6 +1028,7 @@
         "npm:@tauri-apps/plugin-process@2.2",
         "npm:@tauri-apps/plugin-store@2.2",
         "npm:@tauri-apps/plugin-updater@~2.6.1",
+        "npm:@tauri-apps/plugin-upload@~2.2.1",
         "npm:bits-ui@^1.3.15",
         "npm:clsx@^2.1.1",
         "npm:daisyui@^5.0.9",
