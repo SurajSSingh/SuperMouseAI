@@ -17,6 +17,7 @@
     import { getVersion } from "@tauri-apps/api/app";
     import { emitTo } from "@tauri-apps/api/event";
     import UpdateChecker from "$lib/components/UpdateChecker.svelte";
+    import ModelDropdown from "$lib/components/ui/ModelDropdown.svelte";
 
     // Component Bindings
     let micRecorder: MicRecorder = $state() as MicRecorder;
@@ -139,6 +140,11 @@
                 {recordingState}
             />
             <div class="flex flex-col place-content-center">
+                <div class="place-self-stretch">
+                    <div class="mx-2 sm:mx-16">
+                        <ModelDropdown class="w-full" />
+                    </div>
+                </div>
                 <MicRecorder
                     bind:this={micRecorder}
                     {recordingState}
