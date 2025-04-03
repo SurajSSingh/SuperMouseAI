@@ -82,32 +82,3 @@
         </p>
     </div>
 </CollapseableFieldSet>
-<!-- <fieldset class="fieldset bg-base-200 border border-base-300 p-4 rounded-box">
-    <legend class="fieldset-legend"># of CPU threads to use?</legend>
-</fieldset> -->
-<!-- <fieldset class="fieldset bg-base-200 border border-base-300 p-4 rounded-box">
-    <legend class="fieldset-legend">Initial Prompt</legend>
-    <input
-        type="text"
-        name="prompt"
-        id="promt-option"
-        placeholder="Using default prompt."
-        bind:value={configStore.initialPrompt.value}
-        class="p-1 rounded-sm border-1 w-full"
-    />
-    <p class="fieldset-label">Can use to define style or fix spelling.</p>
-</fieldset> -->
-<!-- <fieldset class="fieldset bg-base-200 border border-base-300 p-4 rounded-box">
-    <legend class="fieldset-legend">Ignore Words</legend>
-    <textarea
-        name="ignored-words"
-        id="ignored-words-option"
-        placeholder="List of words to ignore."
-        class="p-1 rounded-sm border-1 w-full"
-        rows={5}
-        bind:value={configStore.ignoredWords.value}
-    ></textarea>
-    <p class="fieldset-label">
-        Specify words to ignore (define each on new line)
-    </p>
-</fieldset> -->
