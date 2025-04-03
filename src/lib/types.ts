@@ -28,4 +28,7 @@ export type WhisperModelInfo = {
   relativePath: string;
   sha256: string;
   approxSize: string;
+  quantizeType: "full" | "q8" | "q5";
+  isEnglishOnly?: boolean;
+  isSuperceded?: boolean;
 };
