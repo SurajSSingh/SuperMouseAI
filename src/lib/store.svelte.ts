@@ -129,6 +129,11 @@ export class ConfigStore {
     ConfigItem.DOWNLOADED_MODELS,
   );
 
+  // Private config data not backed by file
+  includeEnglishOnlyModels = $state({ value: false });
+  includeQuantizedModels = $state({ value: false });
+  includeObsoleteModels = $state({ value: false });
+
   /** Array of all fields in class that are configuration optiosn */
   #configFields = [
     this.theme,

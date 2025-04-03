@@ -97,6 +97,15 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "full",
   },
   {
+    "name": "Large V2 Full",
+    "relativePath": "ggml-large-v2.bin",
+    "sha256":
+      "9a423fe4d40c82774b6af34115b8b935f34152246eb19e80e376071d3f999487",
+    "approxSize": "3.09 GB",
+    quantizeType: "full",
+    isSuperceded: true,
+  },
+  {
     "name": "Large V3 Full",
     "relativePath": "ggml-large-v3.bin",
     "sha256":

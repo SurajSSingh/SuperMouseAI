@@ -23,6 +23,7 @@
     import { download } from "@tauri-apps/plugin-upload";
     import { notifier } from "$lib/notificationSystem.svelte";
     import { appLocalDataDir } from "@tauri-apps/api/path";
+    import ToggleSwitch from "./ui/ToggleSwitch.svelte";
 
     // HACK: This is because it is not exported from types
     interface ProgressPayload {
@@ -42,6 +43,9 @@
     const isDownloaded = $derived(
         configStore.downloadedModels.value.find((model) => model === value) !==
             undefined,
+    );
+    const filteredNotDownloadedModels = $derived(
+        notDownloadedModels.filter(includeModelBasedOnFilter),
     );
 
     $effect(() => {
@@ -68,6 +72,35 @@
         onMount();
         return () => {};
     });
+
+    /**
+     * Given the filters in `configStore`, check if a model is to be included based on its properties
+     * @param model: The model to check
+     * @returns Whether the model should be included
+     */
+    export function includeModelBasedOnFilter(
+        model: WhisperModelInfo,
+    ): boolean {
+        if (
+            model.isEnglishOnly === true &&
+            !configStore.includeEnglishOnlyModels.value
+        ) {
+            return false;
+        }
+        if (
+            model.isSuperceded === true &&
+            !configStore.includeObsoleteModels.value
+        ) {
+            return false;
+        }
+        if (
+            model.quantizeType !== "full" &&
+            !configStore.includeQuantizedModels.value
+        ) {
+            return false;
+        }
+        return true;
+    }
 
     async function downloadModel() {
         info("Start Downloading new model");
@@ -177,7 +210,38 @@
 </script>
 
 <fieldset class="fieldset">
-    <legend class="fieldset-legend">Browsers</legend>
+    <legend class="fieldset-legend">Model Selection</legend>
+    <details class="my-2">
+        <summary class="font-semibold">More Model Options</summary>
+        <p class="my-2 text-sm">Add more models for downloading</p>
+        <div class="mb-2">
+            <ToggleSwitch
+                label="Include English-only models"
+                bind:checked={configStore.includeEnglishOnlyModels.value}
+            />
+            <p class="fieldset-label">
+                Show models which are more accurate at transcribing for English.
+            </p>
+        </div>
+        <div class="mb-2">
+            <ToggleSwitch
+                label="Include Quantized (Compressed) models"
+                bind:checked={configStore.includeQuantizedModels.value}
+            />
+            <p class="fieldset-label">
+                Show models which are smaller at the cost of overall accuracy.
+            </p>
+        </div>
+        <div class="mb-2">
+            <ToggleSwitch
+                label="Include Old models"
+                bind:checked={configStore.includeObsoleteModels.value}
+            />
+            <p class="fieldset-label">
+                Show models which have been replaced by newer models.
+            </p>
+        </div>
+    </details>
     <select class="select select-sm" bind:value disabled={isProcessingModel}>
         <option value="default">Select a model to manage</option>
         <optgroup label="Downloaded Models">
@@ -191,7 +255,7 @@
             {/each}
         </optgroup>
         <optgroup label="Able to Download">
-            {#each notDownloadedModels as model}
+            {#each filteredNotDownloadedModels as model}
                 <option value={model.relativePath}
                     >{model.name} ({model.approxSize})</option
                 >
