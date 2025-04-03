@@ -19,3 +19,13 @@ export type ConfirmActionType = Partial<{
   cancelButtonStyle: string;
   mustRetry: boolean | number;
 }>;
+
+/**
+ * Whisper Model information
+ */
+export type WhisperModelInfo = {
+  name: string;
+  relativePath: string;
+  sha256: string;
+  approxSize: string;
+};
