@@ -1,4 +1,11 @@
 import { debug, trace, warn } from "@tauri-apps/plugin-log";
+import {
+  BASE_LOCAL_APP_DIR,
+  MODELS_DIR,
+  WHISPER_GGML_MODELS,
+} from "./constants.ts";
+import { exists } from "@tauri-apps/plugin-fs";
+import type { WhisperModelInfo } from "./types.ts";
 
 /**
  * Convert a blob to array of bytes
@@ -24,4 +31,43 @@ export function blobChunksToBytes(
     : new Blob(chunks, { type: type });
   trace(`Made a blob to convert`);
   return blobToBytes(blob);
+}
+
+export function checkDownloadedModels(): Promise<
+  { model: WhisperModelInfo; downloaded: boolean }[]
+> {
+  return Promise.all(
+    WHISPER_GGML_MODELS.map(async (model) => {
+      return {
+        model,
+        downloaded: await exists(
+          `${MODELS_DIR}/${model.relativePath}`,
+          BASE_LOCAL_APP_DIR,
+        ),
+      };
+    }),
+  );
+}
+
+const units = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+
+export function convertBPSToHuman(
+  bytesPerSecond: number,
+  precision = 2,
+): string {
+  // Convert as bytes, then add per second to the end
+  return `${convertBytesToHuman(bytesPerSecond, precision)}ps`;
+}
+
+export function convertBytesToHuman(bytes: number, precision = 2): string {
+  if (!Number.isFinite(bytes) || Number.isNaN(bytes) || bytes <= 0) {
+    return "0 B";
+  }
+  const powerBy10 = Math.log10(bytes);
+  const powerBy1000 = Math.floor(powerBy10 / 3);
+  const bytesUnit = units[powerBy1000];
+  const formattedBytes = (bytes / Math.pow(1000, powerBy1000)).toFixed(
+    precision,
+  );
+  return `${formattedBytes} ${bytesUnit}`;
 }

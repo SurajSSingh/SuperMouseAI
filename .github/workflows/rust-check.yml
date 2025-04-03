@@ -20,5 +20,12 @@ jobs:
       - name: Check Rust Formatting
         run: cd ./src-tauri; cargo fmt --all -- --check
 
+      # Install 
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libasound2-dev
+          touch ./src-tauri/resources/whisper-model.bin
+
       - name: Run Rust Lints
-        run: cd ./src-tauri; cargo clippy -- -D warnings
+        run: cd ./src-tauri; cargo clippy --all-targets -- -D warnings

@@ -1,5 +1,5 @@
 import { load, type Store } from "@tauri-apps/plugin-store";
-import type { ThemeKind } from "./types.ts";
+import type { ThemeKind, WhisperModelInfo } from "./types.ts";
 import type { UnlistenFn } from "@tauri-apps/api/event";
 import { debug, error, info, trace, warn } from "@tauri-apps/plugin-log";
 
@@ -29,6 +29,9 @@ export const ConfigItem = {
   UPDATES_NOTIFY: "notify_of_updates",
   AUTO_CHECK_UPDATES: "check_for_updates",
   AUTO_APPLY_UPDATES: "auto_download_and_install_update",
+  CURRENT_MODEL: "current_model",
+  DOWNLOADED_MODELS: "downloaded_models",
+  USE_GPU: "use_gpu",
 };
 
 class StoreStateOption<T> {
@@ -118,6 +121,23 @@ export class ConfigStore {
     false,
     ConfigItem.AUTO_APPLY_UPDATES,
   );
+  currentModel = new StoreStateOption<string>(
+    "default",
+    ConfigItem.CURRENT_MODEL,
+  );
+  downloadedModels = new StoreStateOption<string[]>(
+    [],
+    ConfigItem.DOWNLOADED_MODELS,
+  );
+  useGPU = new StoreStateOption<boolean>(
+    true,
+    ConfigItem.USE_GPU,
+  );
+
+  // Private config data not backed by file
+  includeEnglishOnlyModels = $state({ value: false });
+  includeQuantizedModels = $state({ value: false });
+  includeObsoleteModels = $state({ value: false });
 
   /** Array of all fields in class that are configuration optiosn */
   #configFields = [
@@ -137,6 +157,9 @@ export class ConfigStore {
     this.notifyOfUpdates,
     this.autoCheckForUpdates,
     this.autoApplyUpdates,
+    this.currentModel,
+    this.downloadedModels,
+    this.useGPU,
   ] as const;
 
   // Derived values
@@ -300,6 +323,23 @@ export class ConfigStore {
       }`,
     );
     this.currentIndex.value++;
+  }
+
+  addModel(model: WhisperModelInfo): void {
+    debug(`Add model ${model.relativePath} to config`);
+    // HACK: Issue with proxing array in classes, don't fully understand why yet
+    this.downloadedModels.value = [
+      ...this.downloadedModels.value,
+      model.relativePath,
+    ];
+  }
+
+  removeModel(model: WhisperModelInfo): void {
+    debug(`Remove model ${model.relativePath} from config`);
+    // HACK: Issue with proxing array in classes, don't fully understand why yet
+    this.downloadedModels.value = this.downloadedModels.value.filter(
+      (downloaded) => downloaded !== model.relativePath,
+    );
   }
 }
 

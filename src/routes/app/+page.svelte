@@ -17,6 +17,7 @@
     import { getVersion } from "@tauri-apps/api/app";
     import { emitTo } from "@tauri-apps/api/event";
     import UpdateChecker from "$lib/components/UpdateChecker.svelte";
+    import ModelDropdown from "$lib/components/ui/ModelDropdown.svelte";
 
     // Component Bindings
     let micRecorder: MicRecorder = $state() as MicRecorder;
@@ -80,27 +81,33 @@
 
     // Top-level clean-up ONLY (for store)
     $effect(() => {
-        notifier.confirmAction(
-            "We collect basic error and crash reports by default using Sentry. We DO NOT collect your private data (such as audio data or transcripts), only information related to OS (like which GPU you use) and actions that lead to the app showing an error or crashing. This cannot be turned off for pre-release builds of this app. By continuing, you agree to the terms.",
-            () => {
+        const showNotice = async () => {
+            info("Show telemetry notice");
+            const accepted = await notifier.showDialog(
+                "ask",
+                "We collect basic error and crash reports by default using Sentry. We DO NOT collect your private data (such as audio data or transcripts), only information related to OS (like which GPU you use) and actions that lead to the app showing an error or crashing. This cannot be turned off for pre-release builds of this app. By continuing, you agree to the terms.",
+                {
+                    kind: "warning",
+                    title: "Telemetry Notice",
+                    okLabel: "I Agree",
+                    cancelLabel: "Quit App",
+                },
+            );
+            if (accepted) {
                 info("User has accepted to use the app.");
                 acceptTelemetry = true;
-            },
-            () => {
+            } else {
                 // Exit immediately
                 exit(0);
-            },
-            "Telemetry notice",
-            "I Agree",
-            "Quit App",
-            { mustRetry: true },
-        );
+            }
+        };
         getVersion().then(
             (version) =>
                 (appVersion = version.startsWith("v")
                     ? version
                     : `v${version}`),
         );
+        showNotice();
         return () => {
             configStore.cleanup();
         };
@@ -133,6 +140,11 @@
                 {recordingState}
             />
             <div class="flex flex-col place-content-center">
+                <div class="place-self-stretch">
+                    <div class="mx-2 sm:mx-16">
+                        <ModelDropdown class="w-full" />
+                    </div>
+                </div>
                 <MicRecorder
                     bind:this={micRecorder}
                     {recordingState}

@@ -26,6 +26,22 @@ impl Model {
     /// # Errors
     /// - [`WhisperError`]
     pub fn new(path: &str) -> Result<Self, WhisperError> {
+        trace!("Loading model using default parameters");
+        let params: WhisperContextParameters = WhisperContextParameters::default();
+        Self::new_with_params(path, params)
+    }
+
+    /// Creates a new model from a model path and parameters. Must be a path to a valid
+    /// Whisper model, in GGML format, that is compatible with Whisper.cpp.
+    /// # Arguments
+    /// - `path`: Path to the model.
+    /// - `path`: Context parameters.
+    /// # Errors
+    /// - [`WhisperError`]
+    pub fn new_with_params(
+        path: &str,
+        params: WhisperContextParameters,
+    ) -> Result<Self, WhisperError> {
         trace!("Loading model {}", path);
         // Sanity check - make sure the path exists
         let path_converted = std::path::Path::new(path);
@@ -33,7 +49,6 @@ impl Model {
             return Err(WhisperError::InitError);
         }
 
-        let params: WhisperContextParameters = WhisperContextParameters::default();
         Ok({
             Self {
                 context: WhisperContext::new_with_params(path, params)?,

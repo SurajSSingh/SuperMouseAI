@@ -21,6 +21,102 @@
     "log:default",
     "sentry:default",
     "process:default",
-    "updater:default"
+    "updater:default",
+    "fs:default",
+    "dialog:default",
+    "fs:scope-applocaldata",
+    "fs:scope-applocaldata-recursive",
+    "fs:scope-applocaldata-index",
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [
+        {
+          "path": "$APPLOCALDATA"
+        },
+        {
+          "path": "$APPLOCALDATA/models"
+        },
+        {
+          "path": "$APPLOCALDATA/models/*"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-create",
+      "allow": [
+        {
+          "path": "$APPLOCALDATA"
+        },
+        {
+          "path": "$APPLOCALDATA/models"
+        },
+        {
+          "path": "$APPLOCALDATA/models/*"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-write",
+      "allow": [
+        {
+          "path": "$APPLOCALDATA"
+        },
+        {
+          "path": "$APPLOCALDATA/models"
+        },
+        {
+          "path": "$APPLOCALDATA/models/*"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-write-file",
+      "allow": [
+        {
+          "path": "$APPLOCALDATA"
+        },
+        {
+          "path": "$APPLOCALDATA/models"
+        },
+        {
+          "path": "$APPLOCALDATA/models/*"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-remove",
+      "allow": [
+        {
+          "path": "$APPLOCALDATA"
+        },
+        {
+          "path": "$APPLOCALDATA/models"
+        },
+        {
+          "path": "$APPLOCALDATA/models/*"
+        }
+      ]
+    },
+    {
+      "identifier": "http:default",
+      "allow": [
+        {
+          "url": "https://github.com/SurajSSingh/SuperMouseAI/*"
+        },
+        {
+          "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/*"
+        },
+        {
+          "url": "https://cdn-lfs.hf.co/*"
+        }
+      ],
+      "deny": [
+        {
+          "url": "https://private.tauri.app"
+        }
+      ]
+    },
+    "upload:default",
+    "upload:allow-download"
   ]
 }

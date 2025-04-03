@@ -31,7 +31,7 @@ Component based off of: <https://daisyui.com/components/theme-controller/>
 
 <div class={`dropdown dropdown-${direction} z-10 ${className}`}>
     <div tabindex="0" role="button" class="btn m-1">
-        Theme:<span class="text-accent">{configStore.theme.value}</span>
+        Theme:<span class="text-accent">{configStore.theme.value} &#9660;</span>
     </div>
     <ul
         id="theme-list"
