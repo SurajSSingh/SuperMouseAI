@@ -98,6 +98,9 @@
         },
         {
           "url": "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/*"
+        },
+        {
+          "url": "https://cdn-lfs.hf.co/*"
         }
       ],
       "deny": [
@@ -106,6 +109,7 @@
         }
       ]
     },
-    "upload:default"
+    "upload:default",
+    "upload:allow-download"
   ]
 }
