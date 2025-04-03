@@ -1,6 +1,7 @@
 <script lang="ts">
     import { configStore } from "$lib/store.svelte";
     import CollapseableFieldSet from "./ui/CollapseableFieldSet.svelte";
+    import ToggleSwitch from "./ui/ToggleSwitch.svelte";
     import WhisperModelManager from "./WhisperModelManager.svelte";
 
     interface WhisperOptionProps {
@@ -31,6 +32,16 @@
     titleTag="h3"
     subtitle="Configure how Whisper model works"
 >
+    <div class="mb-2">
+        <ToggleSwitch
+            label="Enable GPU Acceleration"
+            bind:checked={configStore.useGPU.value}
+        />
+        <p class="fieldset-label">
+            Attempt to use GPU for transcription, otherwise falls back to CPU
+            (uses multi-threading when possible)
+        </p>
+    </div>
     <div class="mb-4">
         <label for="threads-option" class=" font-semibold"
             ># of CPU threads to use?</label

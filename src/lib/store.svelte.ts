@@ -31,6 +31,7 @@ export const ConfigItem = {
   AUTO_APPLY_UPDATES: "auto_download_and_install_update",
   CURRENT_MODEL: "current_model",
   DOWNLOADED_MODELS: "downloaded_models",
+  USE_GPU: "use_gpu",
 };
 
 class StoreStateOption<T> {
@@ -128,6 +129,10 @@ export class ConfigStore {
     [],
     ConfigItem.DOWNLOADED_MODELS,
   );
+  useGPU = new StoreStateOption<boolean>(
+    true,
+    ConfigItem.USE_GPU,
+  );
 
   // Private config data not backed by file
   includeEnglishOnlyModels = $state({ value: false });
@@ -154,6 +159,7 @@ export class ConfigStore {
     this.autoApplyUpdates,
     this.currentModel,
     this.downloadedModels,
+    this.useGPU,
   ] as const;
 
   // Derived values
