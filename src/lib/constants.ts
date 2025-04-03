@@ -50,6 +50,13 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     "approxSize": "77.7 MB",
   },
   {
+    "name": "Small",
+    "relativePath": "ggml-small.bin",
+    "sha256":
+      "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b",
+    "approxSize": "488 MB",
+  },
+  {
     "name": "Large V3 Full",
     "relativePath": "ggml-large-v3.bin",
     "sha256":
