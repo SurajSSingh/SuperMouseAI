@@ -3,9 +3,19 @@
 Component to select the model to use
 -->
 <script lang="ts">
-    import { WHISPER_GGML_MODELS, DEFAULT_MODEL } from "$lib/constants";
+    import { commands } from "$lib/bindings";
+    import {
+        WHISPER_GGML_MODELS,
+        DEFAULT_MODEL,
+        MODELS_DIR,
+    } from "$lib/constants";
     import { checkDownloadedModels } from "$lib/myUtils";
     import { configStore } from "$lib/store.svelte";
+    import { notifier } from "$lib/notificationSystem.svelte";
+    import { appLocalDataDir } from "@tauri-apps/api/path";
+    import { debug, error } from "@tauri-apps/plugin-log";
+    import { untrack } from "svelte";
+    import Loading from "./Loading.svelte";
 
     interface ModelDropdownProps {
         class?: string;
@@ -18,6 +28,9 @@ Component to select the model to use
         listClass = "",
         direction = "bottom",
     }: ModelDropdownProps = $props();
+
+    let baseModelDir = $state("");
+    let isUpdating = $state(false);
 
     const selectableModels = $derived(
         WHISPER_GGML_MODELS.concat().filter(
@@ -34,6 +47,69 @@ Component to select the model to use
                 .filter((modelInfo) => modelInfo.downloaded)
                 .map((modelInfo) => modelInfo.model.relativePath);
         });
+        untrack(() => {
+            appLocalDataDir().then((path) => (baseModelDir = path));
+        });
+    });
+
+    async function removeModel() {
+        debug("Will remove custom model");
+        try {
+            const result = await commands.updateModel(null, null);
+            if (result.status === "error") {
+                throw result.error;
+            }
+            notifier.showToast(
+                "Model switched successfully",
+                "",
+                "success",
+                "",
+                5_000,
+            );
+        } catch (err) {
+            error(`Could not unload custom model: ${err}`);
+            notifier.showToast("Custom model could not removed", "", "warn");
+        } finally {
+            isUpdating = false;
+        }
+    }
+
+    async function replaceModel(path: string, useGPU: boolean | null) {
+        debug("Switching custom model");
+        try {
+            const result = await commands.updateModel(path, useGPU);
+            if (result.status === "error") {
+                throw result.error;
+            }
+            notifier.showToast(
+                "Model switched successfully",
+                "",
+                "success",
+                "",
+                5_000,
+            );
+        } catch (err) {
+            error(`Could not switch custom model: ${err}`);
+            notifier.showToast("Could not switch custom model", "", "error");
+        } finally {
+            isUpdating = false;
+        }
+    }
+
+    $effect(() => {
+        if (baseModelDir) {
+            untrack(() => {
+                isUpdating = true;
+            });
+            if (configStore.currentModel.value === "default") {
+                removeModel();
+            } else {
+                replaceModel(
+                    `${baseModelDir}/${MODELS_DIR}/${configStore.currentModel.value}`,
+                    configStore.useGPU.value,
+                );
+            }
+        }
     });
 </script>
 
@@ -43,7 +119,11 @@ Component to select the model to use
         role="button"
         class="btn m-1 btn-soft bg-info/10 hover:bg-info/70 w-full text-sm"
     >
-        Model: <span class="text-accent"
+        {#if isUpdating}
+            <Loading color="accent" variant="spinner" />
+        {/if}
+        Model:
+        <span class="text-accent"
             >{configStore.currentModel.value === "default"
                 ? "Default"
                 : selectableModels.find(
@@ -64,6 +144,7 @@ Component to select the model to use
                 class="btn btn-sm btn-block btn-ghost hover:btn-soft justify-start checked:border-primary checked:border-2 text-center"
                 aria-label={`Default [${DEFAULT_MODEL.name}]`}
                 value="default"
+                disabled={isUpdating}
                 checked={DEFAULT_MODEL.relativePath ===
                     configStore.currentModel.value}
                 bind:group={configStore.currentModel.value}
@@ -78,6 +159,7 @@ Component to select the model to use
                     class="btn btn-sm btn-block btn-ghost hover:btn-soft justify-start checked:border-primary checked:border-2 text-center"
                     aria-label={model.name}
                     value={model.relativePath}
+                    disabled={isUpdating}
                     checked={model.relativePath ===
                         configStore.currentModel.value}
                     bind:group={configStore.currentModel.value}
