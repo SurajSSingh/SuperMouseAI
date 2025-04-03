@@ -324,10 +324,10 @@ export class ConfigStore {
   }
 
   removeModel(model: WhisperModelInfo): void {
-    debug(`Remove model ${model.relativePath} to config`);
+    debug(`Remove model ${model.relativePath} from config`);
     // HACK: Issue with proxing array in classes, don't fully understand why yet
     this.downloadedModels.value = this.downloadedModels.value.filter(
-      (downloaded) => downloaded === model.relativePath
+      (downloaded) => downloaded !== model.relativePath,
     );
   }
 }
