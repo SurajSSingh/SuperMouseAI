@@ -6,22 +6,34 @@ use mouce::common::MouseButton;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::{collections::HashMap, path::PathBuf};
+use whisper_rs::{WhisperContextParameters, WhisperError};
+
+pub struct ModelHolder {
+    default: Model,
+    custom: Option<(Model, String)>,
+}
 
 /// "Global" state for the application.
 ///
 /// This holds all data that is expected to
 /// persist throughout the app's runtime.
-pub struct AppState {
-    pub(crate) model: Model,
+pub struct InnerAppState {
+    pub(crate) model: ModelHolder,
     pub(crate) sound_map: HashMap<String, PathBuf>,
 }
 
-impl AppState {
+impl InnerAppState {
     pub fn new(model: Model, sound_map: HashMap<String, PathBuf>) -> Self {
         // Load model into memory by evaluating short silence
         // FIXME: Need to do this in another thread, otherwise UI freezes
         // let _ = model.transcribe_pcm_s16le(&[0.0; 20_000], false, false, None, None, None);
-        AppState { model, sound_map }
+        InnerAppState {
+            model: ModelHolder {
+                default: model,
+                custom: None,
+            },
+            sound_map,
+        }
     }
 
     /// Get sound by the provided name or by prepending `default_` to the beginning.
@@ -35,7 +47,51 @@ impl AppState {
             self.sound_map.get(&format!("default_{}", &sound_name))
         })
     }
+
+    /// Replace the custom model being used
+    pub fn replace_custom_model(
+        &mut self,
+        path: String,
+        use_gpu: bool,
+    ) -> Result<(), WhisperError> {
+        let mut params = WhisperContextParameters::new();
+        params.use_gpu(use_gpu);
+        let new_model = Model::new_with_params(&path, params)?;
+        // _ will drop old model
+        let _ = self.model.custom.replace((new_model, path));
+        Ok(())
+    }
+
+    /// Removes a custom model
+    pub fn remove_custom_model(&mut self) {
+        // _ will drop old model
+        let _ = self.model.custom.take();
+    }
+
+    pub fn get_model(&self) -> &Model {
+        self.model
+            .custom
+            .as_ref()
+            .map(|holder| &holder.0)
+            .unwrap_or(&self.model.default)
+    }
+
+    pub fn get_model_info(&self) -> String {
+        match &self.model {
+            ModelHolder { custom: None, .. } => {
+                format!("Default Model")
+            }
+            ModelHolder {
+                custom: Some((_, path)),
+                ..
+            } => {
+                format!("Custom Model at: {path}")
+            }
+        }
+    }
 }
+
+pub type AppState = std::sync::Mutex<InnerAppState>;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Type)]
 /// Enum representing mouse button type

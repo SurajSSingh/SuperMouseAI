@@ -34,8 +34,10 @@ pub async fn transcribe(
     options.format,
 );
     info!("Running transcription command");
-    let transcription = app_state
-        .model
+    let app_state = app_state.lock().map_err(|err| err.to_string())?;
+    let model = app_state.get_model();
+    info!("Transcribe using {}", app_state.get_model_info());
+    let transcription = model
         .transcribe_audio(
             &audio_data,
             options.translate.unwrap_or(false),
@@ -118,6 +120,8 @@ pub async fn play_sound(app_state: State<'_, AppState>, sound_name: String) -> R
     info!("Running play sound command");
     // Get sound source
     let source = app_state
+        .lock()
+        .map_err(|err| err.to_string())?
         .get_sound_path(&sound_name)
         .ok_or(format!("Could not find sound with name: {}", sound_name))
         .and_then(|path| File::open(path).map_err(|err| err.to_string()))
@@ -225,6 +229,31 @@ pub async fn set_window_top(
         })
 }
 
+#[tauri::command]
+#[specta::specta]
+/// Update the custom model information
+pub async fn update_model(
+    app_state: State<'_, AppState>,
+    path: Option<String>,
+    use_gpu: Option<bool>,
+) -> Result<(), String> {
+    info!("Updating model to use");
+    let mut app_state = app_state.lock().map_err(|err| err.to_string())?;
+    if let Some(path) = path {
+        info!("Replacing Custom Model");
+        app_state
+            .replace_custom_model(
+                path,
+                use_gpu.unwrap_or(cfg!(any(feature = "vulkan", target_os = "macos"))),
+            )
+            .map_err(|err| err.to_string())?;
+    } else {
+        info!("Removing Custom Model");
+        app_state.remove_custom_model();
+    };
+    Ok(())
+}
+
 /// Gets all collected commands for Super Mouse AI application to be used by builder
 pub fn get_collected_commands() -> Commands<Wry> {
     collect_commands![
@@ -234,6 +263,7 @@ pub fn get_collected_commands() -> Commands<Wry> {
         process_text,
         transcribe_with_post_process,
         set_window_top,
-        write_text
+        write_text,
+        update_model
     ]
 }
