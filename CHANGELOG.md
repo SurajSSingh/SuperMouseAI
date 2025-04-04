@@ -2,7 +2,102 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [unreleased] - Expected 0.8.1
+
+### 🚀 Features
+
+- *(frontend)* :building_construction: Move transcriptions to their own file
+
+### 🐛 Bug Fixes
+
+- *(frontend)* :bug: Fix save transcript bug
+- *(ui)* :lipstick: Fix z-index glitch in Model Dropdown
+- *(frontend)* :bug: Fix window float bug
+
+### 🚜 Refactor
+
+- *(frontend)* :pencil2: Use better name for save checking
+- *(frontend)* :recycle: Improve download progress
+- *(frontend)* :label: Improve WhisperModelInfo Type
+
+### ⚙️ Miscellaneous Tasks
+
+- Add more models
+
+## [0.8.0] - 2025-04-03
+
+### 🚀 Features
+
+- *(installer)* :wrench: Create test hook for NSIS installer
+- *(frontend)* :sparkles: Basic Update checker component with download button
+- *(installer)* :alembic: Try out a new template for NSIS installer
+- *(ui)* :lipstick: Create new collapsable fieldset UI component
+- *(frontend)* :sparkles: Add toggle config for updater
+- *(frontend)* :sparkles: Use config value for updater
+- *(frontend)* :sparkles: Add native dialog to notifier
+- :label: Add whisper model info type and constant
+- *(frontend)* :sparkles: Add UI for Model management
+- *(frontend)* :sparkles: Add model config items
+- *(frontend)* :sparkles: Implement proper add/remove model
+- *(frontend)* :sparkles: Add Model selecting dropdown
+- *(frontend)* :sparkles: Add function to convert bytes info into human readable format
+- *(frontend)* :sparkles: Add filter system for models
+- *(frontend)* :sparkles: Add toggle for GPU use
+- *(backend)* :sparkles: Add functionality to swap models
+- *(frontend)* :sparkles: Connect model dropdown to model switching function
+
+### 🐛 Bug Fixes
+
+- :wrench: Fix config for windows installer
+- *(frontend)* Run update check after telemetry is accepted
+- *(frontend)* :goal_net: Catch update error when target is not found
+- *(backend)* :heavy_plus_sign: Add missing Whisper-rs crate for Linux
+- *(backend)* :rotating_light: Allow unused import for tauri sentry plugin
+- *(frontend)* :bug: Fix model not removed bug
+
+### 🚜 Refactor
+
+- *(installer)* :recycle: Use hooks again for NSIS instead of installer template
+- :wrench: Add another endpoint for pre-release updates
+- *(frontend)* :recycle: Unify App configuration
+- *(frontend)* :recycle: Use native dialog for telemetry request
+- *(frontend)* :recycle: Move initial prompt to model config
+- *(frontend)* :building_construction: Add new consts and util function
+- *(ui)* :recycle: Add dropdown caret for theme dropdown
+- *(frontend)* :recycle: Use new download function in model manager
+- *(frontend)* :label: Add additonal information for whisper model
+- *(frontend)* :recycle: Improve model management component
+- *(frontend)* :coffin: Remove commented code from WhisperOptions
+- *(backend)* :technologist: Add back Sentry code
+
+### ⚙️ Miscellaneous Tasks
+
+- :heavy_plus_sign: Add Tauri updater plugin
+- :wrench: Update Tauri config to utilize updater plugin
+- :wrench: Create git-cliff config for changelog
+- :construction: Add LLM auto-complete work for NSIS installer
+- :memo: Add a changelog
+- *(frontend)* :construction: Add toggle items for update config
+- :wrench: Create a new latest.json within repo
+- *(installer)* :wrench: Update updater configuration
+- :bookmark: Bump to v0.7.4
+- :adhesive_bandage: Apply version bump to Cargo.lock
+- :green_heart: Attempt fix of Rust check by installing Ubuntu dependencies
+- :green_heart: Add missing ALSA lib dependency
+- :green_heart: Add empty whisper-model file
+- :construction_worker: Allow clippy for all targets again
+- :heavy_plus_sign: Add Tauri HTTP client plugin
+- :heavy_plus_sign: Add Tauri File System (fs) Plugin
+- :heavy_plus_sign: Add Tauri Dialog Plugin
+- :wrench: Update fs permissions for local app data file path
+- :wrench: Update permission for http and fs
+- :heavy_plus_sign: Add Tauri Upload plugin
+- :wrench: Add permission to get value from redirect URL
+- Add small model for download testing
+- *(backend)* :rotating_light: Fix clippy lint for unneeded format
+- :bookmark: Bump to v0.8.0
+
+## [0.7.333] - 2025-03-31
 
 ### ⚙️ Miscellaneous Tasks
 
@@ -10,10 +105,6 @@ All notable changes to this project will be documented in this file.
 - *(backend)* :arrow_up: Update Rust dependneices in Cargo
 - *(frontend)* :arrow_up: Update JS Dependnecies
 - :bookmark: Bump to v0.7.3
-- :heavy_plus_sign: Add Tauri updater plugin
-- :wrench: Update Tauri config to utilize updater plugin
-- :wrench: Create git-cliff config for changelog
-- :construction: Add LLM auto-complete work for NSIS installer
 
 ## [0.7.2] - 2025-03-28
 
