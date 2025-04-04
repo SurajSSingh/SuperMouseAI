@@ -1,7 +1,13 @@
 import { load, type Store } from "@tauri-apps/plugin-store";
-import type { ThemeKind, WhisperModelInfo } from "./types.ts";
+import type {
+  ThemeKind,
+  TranscriptionInfo,
+  WhisperModelInfo,
+} from "./types.ts";
 import type { UnlistenFn } from "@tauri-apps/api/event";
 import { debug, error, info, trace, warn } from "@tauri-apps/plugin-log";
+import { open } from "@tauri-apps/plugin-fs";
+import { BASE_LOCAL_APP_DIR } from "./constants.ts";
 
 /** Auto-save every given millisecond, or never if set to `false` */
 const AUTO_SAVE_FREQUENCY: false | number = 2000;
@@ -13,7 +19,6 @@ const AUTO_SAVE_FREQUENCY: false | number = 2000;
 export const ConfigItem = {
   VERSION: "version",
   THEME: "theme",
-  TRANSCRIPTS: "transcripts",
   INDEX: "index",
   SHORTCUT: "shortcut",
   THREADS: "threads",
@@ -32,6 +37,8 @@ export const ConfigItem = {
   CURRENT_MODEL: "current_model",
   DOWNLOADED_MODELS: "downloaded_models",
   USE_GPU: "use_gpu",
+  // THIS HAS BEEN DEPRECATED FROM FIELD
+  TRANSCRIPTS: "transcripts",
 };
 
 class StoreStateOption<T> {
@@ -72,6 +79,84 @@ class StoreStateOption<T> {
   }
 }
 
+export class TranscriptStore {
+  #fileName;
+  #interval;
+
+  value: TranscriptionInfo[] = $state([]);
+
+  constructor(
+    fileName: string = "super_mouse_ai_transcriptions",
+    autoSave = AUTO_SAVE_FREQUENCY,
+  ) {
+    this.#fileName = fileName;
+    if (autoSave !== false) {
+      this.#interval = setInterval(() => this.save(), Math.max(autoSave, 100));
+    }
+  }
+
+  async load(): Promise<void> {
+    debug(`Loading transcriptions from ${this.#fileName}.json`);
+    let file;
+    try {
+      debug(`START`);
+      file = await open(`${this.#fileName}.json`, {
+        ...BASE_LOCAL_APP_DIR,
+        read: true,
+        write: true,
+        create: true,
+      });
+      // FIXME(@): This is wasteful if many loads or large file, currently not a problem,
+      // but may want to stream data in
+      const buffer = new Uint8Array((await file.stat()).size);
+      trace(`LOAD TRANSCRIPTS: Got to BUFFER`);
+      await file.read(buffer);
+      trace(`LOAD TRANSCRIPTS: Got to READ`);
+      const decoder = new TextDecoder("utf-8");
+      const text = decoder.decode(buffer.buffer);
+      trace(`LOAD TRANSCRIPTS: Got to DECODE`);
+      this.value = text.trim() ? JSON.parse(text) : [];
+      trace(`LOAD TRANSCRIPTS: Got to PARSE`);
+      debug(JSON.stringify(this.value));
+    } catch (err) {
+      error(`Error on loading transcripts: ${err}`);
+    } finally {
+      file?.close();
+    }
+  }
+
+  async save(): Promise<boolean> {
+    trace(`Saving transcriptions to ${this.#fileName}.json`);
+    let file;
+    let couldNotSave = false;
+    try {
+      file = await open(`${this.#fileName}.json`, {
+        ...BASE_LOCAL_APP_DIR,
+        write: true,
+        create: true,
+      });
+      const encoder = new TextEncoder();
+      trace(JSON.stringify(this.value));
+      //    Write file <- UTF-8 Encode <- JSON string of value
+      await file.write(encoder.encode(JSON.stringify(this.value)));
+    } // deno-lint-ignore no-explicit-any
+    catch (err: any) {
+      error(err.toString());
+      couldNotSave = true;
+    } finally {
+      await file?.close();
+    }
+    return !couldNotSave;
+  }
+
+  cleanUp(): void {
+    if (this.#interval) {
+      debug(`Removing transcript store auto-save interval`);
+      clearInterval(this.#interval);
+    }
+  }
+}
+
 export class ConfigStore {
   // Store items
   fileStore: Store | null = null;
@@ -81,7 +166,7 @@ export class ConfigStore {
 
   // Private Config data
   theme = new StoreStateOption<ThemeKind>("system", ConfigItem.THEME);
-  transcriptions = new StoreStateOption<string[]>([], ConfigItem.TRANSCRIPTS);
+  transcriptions = new TranscriptStore();
   currentIndex = new StoreStateOption<number>(0, ConfigItem.INDEX);
   shortcut = new StoreStateOption<string>(
     "Shift+Alt+KeyR",
@@ -142,7 +227,6 @@ export class ConfigStore {
   /** Array of all fields in class that are configuration optiosn */
   #configFields = [
     this.theme,
-    this.transcriptions,
     this.currentIndex,
     this.shortcut,
     this.threads,
@@ -166,7 +250,9 @@ export class ConfigStore {
   transcriptLength = $derived(this.transcriptions.value.length);
   isTranscriptsEmpty = $derived(this.transcriptions.value.length === 0);
   currentTranscript = $derived(
-    this.transcriptions.value[this.currentIndex.value],
+    !this.isTranscriptsEmpty
+      ? this.transcriptions.value[this.currentIndex.value].text
+      : "",
   );
   ignoredWordsList = $derived(this.ignoredWords.value.split("\n"));
   // NOTE: A main key will alway exist for a valid shortcut
@@ -195,6 +281,7 @@ export class ConfigStore {
         return () => {
           debug(`Clean up store to file`);
           this.keyChangeUnlistener?.();
+          this.transcriptions.cleanUp();
           this.fileStore?.close();
         };
       });
@@ -236,6 +323,24 @@ export class ConfigStore {
     ).catch((err) => {
       error("Failed to load from store with given error: ", err);
     });
+    if (await this.fileStore.has(ConfigItem.TRANSCRIPTS)) {
+      info(`Move transcriptions from regular config to dedicated config`);
+      debug(JSON.stringify(await this.fileStore.get(ConfigItem.TRANSCRIPTS)));
+      this.transcriptions.value =
+        (await this.fileStore.get(ConfigItem.TRANSCRIPTS) as string[]).map(
+          (text) => {
+            return { text };
+          },
+        );
+      // Save before deleting
+      debug("Save migrated transcription before deleting");
+      const success = await this.transcriptions.save();
+      if (success) {
+        debug("Delete old transcript data");
+        await this.fileStore.delete(ConfigItem.TRANSCRIPTS);
+      }
+    }
+    await this.transcriptions.load();
     this.keyChangeUnlistener = await this.fileStore.onChange((k, v) =>
       trace(`STORE CHANGE: ${k} => ${v}`)
     );
@@ -248,16 +353,10 @@ export class ConfigStore {
 
   saveAll(): Promise<PromiseSettledResult<void>[]> {
     debug(`Save all configured options to file`);
+    this.transcriptions.save();
     return Promise.allSettled(
       this.#configFields.map((field) => field.saveToStore()),
     );
-  }
-
-  clearTranscripts(): void {
-    debug(`Clear all transcripts`);
-    this.fileStore?.delete(ConfigItem.TRANSCRIPTS);
-    this.currentIndex.value = 0;
-    this.transcriptions.value = [];
   }
 
   clearData(): void {
@@ -273,23 +372,17 @@ export class ConfigStore {
 
   addTranscription(transcript: string): void {
     debug(`Add new transcript with size: ${transcript.length}`);
-    // HACK: Issue with proxing array in classes, don't fully understand why yet
-    this.transcriptions.value = [...this.transcriptions.value, transcript];
+    this.transcriptions.value.push({ text: transcript });
     this.currentIndex.value = this.transcriptLength - 1;
   }
 
   editTranscription(edited: string): void {
     debug(`Update transcript at ${this.currentIndex.value}`);
-    // HACK: Issue with proxing array in classes, don't fully understand why yet
-    this.transcriptions.value = this.transcriptions.value.map((
-      original,
-      index,
-    ) => index === this.currentIndex.value ? edited : original);
+    this.transcriptions.value[this.currentIndex.value].text = edited;
   }
 
   removeCurrentTranscription(): void {
     debug(`Remove transcript at ${this.currentIndex.value}`);
-    // HACK: Issue with proxing array in classes, don't fully understand why yet
     this.transcriptions.value = this.transcriptions.value.filter((_, i) =>
       i !== this.currentIndex.value
     );

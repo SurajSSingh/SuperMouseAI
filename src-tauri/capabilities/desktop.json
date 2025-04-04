@@ -34,6 +34,9 @@
           "path": "$APPLOCALDATA"
         },
         {
+          "path": "$APPLOCALDATA/*"
+        },
+        {
           "path": "$APPLOCALDATA/models"
         },
         {
@@ -46,6 +49,9 @@
       "allow": [
         {
           "path": "$APPLOCALDATA"
+        },
+        {
+          "path": "$APPLOCALDATA/*"
         },
         {
           "path": "$APPLOCALDATA/models"
@@ -62,6 +68,9 @@
           "path": "$APPLOCALDATA"
         },
         {
+          "path": "$APPLOCALDATA/*"
+        },
+        {
           "path": "$APPLOCALDATA/models"
         },
         {
@@ -76,6 +85,9 @@
           "path": "$APPLOCALDATA"
         },
         {
+          "path": "$APPLOCALDATA/*"
+        },
+        {
           "path": "$APPLOCALDATA/models"
         },
         {
@@ -88,6 +100,43 @@
       "allow": [
         {
           "path": "$APPLOCALDATA"
+        },
+        {
+          "path": "$APPLOCALDATA/*"
+        },
+        {
+          "path": "$APPLOCALDATA/models"
+        },
+        {
+          "path": "$APPLOCALDATA/models/*"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-fstat",
+      "allow": [
+        {
+          "path": "$APPLOCALDATA"
+        },
+        {
+          "path": "$APPLOCALDATA/*"
+        },
+        {
+          "path": "$APPLOCALDATA/models"
+        },
+        {
+          "path": "$APPLOCALDATA/models/*"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-read",
+      "allow": [
+        {
+          "path": "$APPLOCALDATA"
+        },
+        {
+          "path": "$APPLOCALDATA/*"
         },
         {
           "path": "$APPLOCALDATA/models"

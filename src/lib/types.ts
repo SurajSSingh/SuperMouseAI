@@ -32,3 +32,13 @@ export type WhisperModelInfo = {
   isEnglishOnly?: boolean;
   isSuperceded?: boolean;
 };
+
+/**
+ * Information related to a transcription
+ */
+export type TranscriptionInfo = {
+  text: string;
+  model?: string;
+  onGPU?: boolean;
+  processingTime?: number;
+};
