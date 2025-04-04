@@ -290,19 +290,27 @@
             {/if}
             Download
         </Button>
-        {#if downloadProgress}
+        {#if isProcessingModel && downloadProgress}
             <progress
                 class={`progress w-full ${isProcessingModel ? "progress-primary" : "progress-error"}`}
+                aria-label="model-download-progress"
                 value={downloadProgress.progressTotal}
                 max={downloadProgress.total}
-            ></progress>
-            <span
-                >Speed: {convertBPSToHuman(
-                    downloadProgress.transferSpeed /
-                        1000 /* HACK: Not sure why it is multiplied by 1000, but it now give corrected speed */,
-                )} (Recieved:
-                {convertBytesToHuman(downloadProgress.progress)})</span
+                >{downloadProgress.progressTotal}</progress
             >
+            <div class="text-center">
+                <span>
+                    {convertBytesToHuman(
+                        downloadProgress.progressTotal,
+                    )}/{convertBytesToHuman(downloadProgress.total)}
+                </span>
+                <span>
+                    (Speed: {convertBPSToHuman(
+                        downloadProgress.transferSpeed /
+                            1000 /* HACK: Not sure why it is multiplied by 1000, but it now give corrected speed */,
+                    )})
+                </span>
+            </div>
         {/if}
     {/if}
 </fieldset>
