@@ -134,6 +134,7 @@ export class TranscriptStore {
         ...BASE_LOCAL_APP_DIR,
         write: true,
         create: true,
+        truncate: true,
       });
       const encoder = new TextEncoder();
       trace(JSON.stringify(this.value));
