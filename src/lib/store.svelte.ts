@@ -128,7 +128,7 @@ export class TranscriptStore {
   async save(): Promise<boolean> {
     trace(`Saving transcriptions to ${this.#fileName}.json`);
     let file;
-    let couldNotSave = false;
+    let hasError = false;
     try {
       file = await open(`${this.#fileName}.json`, {
         ...BASE_LOCAL_APP_DIR,
@@ -142,11 +142,11 @@ export class TranscriptStore {
     } // deno-lint-ignore no-explicit-any
     catch (err: any) {
       error(err.toString());
-      couldNotSave = true;
+      hasError = true;
     } finally {
       await file?.close();
     }
-    return !couldNotSave;
+    return !hasError;
   }
 
   cleanUp(): void {
