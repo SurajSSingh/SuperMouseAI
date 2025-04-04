@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "next-patch": "deno run -A npm:tauri-version patch --no-git",
-    "next-minor": "deno run -A npm:tauri-version minor --no-git",
+    "next-patch": "deno run -A npm:tauri-version patch --no-git && git-cliff -o CHANGELOG.md",
+    "next-minor": "deno run -A npm:tauri-version minor --no-git && git-cliff -o CHANGELOG.md",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
