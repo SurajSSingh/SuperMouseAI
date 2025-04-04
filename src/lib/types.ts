@@ -25,12 +25,14 @@ export type ConfirmActionType = Partial<{
  */
 export type WhisperModelInfo = {
   name: string;
+  modelSize?: "Tiny" | "Base" | "Small" | "Medium" | "Large";
+  version?: "V1" | "V2" | "V3" | "V3 Turbo";
   relativePath: string;
   sha256: string;
-  approxSize: string;
+  approxSize: string | { size: number; unit: "KB" | "MB" | "GB" };
   quantizeType: "full" | "q8" | "q5";
   isEnglishOnly?: boolean;
-  isSuperceded?: boolean;
+  isSuperceded?: boolean | string;
 };
 
 /**
