@@ -113,7 +113,7 @@ Component to select the model to use
     });
 </script>
 
-<div class={`dropdown dropdown-${direction} z-5 ${className}`}>
+<div class={`dropdown dropdown-${direction} ${className}`}>
     <div
         tabindex="0"
         role="button"
@@ -134,7 +134,7 @@ Component to select the model to use
     </div>
     <ul
         id="model-list"
-        class={`dropdown-content menu bg-base-300 rounded-box z-1 shadow-2xl w-full ${listClass}`}
+        class={`dropdown-content menu bg-base-300 rounded-box shadow-2xl w-full ${listClass}`}
     >
         <li>
             <input

@@ -13,7 +13,7 @@
     import { configStore } from "$lib/store.svelte";
     import { commands } from "$lib/bindings";
     import { exit } from "@tauri-apps/plugin-process";
-    import { error, info } from "@tauri-apps/plugin-log";
+    import { error, info, warn } from "@tauri-apps/plugin-log";
     import { getVersion } from "@tauri-apps/api/app";
     import { emitTo } from "@tauri-apps/api/event";
     import UpdateChecker from "$lib/components/UpdateChecker.svelte";
@@ -108,6 +108,22 @@
                     : `v${version}`),
         );
         showNotice();
+        configStore.waitForStoreLoaded().then(() => {
+            info("Set window float value");
+            commands
+                .setWindowTop(configStore.windowFloat.value)
+                .catch((err) => {
+                    // Warning, not error, because user can manually set it
+                    warn(`Window float value could not be set: ${err}`);
+                    notifier.showToast(
+                        "Could not set window float value automatically",
+                        "",
+                        "warn",
+                        "",
+                        6_000,
+                    );
+                });
+        });
         return () => {
             configStore.cleanup();
         };
