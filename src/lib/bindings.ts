@@ -94,6 +94,12 @@ async updateModel(path: string | null, useGpu: boolean | null) : Promise<Result<
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+/**
+ * Get information about the user's system.
+ */
+async getSystemInfo() : Promise<SystemInfo> {
+    return await TAURI_INVOKE("get_system_info");
 }
 }
 
@@ -151,6 +157,22 @@ export type MouseClickEvent = MouseButtonType
  * y [i32] : Absolute Y value of mouse (from 0 to SCREEN_HEIGHT)
  */
 export type MouseMoveEvent = { x: number; y: number }
+/**
+ * Basic information about the current system
+ */
+export type SystemInfo = { 
+/**
+ * Total number of cores on this system
+ */
+cpu_core_count: number; 
+/**
+ * Total amount of system memory (RAM) in the system in GB
+ */
+total_memory_gb: number; 
+/**
+ * Total amount of graphic memory (VRAM) in the system in GB
+ */
+total_vram_gb: number }
 /**
  * Ways a text can be decorated
  */

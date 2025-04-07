@@ -13,7 +13,7 @@
     import { configStore } from "$lib/store.svelte";
     import { commands } from "$lib/bindings";
     import { exit } from "@tauri-apps/plugin-process";
-    import { error, info, warn } from "@tauri-apps/plugin-log";
+    import { debug, error, info, warn } from "@tauri-apps/plugin-log";
     import { getVersion } from "@tauri-apps/api/app";
     import { emitTo } from "@tauri-apps/api/event";
     import UpdateChecker from "$lib/components/UpdateChecker.svelte";
@@ -79,51 +79,65 @@
         notifier.showError(err);
     }
 
+    async function preStartUp() {
+        info("Show telemetry notice");
+        const accepted = await notifier.showDialog(
+            "ask",
+            "We collect basic error and crash reports by default using Sentry. We DO NOT collect your private data (such as audio data or transcripts), only information related to OS (like which GPU you use) and actions that lead to the app showing an error or crashing. This cannot be turned off for pre-release builds of this app. By continuing, you agree to the terms.",
+            {
+                kind: "warning",
+                title: "Telemetry Notice",
+                okLabel: "I Agree",
+                cancelLabel: "Quit App",
+            },
+        );
+        if (!accepted) {
+            // Exit immediately
+            await exit(0);
+            return;
+        }
+        info("User has accepted to use the app.");
+        acceptTelemetry = true;
+        debug("Get Version info");
+        const version = await getVersion();
+        appVersion = version.startsWith("v") ? version : `v${version}`;
+        await configStore.waitForStoreLoaded();
+        info("Set window float value");
+        const windowResult = await commands.setWindowTop(
+            configStore.windowFloat.value,
+        );
+        if (windowResult.status === "error") {
+            // Warning, not error, because user can manually set it
+            warn(`Window float value could not be set: ${windowResult.error}`);
+            notifier.showToast(
+                "Could not set window float value automatically",
+                "",
+                "warn",
+                "",
+                6_000,
+            );
+        }
+        const allowModelDownload = await notifier.showDialog(
+            "confirm",
+            "This is your first time running the app, it will download a model that best works for you computer. You can always add more from the menu.",
+            {
+                title: "Downloading Best Model",
+                kind: "info",
+                okLabel: "Ok",
+                cancelLabel: "Cancel",
+            },
+        );
+        if (allowModelDownload) {
+            info("TODO: Downloading custom model based on user info");
+            debug(`Get user's system information`);
+            const sysInfo = await commands.getSystemInfo();
+            debug(`User system info: ${JSON.stringify(sysInfo)}`);
+        }
+    }
+
     // Top-level clean-up ONLY (for store)
     $effect(() => {
-        const showNotice = async () => {
-            info("Show telemetry notice");
-            const accepted = await notifier.showDialog(
-                "ask",
-                "We collect basic error and crash reports by default using Sentry. We DO NOT collect your private data (such as audio data or transcripts), only information related to OS (like which GPU you use) and actions that lead to the app showing an error or crashing. This cannot be turned off for pre-release builds of this app. By continuing, you agree to the terms.",
-                {
-                    kind: "warning",
-                    title: "Telemetry Notice",
-                    okLabel: "I Agree",
-                    cancelLabel: "Quit App",
-                },
-            );
-            if (accepted) {
-                info("User has accepted to use the app.");
-                acceptTelemetry = true;
-            } else {
-                // Exit immediately
-                exit(0);
-            }
-        };
-        getVersion().then(
-            (version) =>
-                (appVersion = version.startsWith("v")
-                    ? version
-                    : `v${version}`),
-        );
-        showNotice();
-        configStore.waitForStoreLoaded().then(() => {
-            info("Set window float value");
-            commands
-                .setWindowTop(configStore.windowFloat.value)
-                .catch((err) => {
-                    // Warning, not error, because user can manually set it
-                    warn(`Window float value could not be set: ${err}`);
-                    notifier.showToast(
-                        "Could not set window float value automatically",
-                        "",
-                        "warn",
-                        "",
-                        6_000,
-                    );
-                });
-        });
+        preStartUp();
         return () => {
             configStore.cleanup();
         };
