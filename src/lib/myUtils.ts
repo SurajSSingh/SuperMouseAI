@@ -33,6 +33,10 @@ export function blobChunksToBytes(
   return blobToBytes(blob);
 }
 
+/**
+ * Find which models are currently downloaded
+ * @returns a promise to an array of models and whether it is downloaded
+ */
 export function checkDownloadedModels(): Promise<
   { model: WhisperModelInfo; downloaded: boolean }[]
 > {
@@ -51,6 +55,12 @@ export function checkDownloadedModels(): Promise<
 
 const units = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
 
+/**
+ * Convert bytes per second into more understandable format
+ * @param bytesPerSecond
+ * @param precision: how many decimal places to use
+ * @returns converted into prefixed-bytes per second
+ */
 export function convertBPSToHuman(
   bytesPerSecond: number,
   precision = 2,
@@ -59,6 +69,12 @@ export function convertBPSToHuman(
   return `${convertBytesToHuman(bytesPerSecond, precision)}ps`;
 }
 
+/**
+ * Convert bytes into more understandable format
+ * @param bytes
+ * @param precision: how many decimal places to use
+ * @returns  converted into prefixed-bytes
+ */
 export function convertBytesToHuman(bytes: number, precision = 2): string {
   if (!Number.isFinite(bytes) || Number.isNaN(bytes) || bytes <= 0) {
     return "0 B";
