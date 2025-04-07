@@ -1912,6 +1912,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "gfxinfo"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14f33b12fba19d158bebe0262fd2b6c49fee6f0e0e089f4f3fdc11c017548473"
+dependencies = [
+ "core-foundation 0.10.0",
+ "io-kit-sys",
+ "libdrm_amdgpu_sys",
+ "nvml-wrapper",
+ "serde",
+ "windows 0.61.1",
+ "wmi",
+]
+
+[[package]]
 name = "gimli"
 version = "0.31.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2532,6 +2547,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "io-kit-sys"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "617ee6cf8e3f66f3b4ea67a4058564628cde41901316e19f559e14c7c72c5e7b"
+dependencies = [
+ "core-foundation-sys",
+ "mach2",
+]
+
+[[package]]
 name = "ipnet"
 version = "2.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2751,6 +2776,15 @@ name = "libc"
 version = "0.2.171"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c19937216e9d3aa9956d9bb8dfc0b0c8beb6058fc4f7a4dc4d850edf86a237d6"
+
+[[package]]
+name = "libdrm_amdgpu_sys"
+version = "0.8.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4d1d46f1ac9f2440fc0caaee46cf88014c8b3157f10b6f28832b5abf74ca623a"
+dependencies = [
+ "libc",
+]
 
 [[package]]
 name = "libloading"
@@ -3226,6 +3260,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ntapi"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8a3895c6391c39d7fe7ebc444a87eb2991b2a0bc718fdabd071eec617fc68e4"
+dependencies = [
+ "winapi",
+]
+
+[[package]]
 name = "num"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3353,6 +3396,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c7398b9c8b70908f6371f47ed36737907c87c52af34c268fed0bf0ceb92ead9"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "nvml-wrapper"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c9bff0aa1d48904a1385ea2a8b97576fbdcbc9a3cfccd0d31fe978e1c4038c5"
+dependencies = [
+ "bitflags 2.9.0",
+ "libloading 0.8.6",
+ "nvml-wrapper-sys",
+ "static_assertions",
+ "thiserror 1.0.69",
+ "wrapcenum-derive",
+]
+
+[[package]]
+name = "nvml-wrapper-sys"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "698d45156f28781a4e79652b6ebe2eaa0589057d588d3aec1333f6466f13fcb5"
+dependencies = [
+ "libloading 0.8.6",
 ]
 
 [[package]]
@@ -5500,6 +5566,7 @@ dependencies = [
  "audrey",
  "device_query",
  "enigo",
+ "gfxinfo",
  "log",
  "mouce",
  "num",
@@ -5511,6 +5578,7 @@ dependencies = [
  "specta",
  "specta-typescript",
  "strum",
+ "sysinfo",
  "tauri",
  "tauri-build",
  "tauri-plugin-clipboard-manager",
@@ -5728,6 +5796,19 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.100",
+]
+
+[[package]]
+name = "sysinfo"
+version = "0.34.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4b93974b3d3aeaa036504b8eefd4c039dced109171c1ae973f1dc63b2c7e4b2"
+dependencies = [
+ "libc",
+ "memchr",
+ "ntapi",
+ "objc2-core-foundation",
+ "windows 0.56.0",
 ]
 
 [[package]]
@@ -7416,11 +7497,24 @@ version = "0.60.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ddf874e74c7a99773e62b1c671427abf01a425e77c3d3fb9fb1e4883ea934529"
 dependencies = [
- "windows-collections",
+ "windows-collections 0.1.1",
  "windows-core 0.60.1",
- "windows-future",
+ "windows-future 0.1.1",
  "windows-link",
- "windows-numerics",
+ "windows-numerics 0.1.1",
+]
+
+[[package]]
+name = "windows"
+version = "0.61.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c5ee8f3d025738cb02bad7868bbb5f8a6327501e870bf51f1b455b0a2454a419"
+dependencies = [
+ "windows-collections 0.2.0",
+ "windows-core 0.61.0",
+ "windows-future 0.2.0",
+ "windows-link",
+ "windows-numerics 0.2.0",
 ]
 
 [[package]]
@@ -7430,6 +7524,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5467f79cc1ba3f52ebb2ed41dbb459b8e7db636cc3429458d9a852e15bc24dec"
 dependencies = [
  "windows-core 0.60.1",
+]
+
+[[package]]
+name = "windows-collections"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3beeceb5e5cfd9eb1d76b381630e82c4241ccd0d27f1a39ed41b2760b255c5e8"
+dependencies = [
+ "windows-core 0.61.0",
 ]
 
 [[package]]
@@ -7509,6 +7612,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a787db4595e7eb80239b74ce8babfb1363d8e343ab072f2ffe901400c03349f0"
 dependencies = [
  "windows-core 0.60.1",
+ "windows-link",
+]
+
+[[package]]
+name = "windows-future"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a1d6bbefcb7b60acd19828e1bc965da6fcf18a7e39490c5f8be71e54a19ba32"
+dependencies = [
+ "windows-core 0.61.0",
  "windows-link",
 ]
 
@@ -7602,6 +7715,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "005dea54e2f6499f2cee279b8f703b3cf3b5734a2d8d21867c8f44003182eeed"
 dependencies = [
  "windows-core 0.60.1",
+ "windows-link",
+]
+
+[[package]]
+name = "windows-numerics"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9150af68066c4c5c07ddc0ce30421554771e528bde427614c61038bc2c92c2b1"
+dependencies = [
+ "windows-core 0.61.0",
  "windows-link",
 ]
 
@@ -8012,6 +8135,33 @@ dependencies = [
  "wayland-client",
  "wayland-protocols",
  "wayland-protocols-wlr",
+]
+
+[[package]]
+name = "wmi"
+version = "0.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f902b4592b911109e7352bcfec7b754b07ec71e514d7dfa280eaef924c1cb08"
+dependencies = [
+ "chrono",
+ "futures",
+ "log",
+ "serde",
+ "thiserror 2.0.12",
+ "windows 0.60.0",
+ "windows-core 0.60.1",
+]
+
+[[package]]
+name = "wrapcenum-derive"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a76ff259533532054cfbaefb115c613203c73707017459206380f03b3b3f266e"
+dependencies = [
+ "darling",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.100",
 ]
 
 [[package]]

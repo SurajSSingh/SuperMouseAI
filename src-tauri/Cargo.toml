@@ -27,6 +27,8 @@ audrey = "0.3.0"
 log = "0.4.21"
 num = "0.4.3"
 num_cpus = "1.16.0"
+sysinfo = "0.34"
+gfxinfo = "0.1.2"
 rodio = { version = "0.20.1" }
 strum = { version = "0.27.1", features = ["derive"] }
 ureq = "3.0.4"
@@ -50,10 +52,13 @@ tauri-plugin-upload = "2"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 # NOTE: CUDA feature separate feature flag
-whisper-rs = { version = "0.14.2", features = [] }
+whisper-rs = { version = "0.14.2", features = ["vulkan"] }
 
-[target.'cfg(target_os = "macos")'.dependencies]
+[target.'cfg(all(target_os = "macos", target_arch="aarch64"))'.dependencies]
 whisper-rs = { version = "0.14.2", features = ["metal", "coreml"] }
+
+[target.'cfg(all(target_os = "macos", target_arch="x86_64"))'.dependencies]
+whisper-rs = { version = "0.14.2", features = ["metal"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 whisper-rs = { version = "0.14.2", features = [] }
