@@ -8,6 +8,7 @@ use specta::Type;
 use std::{collections::HashMap, path::PathBuf};
 use whisper_rs::{WhisperContextParameters, WhisperError};
 
+/// A struct to hold both the default and custom model together, enabling for easy switching
 pub struct ModelHolder {
     default: Model,
     custom: Option<(Model, String)>,
@@ -215,4 +216,15 @@ pub struct TextProcessOptions {
     /// but adds some decoration
     pub decorated_words: Option<Vec<(TextDecoration, String)>>,
     pub replace_inter_sentence_newlines: Option<bool>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Type)]
+/// Basic information about the current system
+pub struct SystemInfo {
+    /// Total number of cores on this system
+    pub cpu_core_count: f64,
+    /// Total amount of system memory (RAM) in the system in GB
+    pub total_memory_gb: f64,
+    /// Total amount of graphic memory (VRAM) in the system in GB
+    pub total_vram_gb: f64,
 }

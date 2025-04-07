@@ -4,13 +4,14 @@
 use crate::{
     events::{MouseClickEvent, MouseMoveEvent},
     mutter::ModelError,
-    types::{AppState, MouseButtonType, TextProcessOptions, TranscribeOptions},
+    types::{AppState, MouseButtonType, SystemInfo, TextProcessOptions, TranscribeOptions},
 };
 use enigo::{Enigo, Keyboard, Settings};
-use log::{error, info, trace};
+use log::{debug, error, info, trace};
 use mouce::{common::MouseEvent, Mouse, MouseActions};
 use rodio::{Decoder, OutputStream, Sink};
 use std::{fs::File, io::BufReader};
+use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 use tauri::{AppHandle, State, Wry};
 use tauri_specta::{collect_commands, Commands, Event};
 
@@ -254,6 +255,57 @@ pub async fn update_model(
     Ok(())
 }
 
+#[tauri::command]
+#[specta::specta]
+/// Get information about the user's system.
+pub async fn get_system_info() -> SystemInfo {
+    // CPU
+    let cpu_info = CpuRefreshKind::nothing(); //.with_frequency();
+    let mem_info = MemoryRefreshKind::nothing().with_ram();
+    let sys = System::new_with_specifics(
+        RefreshKind::nothing()
+            .with_cpu(cpu_info)
+            .with_memory(mem_info)
+            .without_processes(),
+    );
+
+    let cpu_core_count = sys.cpus().len() as f64;
+    let total_memory_gb = (sys.total_memory() as f64) / 1_000_000_000_f64;
+    // sys.cpus().first().unwrap().frequency();
+
+    // GPU
+    debug!("Get GPU Info");
+    let total_vram_gb = match gfxinfo::active_gpu() {
+        Ok(gpu) => {
+            debug!(
+                "Active GPU: ID={}; (Vendor, Model, Family)=({},{},{})",
+                gpu.device_id(),
+                gpu.vendor(),
+                gpu.model(),
+                gpu.family()
+            );
+            match (gpu.info().total_vram(), gpu.model()) {
+                (0, maybe_apple) if maybe_apple.starts_with("Apple") => {
+                    debug!("Active GPU ");
+                    debug!("Got Apple GPU using Unified Memory for GPU, use RAM value");
+                    total_memory_gb
+                }
+                (bytes, _) => (bytes as f64) / 1_000_000_000_f64,
+            }
+        }
+        Err(err) => {
+            error!("Could not get GPU info because: {err}");
+            debug!("Give NaN to signify error, but continue with CPU information");
+            f64::NAN
+        }
+    };
+    SystemInfo {
+        cpu_core_count,
+        total_memory_gb,
+        total_vram_gb,
+    }
+}
+
 /// Gets all collected commands for Super Mouse AI application to be used by builder
 pub fn get_collected_commands() -> Commands<Wry> {
     collect_commands![
@@ -264,6 +316,7 @@ pub fn get_collected_commands() -> Commands<Wry> {
         transcribe_with_post_process,
         set_window_top,
         write_text,
-        update_model
+        update_model,
+        get_system_info
     ]
 }
