@@ -5,7 +5,7 @@ import {
   WHISPER_GGML_MODELS,
 } from "./constants.ts";
 import { exists } from "@tauri-apps/plugin-fs";
-import type { WhisperModelInfo } from "./types.ts";
+import type { LargestModelFinderOption, WhisperModelInfo } from "./types.ts";
 import type { SystemInfo } from "./bindings.ts";
 
 /**
@@ -121,13 +121,84 @@ export function sizeOfModel(model: WhisperModelInfo, precision = 2): string {
 }
 
 /**
- * Determines the largest model based on what the user can run.
- * @param systemInfo Information about the user's system
- * @returns The largest model that works on the system; `null` means use default
+ * Determines the best Whisper model for a given system configuration.
+ *
+ * @param systemInfo User's system specifications
+ * @param preferEnglishOnly Whether to prioritize English-only models (default: true)
+ * @param usesCPU Whether model will run on CPU
+ * @param compressionAllowed The level of quantized models that are allow
+ * @param maxRAMRatio The minimum amount of CPU RAM a model is allowed to take
+ * @param maxRAMRatio The maximum amount of CPU RAM a model is allowed to take
+ * @param maxVRAMRatio The mimum amount of GPU VRAM a model is allowed to take
+ * @param maxVRAMRatio The maximum amount of GPU VRAM a model is allowed to take
+ * @returns The best matching model or null if none suitable
  */
 export function findLargestUseableModel(
   systemInfo: SystemInfo,
+  options: LargestModelFinderOption = {
+    preferEnglishOnly: true,
+    usesCPU: false,
+    compressionAllowed: "all",
+    minRAMRatio: 0.01,
+    maxRAMRatio: 0.05,
+    minVRAMRatio: 0.0,
+    maxVRAMRatio: 0.75,
+    sizePriority: {
+      largeTurbo: 5,
+      small: 4,
+      large: 3,
+      base: 2,
+      medium: 1,
+      tiny: 0,
+    },
+  },
 ): WhisperModelInfo | null {
-  // TODO(@): Find best model
-  return WHISPER_GGML_MODELS.at(0) || null;
+  // Helper functions
+  // Compression check
+  const compressionCheck = (quantizeType: "full" | "q8" | "q5") => {
+    return options.compressionAllowed === "all" || quantizeType === "full" ||
+      (options.compressionAllowed === "low" && quantizeType !== "q5");
+  };
+  // Define the minimum requirements
+  const meetsMinimumRequirements = (model: WhisperModelInfo): boolean => {
+    const modelGBSize = Math.ceil(model.approxSize / 1_000_000_000);
+    return (
+      !model.isSuperceded &&
+      (model.isEnglishOnly || !options.preferEnglishOnly) &&
+      compressionCheck(model.quantizeType) &&
+      modelGBSize >= systemInfo.total_vram_gb * options.minVRAMRatio &&
+      modelGBSize <= systemInfo.total_vram_gb * options.maxVRAMRatio &&
+      (!options.usesCPU ||
+        (modelGBSize >= systemInfo.total_memory_gb * options.minRAMRatio &&
+          modelGBSize <= systemInfo.total_memory_gb * options.maxRAMRatio)) &&
+      // Non-tiny model require multi-processing
+      (model.modelSize === "tiny" || systemInfo.cpu_core_count >= 4)
+      // TODO(@): Consider Disk Space
+    );
+  };
+  // Get priority of a model
+  const getModelPriority = (model: WhisperModelInfo) =>
+    model.version === "v3 turbo"
+      ? options.sizePriority.largeTurbo
+      : options.sizePriority[model.modelSize];
+
+  // Get quantized priority of a model
+  const getQuantPriority = (model: WhisperModelInfo) =>
+    model.quantizeType === "full" ? 2 : model.quantizeType === "q8" ? 1 : 0;
+
+  debug("Finding suitable models");
+  const suitableModels = WHISPER_GGML_MODELS.filter(meetsMinimumRequirements);
+  if (suitableModels.length === 0) {
+    debug("No model is suitable");
+    return null;
+  }
+  // Get the smallest model that works
+  console.log(suitableModels.sort((a, b) => a.approxSize - b.approxSize));
+  console.log(
+    suitableModels.sort((a, b) => getQuantPriority(b) - getQuantPriority(a)),
+  );
+  console.log(
+    suitableModels.sort((a, b) => getModelPriority(b) - getModelPriority(a)),
+  );
+  return suitableModels.at(0) || null;
 }

@@ -43,3 +43,27 @@ export type TranscriptionInfo = {
   onGPU?: boolean;
   processingTime?: number;
 };
+
+/**
+ * Options for the [`LargestModelFinderOption`]
+ */
+export type LargestModelFinderOption = {
+  preferEnglishOnly: boolean;
+  usesCPU: boolean;
+  compressionAllowed: "all" | "low" | "full-only";
+  minRAMRatio: number;
+  maxRAMRatio: number;
+  minVRAMRatio: number;
+  maxVRAMRatio: number;
+  /**
+   * Priority of models, higher priority number comes earlier in sort than lower number
+   */
+  sizePriority: {
+    largeTurbo: number;
+    small: number;
+    large: number;
+    base: number;
+    medium: number;
+    tiny: number;
+  };
+};

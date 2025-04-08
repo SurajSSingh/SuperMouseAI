@@ -18,7 +18,7 @@
     import { emitTo } from "@tauri-apps/api/event";
     import UpdateChecker from "$lib/components/UpdateChecker.svelte";
     import ModelDropdown from "$lib/components/ui/ModelDropdown.svelte";
-    import { findLargestUseableModel } from "$lib/myUtils";
+    import { findLargestUseableModel, nameOfModel } from "$lib/myUtils";
     import { download } from "@tauri-apps/plugin-upload";
     import { readDir } from "@tauri-apps/plugin-fs";
     import {
@@ -182,6 +182,13 @@
             ) !== undefined;
         debug(`Has additional models downloaded?: ${hasModels}`);
         if (!hasModels) await runOptimalModelCheck();
+        debug(
+            nameOfModel(
+                (await findLargestUseableModel(
+                    await commands.getSystemInfo(),
+                )) ?? undefined,
+            ),
+        );
         info("Finished setup function");
     }
 
