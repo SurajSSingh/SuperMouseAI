@@ -9,7 +9,7 @@ Component to select the model to use
         DEFAULT_MODEL,
         MODELS_DIR,
     } from "$lib/constants";
-    import { checkDownloadedModels } from "$lib/myUtils";
+    import { checkDownloadedModels, nameOfModel } from "$lib/myUtils";
     import { configStore } from "$lib/store.svelte";
     import { notifier } from "$lib/notificationSystem.svelte";
     import { appLocalDataDir } from "@tauri-apps/api/path";
@@ -126,10 +126,13 @@ Component to select the model to use
         <span class="text-accent"
             >{configStore.currentModel.value === "default"
                 ? "Default"
-                : selectableModels.find(
-                      (model) =>
-                          model.relativePath === configStore.currentModel.value,
-                  )?.name || "Unknown Model"} &#9660;
+                : nameOfModel(
+                      selectableModels.find(
+                          (model) =>
+                              model.relativePath ===
+                              configStore.currentModel.value,
+                      )!,
+                  ) || "Unknown Model"} &#9660;
         </span>
     </div>
     <ul
@@ -142,7 +145,7 @@ Component to select the model to use
                 type="radio"
                 name="model-dropdown"
                 class="btn btn-sm btn-block btn-ghost hover:btn-soft justify-start checked:border-primary checked:border-2 text-center"
-                aria-label={`Default [${DEFAULT_MODEL.name}]`}
+                aria-label={`Default [${nameOfModel(DEFAULT_MODEL)}]`}
                 value="default"
                 disabled={isUpdating}
                 checked={DEFAULT_MODEL.relativePath ===
@@ -157,7 +160,7 @@ Component to select the model to use
                     type="radio"
                     name="model-dropdown"
                     class="btn btn-sm btn-block btn-ghost hover:btn-soft justify-start checked:border-primary checked:border-2 text-center"
-                    aria-label={model.name}
+                    aria-label={nameOfModel(model)}
                     value={model.relativePath}
                     disabled={isUpdating}
                     checked={model.relativePath ===

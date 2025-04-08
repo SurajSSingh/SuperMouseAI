@@ -18,6 +18,8 @@
         checkDownloadedModels,
         convertBPSToHuman,
         convertBytesToHuman,
+        nameOfModel,
+        sizeOfModel,
     } from "$lib/myUtils";
     import { configStore } from "$lib/store.svelte";
     import { download } from "@tauri-apps/plugin-upload";
@@ -138,7 +140,7 @@
                 (model) => model.relativePath !== value,
             );
             info(
-                `New model ${addedModel.name} (${addedModel.relativePath}) ready to use`,
+                `New model ${nameOfModel(addedModel)} (${addedModel.relativePath}) ready to use`,
             );
             notifier.showToast(
                 "Model has been downloaded, and is ready to use",
@@ -203,7 +205,7 @@
         configStore.removeModel(removingModel);
         isProcessingModel = false;
         info(
-            `Model ${removingModel.name} (${removingModel.relativePath}) removed successfully`,
+            `Model ${nameOfModel(removingModel)} (${removingModel.relativePath}) removed successfully`,
         );
         notifier.showToast("Model has been removed", "", "success", "", 5_000);
     }
@@ -250,14 +252,14 @@
             >
             {#each downloadedModels as model}
                 <option value={model.relativePath}
-                    >{model.name} ({model.approxSize})</option
+                    >{nameOfModel(model)} ({sizeOfModel(model)})</option
                 >
             {/each}
         </optgroup>
         <optgroup label="Able to Download">
             {#each filteredNotDownloadedModels as model}
                 <option value={model.relativePath}
-                    >{model.name} ({model.approxSize})</option
+                    >{nameOfModel(model)} ({sizeOfModel(model)})</option
                 >
             {/each}
         </optgroup>

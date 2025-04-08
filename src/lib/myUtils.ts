@@ -6,6 +6,7 @@ import {
 } from "./constants.ts";
 import { exists } from "@tauri-apps/plugin-fs";
 import type { WhisperModelInfo } from "./types.ts";
+import type { SystemInfo } from "./bindings.ts";
 
 /**
  * Convert a blob to array of bytes
@@ -86,4 +87,34 @@ export function convertBytesToHuman(bytes: number, precision = 2): string {
     precision,
   );
   return `${formattedBytes} ${bytesUnit}`;
+}
+
+/**
+ * Get a the name of the model formatted for displaying to user
+ * @param model Model to get name of
+ * @returns The model's formatted name
+ */
+export function nameOfModel(model: WhisperModelInfo): string {
+  const modelSize = model.modelSize.replace(
+    /\b\w/g,
+    (char) => char.toUpperCase(),
+  );
+  const version =
+    model.version?.replace(/\b\w/g, (char) => " " + char.toUpperCase()) || "";
+  const compression = model.quantizeType === "q8"
+    ? " Low Compression"
+    : model.quantizeType === "q5"
+    ? " High Compression"
+    : "";
+  const langType = model.isEnglishOnly ? " (English Only)" : "";
+  return `${modelSize}${version}${compression}${langType}`;
+}
+
+/**
+ * Get the size of a model based on relative size (rather than raw bytes total)
+ * @param model Model to get size of
+ * @returns formatted string of human readable size
+ */
+export function sizeOfModel(model: WhisperModelInfo, precision = 2): string {
+  return convertBytesToHuman(model.approxSize, precision);
 }
