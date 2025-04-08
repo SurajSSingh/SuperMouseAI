@@ -13,11 +13,20 @@
     import { configStore } from "$lib/store.svelte";
     import { commands } from "$lib/bindings";
     import { exit } from "@tauri-apps/plugin-process";
-    import { debug, error, info, warn } from "@tauri-apps/plugin-log";
+    import { debug, error, info, trace, warn } from "@tauri-apps/plugin-log";
     import { getVersion } from "@tauri-apps/api/app";
     import { emitTo } from "@tauri-apps/api/event";
     import UpdateChecker from "$lib/components/UpdateChecker.svelte";
     import ModelDropdown from "$lib/components/ui/ModelDropdown.svelte";
+    import { findLargestUseableModel } from "$lib/myUtils";
+    import { download } from "@tauri-apps/plugin-upload";
+    import { readDir } from "@tauri-apps/plugin-fs";
+    import {
+        BASE_LOCAL_APP_DIR,
+        MODEL_BASE_URL,
+        MODELS_DIR,
+    } from "$lib/constants";
+    import { appLocalDataDir } from "@tauri-apps/api/path";
 
     // Component Bindings
     let micRecorder: MicRecorder = $state() as MicRecorder;
@@ -28,6 +37,7 @@
     let menuOpen = $state(false);
     let appVersion = $state("unknown");
     let acceptTelemetry: boolean = $state(false);
+    let isDownloadingModel: boolean = $state(false);
 
     // Helper Functions
     function copyToClipboard() {
@@ -79,6 +89,54 @@
         notifier.showError(err);
     }
 
+    async function runOptimalModelCheck() {
+        const allowModelDownload = await notifier.showDialog(
+            "confirm",
+            "This is your first time running the app, it will download a model that best works for you computer. You can always add more from the menu.",
+            {
+                title: "Downloading Best Model",
+                kind: "info",
+                okLabel: "Ok",
+                cancelLabel: "Cancel",
+            },
+        );
+        if (allowModelDownload) {
+            info("Finding optimal model based on user info");
+            debug(`Get user's system information`);
+            const sysInfo = await commands.getSystemInfo();
+            debug(`User system info: ${JSON.stringify(sysInfo)}`);
+            debug(`Finding largest model that user can support.`);
+            const bestModel = findLargestUseableModel(sysInfo);
+            if (bestModel !== null) {
+                debug(
+                    `Found ${bestModel.relativePath} to be best for user's system`,
+                );
+                isDownloadingModel = true;
+                notifier.showPromiseToast(
+                    download(
+                        `${MODEL_BASE_URL}/${bestModel.relativePath}`,
+                        `${await appLocalDataDir()}/${MODELS_DIR}/${bestModel.relativePath}`,
+                        (progress) => {
+                            trace(
+                                `Best Model Download progress: ${JSON.stringify(progress)}`,
+                            );
+                        },
+                    ).then(() => {
+                        // Setting to best model
+                        configStore.addModel(bestModel);
+                        configStore.currentModel.value = bestModel.relativePath;
+                        isDownloadingModel = false;
+                    }),
+                    "Setting up optimal model",
+                    "Model downloaded",
+                    "Model could not be downloaded",
+                );
+                debug("Downloading Model");
+            }
+        }
+        return;
+    }
+
     async function preStartUp() {
         info("Show telemetry notice");
         const accepted = await notifier.showDialog(
@@ -117,22 +175,14 @@
                 6_000,
             );
         }
-        const allowModelDownload = await notifier.showDialog(
-            "confirm",
-            "This is your first time running the app, it will download a model that best works for you computer. You can always add more from the menu.",
-            {
-                title: "Downloading Best Model",
-                kind: "info",
-                okLabel: "Ok",
-                cancelLabel: "Cancel",
-            },
-        );
-        if (allowModelDownload) {
-            info("TODO: Downloading custom model based on user info");
-            debug(`Get user's system information`);
-            const sysInfo = await commands.getSystemInfo();
-            debug(`User system info: ${JSON.stringify(sysInfo)}`);
-        }
+        debug("Check if user already has models downloaded");
+        const hasModels =
+            (await readDir(MODELS_DIR, BASE_LOCAL_APP_DIR)).find(
+                (x) => x.isFile,
+            ) !== undefined;
+        debug(`Has additional models downloaded?: ${hasModels}`);
+        if (!hasModels) await runOptimalModelCheck();
+        info("Finished setup function");
     }
 
     // Top-level clean-up ONLY (for store)
@@ -181,6 +231,7 @@
                     {onRecordingStart}
                     {onRecordingEnd}
                     {onError}
+                    disabled={isDownloadingModel}
                 />
                 <CustomShortcut
                     class="w-3/4 mb-2"

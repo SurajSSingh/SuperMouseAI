@@ -41,6 +41,14 @@ Component to select the model to use
         ),
     );
 
+    const isModelDefault = $derived(
+        configStore.currentModel.value === "default" ||
+            selectableModels.find(
+                (model) =>
+                    model.relativePath === configStore.currentModel.value,
+            ) === undefined,
+    );
+
     $effect(() => {
         checkDownloadedModels().then((models) => {
             configStore.downloadedModels.value = models
@@ -124,14 +132,14 @@ Component to select the model to use
         {/if}
         Model:
         <span class="text-accent"
-            >{configStore.currentModel.value === "default"
+            >{isModelDefault
                 ? "Default"
                 : nameOfModel(
                       selectableModels.find(
                           (model) =>
                               model.relativePath ===
                               configStore.currentModel.value,
-                      )!,
+                      ),
                   ) || "Unknown Model"} &#9660;
         </span>
     </div>

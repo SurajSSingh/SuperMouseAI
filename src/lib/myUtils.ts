@@ -92,9 +92,10 @@ export function convertBytesToHuman(bytes: number, precision = 2): string {
 /**
  * Get a the name of the model formatted for displaying to user
  * @param model Model to get name of
- * @returns The model's formatted name
+ * @returns The model's formatted name or "Unknown Model"
  */
-export function nameOfModel(model: WhisperModelInfo): string {
+export function nameOfModel(model?: WhisperModelInfo): string {
+  if (!model) return "Unknown Model";
   const modelSize = model.modelSize.replace(
     /\b\w/g,
     (char) => char.toUpperCase(),
@@ -117,4 +118,16 @@ export function nameOfModel(model: WhisperModelInfo): string {
  */
 export function sizeOfModel(model: WhisperModelInfo, precision = 2): string {
   return convertBytesToHuman(model.approxSize, precision);
+}
+
+/**
+ * Determines the largest model based on what the user can run.
+ * @param systemInfo Information about the user's system
+ * @returns The largest model that works on the system; `null` means use default
+ */
+export function findLargestUseableModel(
+  systemInfo: SystemInfo,
+): WhisperModelInfo | null {
+  // TODO(@): Find best model
+  return WHISPER_GGML_MODELS.at(0) || null;
 }
