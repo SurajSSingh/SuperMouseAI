@@ -37,6 +37,7 @@ export const ConfigItem = {
   CURRENT_MODEL: "current_model",
   DOWNLOADED_MODELS: "downloaded_models",
   USE_GPU: "use_gpu",
+  ENABLE_TELEMETRY: "telemetry_enabled",
   // THIS HAS BEEN DEPRECATED FROM FIELD
   TRANSCRIPTS: "transcripts",
 };
@@ -219,6 +220,10 @@ export class ConfigStore {
     true,
     ConfigItem.USE_GPU,
   );
+  enableTelemetry = new StoreStateOption<boolean>(
+    false,
+    ConfigItem.ENABLE_TELEMETRY,
+  );
 
   // Private config data not backed by file
   includeEnglishOnlyModels = $state({ value: false });
@@ -245,6 +250,7 @@ export class ConfigStore {
     this.currentModel,
     this.downloadedModels,
     this.useGPU,
+    this.enableTelemetry,
   ] as const;
 
   // Derived values

@@ -58,6 +58,19 @@
             words without puncuation).
         </p>
     </div>
+    <div class="mb-4">
+        <ToggleSwitch
+            label="Telemetry:"
+            bind:checked={configStore.enableTelemetry.value}
+            disabled={true}
+        />
+        <p class="fieldset-label">
+            To allow running telemetry for app issues and crash reports. <span
+                class="text-warning"
+                >This is cannot be disabled for pre-release builds.</span
+            >
+        </p>
+    </div>
 </CollapseableFieldSet>
 <CollapseableFieldSet
     title="Update Configuration"
