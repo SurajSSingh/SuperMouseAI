@@ -2,7 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased] - Expected 0.8.1
+## [current]
+
+### 🚀 Features
+
+- *(backend)* :heavy_plus_sign: Add hardware information query dependencies
+- *(backend)* :sparkles: Get system information about user's machine
+- *(frontend)* :sparkles: Download model when no model is found
+- *(frontend)* :sparkles: Add actual find best model
+
+### 🚜 Refactor
+
+- *(frontend)* :recycle: Move all pre setup functions into single function
+- *(frontend)* :recycle: Model object update
+- *(frontend)* :recycle: Save user preference for telemetry
+
+### 📚 Documentation
+
+- *(frontend)* :memo: Add documentation to functions in myUtils
+
+### ⚙️ Miscellaneous Tasks
+
+- :bookmark: Update latest version to v0.8.1
+- *(frontend)* :arrow_up: Update front-end dependencies
+- *(backend)* :arrow_up: Update backend dependencies
+- :green_heart: Remove CPU only build for simple windows CI
+
+## [0.8.1] - 2025-04-04
 
 ### 🚀 Features
 
@@ -23,6 +49,8 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Add more models
+- :hammer: Add changelog generation to version bump task
+- :bookmark: Bump to v0.8.1
 
 ## [0.8.0] - 2025-04-03
 
