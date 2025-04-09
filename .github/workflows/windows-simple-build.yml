@@ -16,10 +16,6 @@ jobs:
             args: "--features vulkan,openmp"
             name: "vulkan"
             type: "gpu"
-          - platform: "windows-latest"
-            args: "--features openmp"
-            name: "cpu-only"
-            type: "cpu"
 
     runs-on: ${{ matrix.platform }}
     steps:

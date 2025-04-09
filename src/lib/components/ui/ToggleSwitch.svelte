@@ -14,6 +14,7 @@
         checkedClass?: string;
         uncheckedClass?: string;
         onchange?: ChangeEventHandler<HTMLInputElement>;
+        disabled?: boolean;
     }
 
     let {
@@ -24,6 +25,7 @@
         indeterminate = false,
         checkedClass = "",
         uncheckedClass = "",
+        disabled = false,
         onchange,
     }: ToggleSwitchProps = $props();
 </script>
@@ -45,5 +47,6 @@
         bind:checked
         {indeterminate}
         {onchange}
+        {disabled}
     />
 </div>

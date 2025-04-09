@@ -17,6 +17,7 @@
         onRecordingStart?: () => void;
         onRecordingEnd?: (chunks: Blob[]) => void;
         onError?: (err: string) => void;
+        disabled?: boolean;
     }
 
     let {
@@ -25,6 +26,7 @@
         onRecordingStart,
         onRecordingEnd,
         onError,
+        disabled = false,
     }: RecorderProps = $props();
 
     // Regular Variables
@@ -175,7 +177,7 @@
         size="sm"
         width="block"
         onclick={toggleRecording}
-        disabled={isProcessing}>{buttonText}</Button
+        disabled={disabled || isProcessing}>{buttonText}</Button
     >
     <p class="mb-2">
         {#if isProcessing}

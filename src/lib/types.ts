@@ -24,15 +24,14 @@ export type ConfirmActionType = Partial<{
  * Whisper Model information
  */
 export type WhisperModelInfo = {
-  name: string;
-  modelSize?: "Tiny" | "Base" | "Small" | "Medium" | "Large";
-  version?: "V1" | "V2" | "V3" | "V3 Turbo";
+  modelSize: "tiny" | "base" | "small" | "medium" | "large";
+  version?: "v1" | "v2" | "v3" | "v3 turbo";
   relativePath: string;
   sha256: string;
-  approxSize: string | { size: number; unit: "KB" | "MB" | "GB" };
+  approxSize: number;
   quantizeType: "full" | "q8" | "q5";
-  isEnglishOnly?: boolean;
-  isSuperceded?: boolean | string;
+  isEnglishOnly: boolean;
+  isSuperceded: boolean | string;
 };
 
 /**
@@ -43,4 +42,28 @@ export type TranscriptionInfo = {
   model?: string;
   onGPU?: boolean;
   processingTime?: number;
+};
+
+/**
+ * Options for the [`LargestModelFinderOption`]
+ */
+export type LargestModelFinderOption = {
+  preferEnglishOnly: boolean;
+  usesCPU: boolean;
+  compressionAllowed: "all" | "low" | "full-only";
+  minRAMRatio: number;
+  maxRAMRatio: number;
+  minVRAMRatio: number;
+  maxVRAMRatio: number;
+  /**
+   * Priority of models, higher priority number comes earlier in sort than lower number
+   */
+  sizePriority: {
+    largeTurbo: number;
+    small: number;
+    large: number;
+    base: number;
+    medium: number;
+    tiny: number;
+  };
 };
