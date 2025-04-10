@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [current]
 
+### 🐛 Bug Fixes
+
+- *(frontend)* :goal_net: Add catch for JS async errors
+
+### 🚜 Refactor
+
+- *(frontend)* :fire: Remove deprecated update available
+
+### ⚙️ Miscellaneous Tasks
+
+- Update version to v0.8.2
+
+## [0.8.2] - 2025-04-09
+
 ### 🚀 Features
 
 - *(backend)* :heavy_plus_sign: Add hardware information query dependencies
@@ -27,6 +41,7 @@ All notable changes to this project will be documented in this file.
 - *(frontend)* :arrow_up: Update front-end dependencies
 - *(backend)* :arrow_up: Update backend dependencies
 - :green_heart: Remove CPU only build for simple windows CI
+- :bookmark: Bump to v0.8.2
 
 ## [0.8.1] - 2025-04-04
 
