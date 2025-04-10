@@ -1,11 +1,11 @@
 {
-    "version": "v0.8.2",
+    "version": "v0.8.3",
     "notes": "See full changelog at <https://github.com/SurajSSingh/SuperMouseAI/blob/main/CHANGELOG.md>",
-    "pub_date": "2025-04-09T23:44:40+00:00",
+    "pub_date": "2025-04-10T21:14:23+00:00",
     "platforms": {
       "windows-x86_64": {
-        "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUWlFaME9mSW9pQUU0emxGbTdrUWxEZHFDblRaTmwyc2VKU2NRTEU3TzVuK2hLNWNTODFuTXZhWXc1ZkorRUh1UWwwQno4Nlc2S0hkZ1VHbjEwUGdDaXZJVG9vQ3Y3OFEwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzQ0MjQxMTIxCWZpbGU6c3VwZXItbW91c2UtYWlfMC44LjJfeDY0LXNldHVwLmV4ZQpmbkpyRjlCVFJ2TVZYc3I0Z2JMTHBJYjVKcU1rSVd0ZHh0TkZEbmJ3NWJUK3NxdU9MVHA4a1RNTEZOSXl2MDJCTlQybVo2bU1MVmJycWJzVytYdzFEUT09Cg==",
-        "url": "https://github.com/SurajSSingh/SuperMouseAI/releases/download/v0.8.2/super-mouse-ai_0.8.2_x64-setup.exe"
+        "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUWlFaME9mSW9pQUhvNzgwK1lzd3Ziekc4RlVNTFpGN0sxUkU3UjFTYnhnamJTUTBkVElIdy9FSXVNajBXZndIcUg0VHN0S0JseUdGV0VRbUtwVklqWTlFb01oeDJVeUFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzQ0MzE3NzM0CWZpbGU6c3VwZXItbW91c2UtYWlfMC44LjNfeDY0LXNldHVwLmV4ZQo5UmVEQkNydmgzZ25hbjhvQXVrbzF6UEhtNVB2bXNqN2UrekdacTFQUkFFWUd2ZGVLMTlPSlhmU1d3aVREaU9LZVA1Sk4rWS94dERPOU1UWTZLUFNBdz09Cg==",
+        "url": "https://github.com/SurajSSingh/SuperMouseAI/releases/download/v0.8.3/super-mouse-ai_0.8.3_x64-setup.exe"
       }
     }
   }
