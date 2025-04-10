@@ -1,4 +1,4 @@
-import { debug, trace, warn } from "@tauri-apps/plugin-log";
+import { debug, error, trace, warn } from "@tauri-apps/plugin-log";
 import {
   BASE_LOCAL_APP_DIR,
   MODELS_DIR,
@@ -48,7 +48,10 @@ export function checkDownloadedModels(): Promise<
         downloaded: await exists(
           `${MODELS_DIR}/${model.relativePath}`,
           BASE_LOCAL_APP_DIR,
-        ),
+        ).catch((err) => {
+          error(`Could not check for model existence: ${err}`);
+          return false;
+        }),
       };
     }),
   );
@@ -94,7 +97,7 @@ export function convertBytesToHuman(bytes: number, precision = 2): string {
  * @param model Model to get name of
  * @returns The model's formatted name or "Unknown Model"
  */
-export function nameOfModel(model?: WhisperModelInfo): string {
+export function nameOfModel(model?: WhisperModelInfo | null): string {
   if (!model) return "Unknown Model";
   const modelSize = model.modelSize.replace(
     /\b\w/g,

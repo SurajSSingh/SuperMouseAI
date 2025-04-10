@@ -20,7 +20,7 @@
     import ModelDropdown from "$lib/components/ui/ModelDropdown.svelte";
     import { findLargestUseableModel, nameOfModel } from "$lib/myUtils";
     import { download } from "@tauri-apps/plugin-upload";
-    import { readDir } from "@tauri-apps/plugin-fs";
+    import { exists, mkdir, readDir } from "@tauri-apps/plugin-fs";
     import {
         BASE_LOCAL_APP_DIR,
         MODEL_BASE_URL,
@@ -179,17 +179,46 @@
             );
         }
         debug("Check if user already has models downloaded");
+        if (
+            !(await exists(MODELS_DIR, BASE_LOCAL_APP_DIR).catch((err) => {
+                error(`Could not check for file existence: ${err}`);
+                // Skip creation
+                return true;
+            }))
+        ) {
+            info("First time running, adding models folder");
+            await mkdir(MODELS_DIR, BASE_LOCAL_APP_DIR).catch((err) => {
+                error(`Could not make model dir: ${err}`);
+                notifier.showToast(
+                    "Could not make models folder, models may not download properly.",
+                    "",
+                    "error",
+                    "",
+                    6_000,
+                );
+            });
+        }
         const hasModels =
-            (await readDir(MODELS_DIR, BASE_LOCAL_APP_DIR)).find(
-                (x) => x.isFile,
-            ) !== undefined;
+            (
+                await readDir(MODELS_DIR, BASE_LOCAL_APP_DIR).catch((err) => {
+                    {
+                        error(`Could not read models dir: ${err}`);
+                        notifier.showToast(
+                            "Could not read models folder, might not download models properly.",
+                            "",
+                            "error",
+                            "",
+                            6_000,
+                        );
+                    }
+                    return [];
+                })
+            ).find((x) => x.isFile) !== undefined;
         debug(`Has additional models downloaded?: ${hasModels}`);
         if (!hasModels) await runOptimalModelCheck();
         debug(
             nameOfModel(
-                (await findLargestUseableModel(
-                    await commands.getSystemInfo(),
-                )) ?? undefined,
+                findLargestUseableModel(await commands.getSystemInfo()),
             ),
         );
         info("Finished setup function");
