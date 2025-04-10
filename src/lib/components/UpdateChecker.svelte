@@ -76,8 +76,7 @@
         }
         debug(`Update Info: ${JSON.stringify(updateInfo)}`);
         autoUpdater = updateInfo;
-        hasUpdate = updateInfo.available;
-        if (hasUpdate && !skipped) {
+        if (!skipped) {
             if (configStore.autoApplyUpdates.value) {
                 debug("Applying update immediately");
                 applyUpdate();
