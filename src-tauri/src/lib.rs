@@ -1,3 +1,4 @@
+#![deny(clippy::all, clippy::suspicious, clippy::complexity)]
 #![cfg_attr(
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
