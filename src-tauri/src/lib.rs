@@ -88,6 +88,10 @@ pub fn run() {
         .events(get_collected_events());
     export_bindings(&builder);
     info!("Start app building");
+    #[allow(
+        clippy::large_stack_frames,
+        reason = "This is required by Tauri and cannot be refactored right now"
+    )]
     tauri::Builder::default()
         .plugin(tauri_plugin_upload::init())
         .plugin(tauri_plugin_dialog::init())

@@ -129,7 +129,7 @@ pub async fn play_sound(app_state: State<'_, AppState>, sound_name: String) -> R
         .lock()
         .map_err(|err| err.to_string())?
         .get_sound_path(&sound_name)
-        .ok_or(format!("Could not find sound with name: {sound_name}"))
+        .ok_or_else(|| format!("Could not find sound with name: {sound_name}"))
         .and_then(|path| File::open(path).map_err(|err| err.to_string()))
         .map(BufReader::new)
         .and_then(|file| Decoder::new(file).map_err(|err| err.to_string()))?;
@@ -257,6 +257,8 @@ pub async fn update_model(
         info!("Removing Custom Model");
         app_state.remove_custom_model();
     };
+    // Explict drop to unlock the Mutex (mostly to fix lint issue)
+    drop(app_state);
     Ok(())
 }
 
