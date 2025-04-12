@@ -9,7 +9,7 @@
 use log::{debug, error, info, trace, warn, LevelFilter};
 use std::{collections::HashMap, path::PathBuf};
 use tauri::{path::BaseDirectory, Manager};
-#[allow(unused_imports)]
+#[allow(unused_imports, reason = "Only needed when Sentry feature is enabled")]
 use tauri_plugin_sentry::{minidump, sentry};
 use tauri_specta::{Builder, Event};
 
@@ -59,8 +59,10 @@ const KEY_QUERY_MILLIS: u64 = 100;
 /// ## Panics
 ///
 /// If Tauri app fails to build
-#[allow(clippy::too_many_lines)]
-// TODO: This actually should be split into multiple parts, allowed only temporarily
+#[allow(
+    clippy::too_many_lines,
+    reason = "This actually should be split into multiple parts, allowed only temporarily due to how Tauri is setup"
+)]
 pub fn run() {
     info!("Start running Super Mouse AI");
     debug!("Start Sentry Setup");
@@ -239,8 +241,10 @@ pub fn run() {
                     });
                 });
                 trace!("Start listening for key down events");
-                // Require loop to ensure thread remains active
-                #[allow(clippy::empty_loop)]
+                #[allow(
+                    clippy::empty_loop,
+                    reason = "Require loop to ensure thread remains active"
+                )]
                 loop {}
             }));
             if cfg!(feature = "overlay") {
@@ -284,7 +288,10 @@ pub fn run() {
     info!("Finish app building");
 }
 
-#[allow(unused_variables)]
+#[allow(
+    unused_variables,
+    reason = "Production build does not need to export bindings and so it is pointless"
+)]
 /// Export TypeScript bindings for the application
 ///
 /// ## Panics

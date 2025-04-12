@@ -276,11 +276,15 @@ pub async fn get_system_info() -> SystemInfo {
             .without_processes(),
     );
 
-    // Total CPU core is unlikely to exceed 2^52 for consumer systems
-    #[allow(clippy::cast_precision_loss)]
+    #[allow(
+        clippy::cast_precision_loss,
+        reason = "Total CPU core is unlikely to exceed 2^52 for consumer systems"
+    )]
     let cpu_core_count = sys.cpus().len() as f64;
-    // Total Memory in bytes is unlikely to exceed 2^52 for consumer systems
-    #[allow(clippy::cast_precision_loss)]
+    #[allow(
+        clippy::cast_precision_loss,
+        reason = "Total Memory in bytes is unlikely to exceed 2^52 for consumer systems"
+    )]
     let total_memory_gb = (sys.total_memory() as f64) / 1_000_000_000_f64;
     // sys.cpus().first().unwrap().frequency();
 
@@ -301,8 +305,10 @@ pub async fn get_system_info() -> SystemInfo {
                     debug!("Got Apple GPU using Unified Memory for GPU, use RAM value");
                     total_memory_gb
                 }
-                // Total VRAM in bytes is unlikely to exceed 2^52 for consumer systems
-                #[allow(clippy::cast_precision_loss)]
+                #[allow(
+                    clippy::cast_precision_loss,
+                    reason = "Total VRAM in bytes is unlikely to exceed 2^52 for consumer systems"
+                )]
                 (bytes, _) => (bytes as f64) / 1_000_000_000_f64,
             }
         }
