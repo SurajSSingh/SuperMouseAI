@@ -50,9 +50,9 @@ pub struct MouseMoveEvent {
 }
 
 impl MouseMoveEvent {
-    pub fn with_payload(x: &i32, y: &i32) -> Self {
+    pub fn with_payload(x: i32, y: i32) -> Self {
         trace!("Mouse move EVENT with following payload: ({x}, {y})");
-        Self { x: *x, y: *y }
+        Self { x, y }
     }
 }
 

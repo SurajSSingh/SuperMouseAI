@@ -70,8 +70,7 @@ impl InnerAppState {
         self.model
             .custom
             .as_ref()
-            .map(|holder| &holder.0)
-            .unwrap_or(&self.model.default)
+            .map_or(&self.model.default, |holder| &holder.0)
     }
 
     pub fn get_model_info(&self) -> String {
@@ -137,7 +136,7 @@ impl ModKeyPayload {
 /// Given a key, check if it matches one of the (specific) modifier keys.
 ///
 /// The main modifiers are: Alt, Control, Meta, Option, and Shift (both left and right).
-pub fn is_modkey(key: &device_query::Keycode) -> bool {
+pub fn is_modkey(key: device_query::Keycode) -> bool {
     use device_query::Keycode as K;
     matches!(
         key,
@@ -169,7 +168,7 @@ pub enum TranscriptionFormat {
 
 impl TranscriptionFormat {
     /// Convert a given transcript to its string form based on the current format type.
-    pub fn convert_transcript(&self, transcript: crate::transcript::Transcript) -> String {
+    pub fn convert_transcript(self, transcript: &crate::transcript::Transcript) -> String {
         match self {
             TranscriptionFormat::Text => transcript.as_text(),
             TranscriptionFormat::SRT => transcript.as_srt(),

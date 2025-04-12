@@ -1,5 +1,10 @@
 //! All things related to Rust of the Super Mouse AI app
 
+#![allow(clippy::used_underscore_binding)]
+// When Specta builds the type bindings, it uses it's own Result,
+// which causes a lint warning. Thus, the aboe lint is disabled
+// for this file
+
 // Crate level use (imports)
 use crate::{
     events::{MouseClickEvent, MouseMoveEvent},
@@ -62,7 +67,7 @@ pub async fn transcribe(
     Ok(options
         .format
         .unwrap_or_default()
-        .convert_transcript(transcription))
+        .convert_transcript(&transcription))
 }
 
 #[tauri::command]
@@ -155,7 +160,7 @@ pub fn listen_for_mouse_click(app_handle: AppHandle) -> Result<u8, String> {
                 })
                 .unwrap_or_default(),
             MouseEvent::Release(_button) => { /* Do Nothing Yet */ }
-            MouseEvent::AbsoluteMove(x, y) =>  MouseMoveEvent::with_payload(x, y).emit(&app_handle).map_err(|e| {
+            MouseEvent::AbsoluteMove(x, y) =>  MouseMoveEvent::with_payload(*x, *y).emit(&app_handle).map_err(|e| {
                 error!("App Handle expected to emit mouse move event but could not: {e}");
             })
             .unwrap_or_default(),
@@ -269,7 +274,11 @@ pub async fn get_system_info() -> SystemInfo {
             .without_processes(),
     );
 
+    // Total CPU core is unlikely to exceed 2^52 for consumer systems
+    #[allow(clippy::cast_precision_loss)]
     let cpu_core_count = sys.cpus().len() as f64;
+    // Total Memory in bytes is unlikely to exceed 2^52 for consumer systems
+    #[allow(clippy::cast_precision_loss)]
     let total_memory_gb = (sys.total_memory() as f64) / 1_000_000_000_f64;
     // sys.cpus().first().unwrap().frequency();
 
@@ -290,6 +299,8 @@ pub async fn get_system_info() -> SystemInfo {
                     debug!("Got Apple GPU using Unified Memory for GPU, use RAM value");
                     total_memory_gb
                 }
+                // Total VRAM in bytes is unlikely to exceed 2^52 for consumer systems
+                #[allow(clippy::cast_precision_loss)]
                 (bytes, _) => (bytes as f64) / 1_000_000_000_f64,
             }
         }

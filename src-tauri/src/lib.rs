@@ -55,6 +55,12 @@ const KEY_QUERY_MILLIS: u64 = 100;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 /// Tauri entry point to run app
+///
+/// ## Panics
+///
+/// If Tauri app fails to build
+#[allow(clippy::too_many_lines)]
+// TODO: This actually should be split into multiple parts, allowed only temporarily
 pub fn run() {
     info!("Start running Super Mouse AI");
     debug!("Start Sentry Setup");
@@ -212,7 +218,7 @@ pub fn run() {
                 let app_handle_down = app_key_listener_handler.clone();
                 trace!("Created clones for app handlers");
                 let _up_guard = device_state.on_key_up(move |key| {
-                    is_modkey(key).then(|| {
+                    is_modkey(*key).then(|| {
                         trace!("Mod Key UP Event with {key:?}");
                         let _ = ModKeyEvent::with_payload(ModKeyPayload::released(key.to_string()))
                             .emit(&app_handle_up)
@@ -221,7 +227,7 @@ pub fn run() {
                 });
                 trace!("Start listening for key up events");
                 let _down_guard = device_state.on_key_down(move |key| {
-                    is_modkey(key).then(|| {
+                    is_modkey(*key).then(|| {
                         trace!("Mod Key Event DOWN with {key:?}");
                         let _ = ModKeyEvent::with_payload(ModKeyPayload::pressed(key.to_string()))
                             .emit(&app_handle_down)
@@ -250,18 +256,21 @@ pub fn run() {
             let windows = app.webview_windows();
             app.get_webview_window("main")
                 .expect("Main window should exist")
-                .on_window_event(move |event| if let tauri::WindowEvent::CloseRequested { api: _api, .. } = event {
-                    debug!("Main window requested to be closed!");
-                    for (label, window) in &windows {
-                        // NOTE: Only do non-main window, otherwise will get stuck in loop
-                        if !label.eq_ignore_ascii_case("main") {
-                            debug!("Window {label} will also be closed.");
-                            window.close().unwrap_or_else(|_| {
-                                panic!("Window {label} should be closable")
-                            });
+                .on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api: _api, .. } = event {
+                        debug!("Main window requested to be closed!");
+                        for (label, window) in &windows {
+                            // NOTE: Only do non-main window, otherwise will get stuck in loop
+                            if !label.eq_ignore_ascii_case("main") {
+                                debug!("Window {label} will also be closed.");
+                                window.close().unwrap_or_else(|_| {
+                                    panic!("Window {label} should be closable")
+                                });
+                            }
                         }
+                    } else { /* Do nothing*/
                     }
-                } else { /* Do nothing*/ });
+                });
             debug!("Finish app setup function");
             Ok(())
         })
@@ -273,6 +282,10 @@ pub fn run() {
 
 #[allow(unused_variables)]
 /// Export TypeScript bindings for the application
+///
+/// ## Panics
+///
+/// If it cannot make the TypeScript bindings
 pub fn export_bindings(builder: &Builder) {
     #[cfg(debug_assertions)] // <- Only export on non-release builds
     builder
