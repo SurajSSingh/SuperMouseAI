@@ -24,11 +24,11 @@ pub struct InnerAppState {
 }
 
 impl InnerAppState {
-    pub fn new(model: Model, sound_map: HashMap<String, PathBuf>) -> Self {
+    pub const fn new(model: Model, sound_map: HashMap<String, PathBuf>) -> Self {
         // Load model into memory by evaluating short silence
         // FIXME: Need to do this in another thread, otherwise UI freezes
         // let _ = model.transcribe_pcm_s16le(&[0.0; 20_000], false, false, None, None, None);
-        InnerAppState {
+        Self {
             model: ModelHolder {
                 default: model,
                 custom: None,
@@ -102,9 +102,9 @@ pub enum MouseButtonType {
 impl From<&MouseButton> for MouseButtonType {
     fn from(mb: &MouseButton) -> Self {
         match mb {
-            MouseButton::Left => MouseButtonType::Left,
-            MouseButton::Middle => MouseButtonType::Middle,
-            MouseButton::Right => MouseButtonType::Right,
+            MouseButton::Left => Self::Left,
+            MouseButton::Middle => Self::Middle,
+            MouseButton::Right => Self::Right,
         }
     }
 }
@@ -118,17 +118,17 @@ pub struct ModKeyPayload {
 
 impl ModKeyPayload {
     /// New Modifier Key Event
-    pub fn new(key: String, is_pressed: bool) -> Self {
+    pub const fn new(key: String, is_pressed: bool) -> Self {
         Self { key, is_pressed }
     }
 
     /// New pressed event for given key
-    pub fn pressed(key: String) -> Self {
+    pub const fn pressed(key: String) -> Self {
         Self::new(key, true)
     }
 
     /// New release event for given key
-    pub fn released(key: String) -> Self {
+    pub const fn released(key: String) -> Self {
         Self::new(key, false)
     }
 }
@@ -136,7 +136,7 @@ impl ModKeyPayload {
 /// Given a key, check if it matches one of the (specific) modifier keys.
 ///
 /// The main modifiers are: Alt, Control, Meta, Option, and Shift (both left and right).
-pub fn is_modkey(key: device_query::Keycode) -> bool {
+pub const fn is_modkey(key: device_query::Keycode) -> bool {
     use device_query::Keycode as K;
     matches!(
         key,
@@ -170,14 +170,14 @@ impl TranscriptionFormat {
     /// Convert a given transcript to its string form based on the current format type.
     pub fn convert_transcript(self, transcript: &crate::transcript::Transcript) -> String {
         match self {
-            TranscriptionFormat::Text => transcript.as_text(),
-            TranscriptionFormat::SRT => transcript.as_srt(),
-            TranscriptionFormat::VTT => transcript.as_vtt(),
+            Self::Text => transcript.as_text(),
+            Self::SRT => transcript.as_srt(),
+            Self::VTT => transcript.as_vtt(),
         }
     }
 }
 
-#[derive(Clone, PartialEq, Debug, Default, Serialize, Deserialize, Type)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize, Type)]
 /// Options for the transcribing function.
 ///
 /// All items are optional. Based on arguments for [`crate::mutter::Model::transcribe_audio`].
@@ -201,7 +201,7 @@ pub enum TextDecoration {
     Mark,
 }
 
-#[derive(Clone, PartialEq, Debug, Default, Serialize, Deserialize, Type)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize, Type)]
 /// Options for the text post-processing function.
 ///
 /// All items are optional.

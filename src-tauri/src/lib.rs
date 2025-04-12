@@ -1,5 +1,5 @@
 #![deny(clippy::all, clippy::suspicious, clippy::complexity, clippy::perf)]
-#![warn(clippy::style, clippy::cargo, clippy::pedantic)]
+#![warn(clippy::style, clippy::cargo, clippy::pedantic, clippy::nursery)]
 #![cfg_attr(
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
@@ -215,7 +215,7 @@ pub fn run() {
                         .expect("Failed to start event loop");
                 trace!("Created device state");
                 let app_handle_up = app_key_listener_handler.clone();
-                let app_handle_down = app_key_listener_handler.clone();
+                let app_handle_down = app_key_listener_handler;
                 trace!("Created clones for app handlers");
                 let _up_guard = device_state.on_key_up(move |key| {
                     is_modkey(*key).then(|| {
