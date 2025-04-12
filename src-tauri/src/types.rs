@@ -39,12 +39,9 @@ impl InnerAppState {
 
     /// Get sound by the provided name or by prepending `default_` to the beginning.
     pub fn get_sound_path(&self, sound_name: &str) -> Option<&PathBuf> {
-        debug!("Getting sound: {}", sound_name);
+        debug!("Getting sound: {sound_name}");
         self.sound_map.get(sound_name).or_else(|| {
-            warn!(
-                "No sound with name '{}', falling back to 'default_{}'",
-                sound_name, sound_name
-            );
+            warn!("No sound with name '{sound_name}', falling back to 'default_{sound_name}'");
             self.sound_map.get(&format!("default_{}", &sound_name))
         })
     }
@@ -184,7 +181,7 @@ impl TranscriptionFormat {
 #[derive(Clone, PartialEq, Debug, Default, Serialize, Deserialize, Type)]
 /// Options for the transcribing function.
 ///
-/// All items are optional. Based on arguments for [crate::mutter::Model::transcribe_audio].
+/// All items are optional. Based on arguments for [`crate::mutter::Model::transcribe_audio`].
 pub struct TranscribeOptions {
     pub translate: Option<bool>,
     pub individual_word_timestamps: Option<bool>,

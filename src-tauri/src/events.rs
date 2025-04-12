@@ -12,7 +12,7 @@ use crate::types::{ModKeyPayload, MouseButtonType};
 ///
 /// ### Payload
 ///
-/// [MouseButtonType] : Which button was pressed
+/// [`MouseButtonType`] : Which button was pressed
 pub struct MouseClickEvent(MouseButtonType);
 
 impl MouseClickEvent {
@@ -27,7 +27,7 @@ impl MouseClickEvent {
 ///
 /// ### Payload
 ///
-/// [ModKeyPayload] : The modifer key that is pressed/released
+/// [`ModKeyPayload`] : The modifer key that is pressed/released
 pub struct ModKeyEvent(ModKeyPayload);
 
 impl ModKeyEvent {
@@ -42,8 +42,8 @@ impl ModKeyEvent {
 ///
 /// ### Payload
 ///
-/// x [i32] : Absolute X value of mosue (from 0 to SCREEN_WIDTH)
-/// y [i32] : Absolute Y value of mouse (from 0 to SCREEN_HEIGHT)
+/// x [i32] : Absolute X value of mosue (from 0 to `SCREEN_WIDTH`)
+/// y [i32] : Absolute Y value of mouse (from 0 to `SCREEN_HEIGHT`)
 pub struct MouseMoveEvent {
     x: i32,
     y: i32,
@@ -56,6 +56,7 @@ impl MouseMoveEvent {
     }
 }
 
+#[must_use]
 pub fn get_collected_events() -> Events {
     collect_events![MouseClickEvent, ModKeyEvent, MouseMoveEvent]
 }

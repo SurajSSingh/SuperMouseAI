@@ -139,7 +139,7 @@ pub fn run() {
             let model_path = resource_path
                 .into_os_string()
                 .into_string()
-                .map_err(|os_str| format!("\"{:?}\" cannot be convered to string!", os_str))?;
+                .map_err(|os_str| format!("\"{os_str:?}\" cannot be convered to string!"))?;
             trace!("Converted model path");
             let model = Model::new(&model_path)?;
             trace!("Created new model");
@@ -174,19 +174,19 @@ pub fn run() {
                         .then(|| {
                             map.insert("start".into(), start_path.clone());
                         })
-                        .unwrap_or_else(|| warn!("No start path found: {:?}", start_path));
+                        .unwrap_or_else(|| warn!("No start path found: {start_path:?}"));
                     stop_path
                         .exists()
                         .then(|| {
                             map.insert("stop".into(), stop_path.clone());
                         })
-                        .unwrap_or_else(|| warn!("No stop path found: {:?}", stop_path));
+                        .unwrap_or_else(|| warn!("No stop path found: {stop_path:?}"));
                     magic_path
                         .exists()
                         .then(|| {
                             map.insert("finish".into(), magic_path.clone());
                         })
-                        .unwrap_or_else(|| warn!("No magic path found: {:?}", magic_path));
+                        .unwrap_or_else(|| warn!("No magic path found: {magic_path:?}"));
                     trace!("Finished looking for extra sounds");
                 }
                 debug!("Finished creating sound map");
@@ -213,7 +213,7 @@ pub fn run() {
                 trace!("Created clones for app handlers");
                 let _up_guard = device_state.on_key_up(move |key| {
                     is_modkey(key).then(|| {
-                        trace!("Mod Key UP Event with {:?}", key);
+                        trace!("Mod Key UP Event with {key:?}");
                         let _ = ModKeyEvent::with_payload(ModKeyPayload::released(key.to_string()))
                             .emit(&app_handle_up)
                             .map_err(|err| error!("Error for mod key event release: {err}"));
@@ -222,7 +222,7 @@ pub fn run() {
                 trace!("Start listening for key up events");
                 let _down_guard = device_state.on_key_down(move |key| {
                     is_modkey(key).then(|| {
-                        trace!("Mod Key Event DOWN with {:?}", key);
+                        trace!("Mod Key Event DOWN with {key:?}");
                         let _ = ModKeyEvent::with_payload(ModKeyPayload::pressed(key.to_string()))
                             .emit(&app_handle_down)
                             .map_err(|err| error!("Error for mod key event press: {err}"));
@@ -250,21 +250,18 @@ pub fn run() {
             let windows = app.webview_windows();
             app.get_webview_window("main")
                 .expect("Main window should exist")
-                .on_window_event(move |event| match event {
-                    tauri::WindowEvent::CloseRequested { api: _api, .. } => {
-                        debug!("Main window requested to be closed!");
-                        windows.iter().for_each(|(label, window)| {
-                            // NOTE: Only do non-main window, otherwise will get stuck in loop
-                            if !label.eq_ignore_ascii_case("main") {
-                                debug!("Window {label} will also be closed.");
-                                window.close().unwrap_or_else(|_| {
-                                    panic!("Window {label} should be closable")
-                                });
-                            }
-                        });
+                .on_window_event(move |event| if let tauri::WindowEvent::CloseRequested { api: _api, .. } = event {
+                    debug!("Main window requested to be closed!");
+                    for (label, window) in &windows {
+                        // NOTE: Only do non-main window, otherwise will get stuck in loop
+                        if !label.eq_ignore_ascii_case("main") {
+                            debug!("Window {label} will also be closed.");
+                            window.close().unwrap_or_else(|_| {
+                                panic!("Window {label} should be closable")
+                            });
+                        }
                     }
-                    _ => { /* Do nothing*/ }
-                });
+                } else { /* Do nothing*/ });
             debug!("Finish app setup function");
             Ok(())
         })

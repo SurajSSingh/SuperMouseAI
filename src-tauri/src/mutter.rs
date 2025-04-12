@@ -42,7 +42,7 @@ impl Model {
         path: &str,
         params: WhisperContextParameters,
     ) -> Result<Self, WhisperError> {
-        trace!("Loading model {}", path);
+        trace!("Loading model {path}");
         // Sanity check - make sure the path exists
         let path_converted = std::path::Path::new(path);
         if !path_converted.exists() {
@@ -153,7 +153,7 @@ impl Model {
         #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
         let threads = threads.map_or_else(|| num_cpus::get() as i32, i32::from);
 
-        trace!("Using {} threads", threads);
+        trace!("Using {threads} threads");
 
         params.set_n_threads(threads);
 
@@ -172,7 +172,7 @@ impl Model {
             error!("Failed to get segments");
             ModelError::WhisperError(e)
         })?;
-        trace!("Number of segments: {}", num_segments);
+        trace!("Number of segments: {num_segments}");
 
         let mut words = Vec::new();
         let mut utterances = Vec::new();
@@ -194,7 +194,7 @@ impl Model {
                 continue;
             }
 
-            trace!("Getting word timestamps for segment {}", segment_idx);
+            trace!("Getting word timestamps for segment {segment_idx}");
 
             let num_tokens = state
                 .full_n_tokens(segment_idx)

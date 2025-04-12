@@ -53,7 +53,7 @@ pub async fn transcribe(
             },
         )
         .map_err(|err| {
-            log::error!("Transcription Error: {:?}", err);
+            log::error!("Transcription Error: {err:?}");
             match err {
                 ModelError::WhisperError(whisper_error) => whisper_error.to_string(),
                 ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
@@ -124,7 +124,7 @@ pub async fn play_sound(app_state: State<'_, AppState>, sound_name: String) -> R
         .lock()
         .map_err(|err| err.to_string())?
         .get_sound_path(&sound_name)
-        .ok_or(format!("Could not find sound with name: {}", sound_name))
+        .ok_or(format!("Could not find sound with name: {sound_name}"))
         .and_then(|path| File::open(path).map_err(|err| err.to_string()))
         .map(BufReader::new)
         .and_then(|file| Decoder::new(file).map_err(|err| err.to_string()))?;
@@ -144,19 +144,19 @@ pub async fn play_sound(app_state: State<'_, AppState>, sound_name: String) -> R
 ///
 /// Returns either the callback id or an error message.
 ///
-/// Adapted from https://github.com/crabnebula-dev/koi-pond/blob/main/src-tauri/src/lib.rs under MIT License
+/// Adapted from <https://github.com/crabnebula-dev/koi-pond/blob/main/src-tauri/src/lib.rs> under MIT License
 pub fn listen_for_mouse_click(app_handle: AppHandle) -> Result<u8, String> {
     Mouse::new()
         .hook(Box::new(move |e| match e {
             MouseEvent::Press(button) => MouseClickEvent::with_payload(MouseButtonType::from(button))
                 .emit(&app_handle)
                 .map_err(|e| {
-                    error!("App Handle expected to emit press event with button playload but could not: {}", e);
+                    error!("App Handle expected to emit press event with button playload but could not: {e}");
                 })
                 .unwrap_or_default(),
             MouseEvent::Release(_button) => { /* Do Nothing Yet */ }
             MouseEvent::AbsoluteMove(x, y) =>  MouseMoveEvent::with_payload(x, y).emit(&app_handle).map_err(|e| {
-                error!("App Handle expected to emit mouse move event but could not: {}", e);
+                error!("App Handle expected to emit mouse move event but could not: {e}");
             })
             .unwrap_or_default(),
             _ => (),
@@ -170,7 +170,7 @@ pub fn listen_for_mouse_click(app_handle: AppHandle) -> Result<u8, String> {
 pub async fn write_text(text: String) -> Result<(), String> {
     info!("Running auto-write text command");
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
-    trace!("Enigo setup: {:?}", enigo);
+    trace!("Enigo setup: {enigo:?}");
     enigo.text(&text).map_err(|e| e.to_string())?;
     // Use len rather then actual text to prevent leaking info in logs
     trace!("Enigo Wrote {} bytes", text.len());
@@ -183,7 +183,7 @@ pub async fn write_text(text: String) -> Result<(), String> {
 pub fn paste_text() -> Result<(), String> {
     info!("Running paste from clipboard command");
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
-    trace!("Enigo setup: {:?}", enigo);
+    trace!("Enigo setup: {enigo:?}");
     let cmd_or_ctrl = match std::env::consts::OS {
         "macos" => enigo::Key::Meta,
         "windows" | "linux" => enigo::Key::Control,
@@ -195,19 +195,19 @@ pub fn paste_text() -> Result<(), String> {
     enigo
         .key(cmd_or_ctrl, enigo::Direction::Press)
         .map_err(|e| {
-            error!("Input error: {}", e);
+            error!("Input error: {e}");
             e.to_string()
         })?;
     enigo
         .key(enigo::Key::Unicode('v'), enigo::Direction::Click)
         .map_err(|e| {
-            error!("Input error: {}", e);
+            error!("Input error: {e}");
             e.to_string()
         })?;
     enigo
         .key(cmd_or_ctrl, enigo::Direction::Release)
         .map_err(|e| {
-            error!("Input error: {}", e);
+            error!("Input error: {e}");
             e.to_string()
         })?;
     trace!("Enigo Pasted text");
@@ -225,7 +225,7 @@ pub async fn set_window_top(
     webview_window
         .set_always_on_top(override_value.unwrap_or(true))
         .map_err(|err| {
-            log::error!("Could not set window to top value: {}", err);
+            log::error!("Could not set window to top value: {err}");
             err.to_string()
         })
 }
@@ -307,6 +307,7 @@ pub async fn get_system_info() -> SystemInfo {
 }
 
 /// Gets all collected commands for Super Mouse AI application to be used by builder
+#[must_use]
 pub fn get_collected_commands() -> Commands<Wry> {
     collect_commands![
         transcribe,
