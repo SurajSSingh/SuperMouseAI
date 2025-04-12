@@ -1,4 +1,5 @@
-#![deny(clippy::all, clippy::suspicious, clippy::complexity)]
+#![deny(clippy::all, clippy::suspicious, clippy::complexity, clippy::perf)]
+#![warn(clippy::style, clippy::cargo)]
 #![cfg_attr(
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
@@ -232,17 +233,17 @@ pub fn run() {
                 #[allow(clippy::empty_loop)]
                 loop {}
             }));
-            if cfg!(feature = "no-overlay") {
-                debug!("Removing overlay");
-                if let Some(overlay) = app.get_webview_window("overlay") {
-                    overlay.close()?;
-                }
-            } else {
+            if cfg!(feature = "overlay") {
                 info!("Ignoring mouse events in overlay");
                 app.get_webview_window("overlay")
                     .expect("Overlay should exist")
                     .set_ignore_cursor_events(true)
                     .expect("Setting to ignore cursor should work");
+            } else {
+                debug!("Removing overlay");
+                if let Some(overlay) = app.get_webview_window("overlay") {
+                    overlay.close()?;
+                }
             }
 
             info!("Add close all windows event when main window is closed");
