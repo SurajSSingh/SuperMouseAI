@@ -10,9 +10,8 @@ use log::{debug, error, info, trace, warn, LevelFilter};
 use std::{collections::HashMap, path::PathBuf};
 use tauri::AppHandle;
 use tauri::{path::BaseDirectory, Manager};
-use tauri_plugin_sentry::sentry::protocol::Event as SentryEvent;
+// use tauri_plugin_sentry::sentry::protocol::Event as SentryEvent;
 use tauri_plugin_sentry::sentry::ClientInitGuard;
-#[allow(unused_imports, reason = "Only needed when Sentry feature is enabled")]
 use tauri_plugin_sentry::{minidump, sentry};
 use tauri_specta::{Builder, Event};
 
@@ -62,10 +61,6 @@ const KEY_QUERY_MILLIS: u64 = 100;
 /// ## Panics
 ///
 /// If Tauri app fails to build
-#[allow(
-    clippy::too_many_lines,
-    reason = "This actually should be split into multiple parts, allowed only temporarily due to how Tauri is setup"
-)]
 pub fn run() {
     info!("Start running Super Mouse AI");
     let bindings_builder = export_bindings();
@@ -84,13 +79,14 @@ pub fn run() {
     )]
     app_builder
         .invoke_handler(bindings_builder.invoke_handler())
-        .setup(|app| setup_app(app, bindings_builder))
+        .setup(move |app| setup_app(app, &bindings_builder))
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
     info!("Finish app building");
 }
 
 /// Export TypeScript bindings for the application
+#[must_use]
 pub fn export_bindings() -> Builder {
     debug!("Exporting Rust binding to TypeScript");
     // Following <https://docs.rs/tauri-specta/2.0.0-rc.21/tauri_specta/index.html>
@@ -103,7 +99,7 @@ pub fn export_bindings() -> Builder {
         specta_typescript::Typescript::default(),
         "../src/lib/bindings.ts",
     ) {
-        Ok(_) => debug!("Exported TypeScript bindings"),
+        Ok(()) => debug!("Exported TypeScript bindings"),
         Err(err) => warn!("Export Binding Issue: {err}"),
     };
     builder
@@ -170,14 +166,18 @@ fn create_sentry_client() -> ClientInitGuard {
     ))
 }
 
-// Arc<dyn Fn(Event<'static>) -> Option<Event<'static>> + Send + Sync, Global>
-fn event_callback(event: SentryEvent) -> Option<SentryEvent> {
-    todo!()
-}
+// /// Arc<dyn Fn(Event<'static>) -> Option<Event<'static>> + Send + Sync, Global>
+// fn event_callback(event: SentryEvent) -> Option<SentryEvent> {
+//     todo!()
+// }
 
+#[allow(
+    clippy::too_many_lines,
+    reason = "This actually should be split into multiple parts, allowed only temporarily until it can be split"
+)]
 fn setup_app(
-    app: &mut tauri::App,
-    bindings_builder: Builder,
+    app: &tauri::App,
+    bindings_builder: &Builder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     debug!("Start app setup function");
     // This is also required if you want to use events

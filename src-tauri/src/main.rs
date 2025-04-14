@@ -3,7 +3,7 @@
 
 fn main() {
     if cfg!(feature = "export-bindings-only") {
-        super_mouse_ai_lib::export_bindings();
+        let _ = super_mouse_ai_lib::export_bindings();
     } else {
         super_mouse_ai_lib::run()
     }
