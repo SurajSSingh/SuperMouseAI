@@ -127,7 +127,7 @@ mouseMoveEvent: "mouse-move-event"
  * 
  * ### Payload
  * 
- * [ModKeyPayload] : The modifer key that is pressed/released
+ * [`ModKeyPayload`] : The modifer key that is pressed/released
  */
 export type ModKeyEvent = ModKeyPayload
 /**
@@ -145,7 +145,7 @@ export type MouseButtonType = "Left" | "Middle" | "Right"
  * 
  * ### Payload
  * 
- * [MouseButtonType] : Which button was pressed
+ * [`MouseButtonType`] : Which button was pressed
  */
 export type MouseClickEvent = MouseButtonType
 /**
@@ -153,8 +153,8 @@ export type MouseClickEvent = MouseButtonType
  * 
  * ### Payload
  * 
- * x [i32] : Absolute X value of mosue (from 0 to SCREEN_WIDTH)
- * y [i32] : Absolute Y value of mouse (from 0 to SCREEN_HEIGHT)
+ * x [i32] : Absolute X value of mosue (from 0 to `SCREEN_WIDTH`)
+ * y [i32] : Absolute Y value of mouse (from 0 to `SCREEN_HEIGHT`)
  */
 export type MouseMoveEvent = { x: number; y: number }
 /**
@@ -195,7 +195,7 @@ decorated_words: ([TextDecoration, string])[] | null; replace_inter_sentence_new
 /**
  * Options for the transcribing function.
  * 
- * All items are optional. Based on arguments for [crate::mutter::Model::transcribe_audio].
+ * All items are optional. Based on arguments for [`crate::mutter::Model::transcribe_audio`].
  */
 export type TranscribeOptions = { translate: boolean | null; individual_word_timestamps: boolean | null; threads: number | null; initial_prompt: string | null; language: string | null; format: TranscriptionFormat | null }
 /**
