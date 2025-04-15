@@ -80,6 +80,7 @@ impl Model {
         initial_prompt: Option<&str>,
         language: Option<&str>,
         threads: Option<u16>,
+        patience: Option<f32>,
     ) -> Result<Transcript, ModelError> {
         trace!("Decoding audio.");
         let samples = decode(audio.as_ref().to_vec())?;
@@ -91,6 +92,7 @@ impl Model {
             initial_prompt,
             language,
             threads,
+            patience,
         )
     }
 
@@ -122,6 +124,7 @@ impl Model {
         initial_prompt: Option<&str>,
         language: Option<&str>,
         threads: Option<u16>,
+        patience: Option<f32>,
     ) -> Result<Transcript, ModelError> {
         debug!("Start transcribing audio");
         trace!(
@@ -131,7 +134,7 @@ impl Model {
 
         let mut params = FullParams::new(SamplingStrategy::BeamSearch {
             beam_size: 5,
-            patience: 1.0,
+            patience: patience.map_or_else(|| 1.0, |p| p.min(0.0)),
         });
 
         if let Some(prompt) = initial_prompt {

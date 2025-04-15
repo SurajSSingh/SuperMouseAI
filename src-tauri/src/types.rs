@@ -177,7 +177,7 @@ impl TranscriptionFormat {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize, Type)]
+#[derive(Clone, PartialEq, Debug, Default, Serialize, Deserialize, Type)]
 /// Options for the transcribing function.
 ///
 /// All items are optional. Based on arguments for [`crate::mutter::Model::transcribe_audio`].
@@ -188,6 +188,7 @@ pub struct TranscribeOptions {
     pub initial_prompt: Option<String>,
     pub language: Option<String>,
     pub format: Option<TranscriptionFormat>,
+    pub patience: Option<f32>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]

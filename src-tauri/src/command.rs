@@ -31,14 +31,15 @@ pub async fn transcribe(
     options: Option<TranscribeOptions>,
 ) -> Result<String, String> {
     let options = options.unwrap_or_default();
-    log::info!("Transcribing with parameters: translate={:?}, use_timestamp={:?}, threads={:?}, prompt={:?}, lang={:?}, fmt={:?}", 
-    options.translate,
-    options.individual_word_timestamps,
-    options.threads,
-    options.initial_prompt,
-    options.language,
-    options.format,
-);
+    log::info!("Transcribing with parameters: translate={:?}, use_timestamp={:?}, threads={:?}, prompt={:?}, lang={:?}, fmt={:?}, patience={:?}",
+        options.translate,
+        options.individual_word_timestamps,
+        options.threads,
+        options.initial_prompt,
+        options.language,
+        options.format,
+        options.patience,
+    );
     info!("Running transcription command");
     let app_state = app_state.lock().map_err(|err| err.to_string())?;
     let model = app_state.get_model();
@@ -56,6 +57,7 @@ pub async fn transcribe(
                 Some(0) => None,
                 threads => threads,
             },
+            options.patience,
         )
         .map_err(|err| {
             log::error!("Transcription Error: {err:?}");
