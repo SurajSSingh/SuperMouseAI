@@ -2,6 +2,7 @@
     import { events } from "$lib/bindings";
     import { type RecordingStates } from "$lib/types";
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+    import { currentMonitor, cursorPosition } from "@tauri-apps/api/window";
     import { debug } from "@tauri-apps/plugin-log";
 
     let follower: HTMLElement;
@@ -10,9 +11,18 @@
     let yOffset = $state(-20);
 
     let currentState: RecordingStates | undefined = $state();
+    let scale = 1;
 
     $effect(() => {
         let unlistenMoveEvent: UnlistenFn | undefined;
+        // currentMonitor().then((monitor) => {
+        //     if (monitor) {
+        //         debug(
+        //             `Got Monitor: ${monitor.name}(${JSON.stringify(monitor.size)}@${monitor.scaleFactor}x)`,
+        //         );
+        //         scale = monitor.scaleFactor;
+        //     }
+        // });
         const run = async () => {
             unlistenMoveEvent = await events.mouseMoveEvent.listen((e) => {
                 follower.style.left = `${e.payload.x + xOffset}px`;
@@ -29,6 +39,16 @@
             unlistenMoveEvent?.();
         };
     });
+
+    // $effect(() => {
+    //     let interval;
+
+    //     setInterval(async () => {
+    //         const position = await cursorPosition();
+    //         follower.style.left = `${Math.ceil(position.x / scale) + xOffset}px`;
+    //         follower.style.top = `${Math.ceil(position.y / scale) + yOffset}px`;
+    //     }, 30);
+    // });
 </script>
 
 <div id="follower" bind:this={follower} class={currentState}>
