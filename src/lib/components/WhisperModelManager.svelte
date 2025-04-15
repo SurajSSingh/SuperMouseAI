@@ -144,10 +144,8 @@
             );
             notifier.showToast(
                 "Model has been downloaded, and is ready to use",
-                "",
                 "success",
-                "",
-                5_000,
+                { duration: 5_000 },
             );
         } catch (err: any) {
             removeFile(
@@ -155,13 +153,10 @@
                 BASE_LOCAL_APP_DIR,
             );
             error(err.toString());
-            notifier.showToast(
-                "Could not download the model",
-                "",
-                "error",
-                "alert",
-                10_000,
-            );
+            notifier.showToast("Could not download the model", "error", {
+                sound: "alert",
+                duration: 10_000,
+            });
         } finally {
             isProcessingModel = false;
             downloadProgress = null;
@@ -189,13 +184,10 @@
             );
         } catch (err) {
             error(`Could not remove model: ${err}`);
-            notifier.showToast(
-                "Could not remove the given model",
-                "",
-                "error",
-                "alert",
-                10_000,
-            );
+            notifier.showToast("Could not remove the given model", "error", {
+                sound: "alert",
+                duration: 10_000,
+            });
             return;
         }
         notDownloadedModels.push(removingModel);
@@ -207,7 +199,9 @@
         info(
             `Model ${nameOfModel(removingModel)} (${removingModel.relativePath}) removed successfully`,
         );
-        notifier.showToast("Model has been removed", "", "success", "", 5_000);
+        notifier.showToast("Model has been removed", "success", {
+            duration: 5_000,
+        });
     }
 </script>
 

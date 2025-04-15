@@ -60,7 +60,7 @@
         if (!autoUpdater) {
             error(`Update class not defined to run auto-update.`);
             hasUpdate = false;
-            notifier.showError("Could not apply update");
+            notifier.showToast("Could not apply update", "error");
             return;
         }
 

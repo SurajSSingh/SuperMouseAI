@@ -67,16 +67,12 @@ Component to select the model to use
             if (result.status === "error") {
                 throw result.error;
             }
-            notifier.showToast(
-                "Model switched successfully",
-                "",
-                "success",
-                "",
-                5_000,
-            );
+            notifier.showToast("Model switched successfully", "success", {
+                duration: 5_000,
+            });
         } catch (err) {
             error(`Could not unload custom model: ${err}`);
-            notifier.showToast("Custom model could not removed", "", "warn");
+            notifier.showToast("Custom model could not removed", "warn");
         } finally {
             isUpdating = false;
         }
@@ -89,16 +85,12 @@ Component to select the model to use
             if (result.status === "error") {
                 throw result.error;
             }
-            notifier.showToast(
-                "Model switched successfully",
-                "",
-                "success",
-                "",
-                5_000,
-            );
+            notifier.showToast("Model switched successfully", "success", {
+                duration: 5_000,
+            });
         } catch (err) {
             error(`Could not switch custom model: ${err}`);
-            notifier.showToast("Could not switch custom model", "", "error");
+            notifier.showToast("Could not switch custom model", "error");
         } finally {
             isUpdating = false;
         }

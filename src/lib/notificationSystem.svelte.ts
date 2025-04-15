@@ -73,21 +73,22 @@ export class NotificationSystem {
         title: `SuperMouse AI${subtitle ? ": " + subtitle : ""}`,
         body: message,
       });
+      this.playSound(sound);
     } else {
-      this.showInfo(message, subtitle, sound);
+      warn("Could not show notification, falling back to toast message.");
+      this.showToast(message, "default", { subtitle, sound });
     }
-    this.playSound(sound);
   }
 
-  // FIXME: Move subtitle to end
   showToast(
     message: string,
-    // deno-lint-ignore default-param-last
-    subtitle = "",
     type?: "info" | "warn" | "error" | "success" | "loading" | "default",
-    sound = "",
-    duration = 5000,
+    toastConfig?: ExternalToast & { sound?: string; subtitle?: string },
   ): string | number {
+    toastConfig ??= toastData;
+    if (toastConfig.subtitle && !toastConfig.description) {
+      toastConfig.description = message;
+    }
     // This would be fixed it TS allowed switch/match-expression
     const toster = type === "info"
       ? toast.info
@@ -100,10 +101,10 @@ export class NotificationSystem {
       : type === "loading"
       ? toast.loading
       : toast;
-    if (sound) {
-      this.playSound(sound);
+    if (toastConfig.sound) {
+      this.playSound(toastConfig.sound);
     }
-    return toster(subtitle || message, { ...toastData, duration });
+    return toster(toastConfig.subtitle || message, toastConfig);
   }
 
   showPromiseToast<T>(
@@ -122,6 +123,13 @@ export class NotificationSystem {
     });
   }
 
+  /**
+   * Show native dialog box
+   * @param type: `message` = "Simple message", `ask` = "Question to answer", `confirm` = "Confirm an action"
+   * @param message: The message/question for the user
+   * @param options: Options to modify the dialog box
+   * @returns Promise of user's response (`true` = OK/Yes, `false`=Cancel/No)
+   */
   async showDialog(
     type: "message" | "ask" | "confirm",
     message: string,
@@ -140,58 +148,6 @@ export class NotificationSystem {
         break;
     }
     return false;
-  }
-
-  // TEMP
-  showSuccess(
-    message: string,
-    subtitle = "",
-    sound = "",
-    duration = 5000,
-  ): void {
-    toast.success(subtitle || message, {
-      description: subtitle ? message : "",
-      duration,
-    });
-    this.playSound(sound);
-  }
-
-  // TEMP
-  showError(
-    message: string,
-    subtitle = "",
-    sound = "default_alert",
-    duration = 5000,
-  ): void {
-    toast.error(subtitle || message, {
-      description: subtitle ? message : "",
-      duration,
-    });
-    this.playSound(sound);
-  }
-
-  // TEMP
-  showInfo(
-    message: string,
-    subtitle = "",
-    sound = "default_alert",
-    duration = 5000,
-  ): void {
-    toast.info(subtitle || message, {
-      description: subtitle ? message : "",
-      duration,
-    });
-    this.playSound(sound);
-  }
-
-  showAlert(
-    message: string,
-    subtitle = "",
-    sound = "default_alert",
-  ): void {
-    console.log(`Alert ${subtitle}: ${message}`);
-    toast(`${subtitle ? subtitle + ": " : ""}${message}`);
-    this.playSound(sound);
   }
 
   confirmAction(

@@ -41,7 +41,7 @@
     // Helper Functions
     function copyToClipboard() {
         writeText(configStore.currentTranscript);
-        notifier.showInfo("Copied to clipboard!", "", "");
+        notifier.showToast("Copied to clipboard!", "info");
         notifier.showNotification("Copied to clipboard!", "", "");
     }
 
@@ -75,17 +75,19 @@
         copyToClipboard();
         if (configStore.autoPaste.value) {
             if (configStore.pasteViaKeys.value) {
-                commands.pasteText().catch((err) => notifier.showError(err));
+                commands
+                    .pasteText()
+                    .catch((err) => notifier.showToast(err, "error"));
             } else {
                 commands
                     .writeText(configStore.currentTranscript)
-                    .catch((err) => notifier.showError(err));
+                    .catch((err) => notifier.showToast(err, "error"));
             }
         }
     }
     function onError(err: string) {
         error(`Got error: ${error}`);
-        notifier.showError(err);
+        notifier.showToast(err, "error");
     }
 
     async function runOptimalModelCheck() {
@@ -159,7 +161,7 @@
             return;
         }
         info("User has accepted to use the app.");
-        notifier.showToast("Telemetry enabled", "", "info", "", 5_000);
+        notifier.showToast("Telemetry enabled", "info", { duration: 5_000 });
         debug("Get Version info");
         const version = await getVersion();
         appVersion = version.startsWith("v") ? version : `v${version}`;
@@ -172,10 +174,8 @@
             warn(`Window float value could not be set: ${windowResult.error}`);
             notifier.showToast(
                 "Could not set window float value automatically",
-                "",
                 "warn",
-                "",
-                6_000,
+                { duration: 6_000 },
             );
         }
         debug("Check if user already has models downloaded");
@@ -191,10 +191,8 @@
                 error(`Could not make model dir: ${err}`);
                 notifier.showToast(
                     "Could not make models folder, models may not download properly.",
-                    "",
                     "error",
-                    "",
-                    6_000,
+                    { duration: 6_000 },
                 );
             });
         }
@@ -205,10 +203,8 @@
                         error(`Could not read models dir: ${err}`);
                         notifier.showToast(
                             "Could not read models folder, might not download models properly.",
-                            "",
                             "error",
-                            "",
-                            6_000,
+                            { duration: 6_000 },
                         );
                     }
                     return [];

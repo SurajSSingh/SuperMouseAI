@@ -21,7 +21,7 @@
             <option value="success">Success</option>
             <option value="error">Error</option>
         </select>
-        <Button onclick={() => notifier.showToast(message, "", type)}
+        <Button onclick={() => notifier.showToast(message, type)}
             >Test Basic Toast</Button
         >
         <Button

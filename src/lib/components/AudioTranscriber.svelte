@@ -96,7 +96,7 @@
                     configStore.removeCurrentTranscription();
                 },
                 () => {
-                    notifier?.showInfo("Cancelled delete.", "", "");
+                    notifier?.showToast("Cancelled delete.", "info");
                 },
                 "Are you sure you want to delete?",
             );
