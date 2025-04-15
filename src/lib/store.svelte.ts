@@ -399,6 +399,11 @@ export class ConfigStore {
     if (this.isTranscriptsEmpty) this.currentIndex.value = 0;
   }
 
+  clearTranscripts(): void {
+    this.transcriptions.value = [];
+    this.currentIndex.value = 0;
+  }
+
   prevIndex(): void {
     if (this.currentIndex.value <= 0) {
       warn(`Cannot go to a previous index before the first index`);
