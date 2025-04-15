@@ -193,10 +193,10 @@ fn setup_app(app: &App, bindings_builder: &Builder) -> Result<(), Box<dyn std::e
     debug!("Setup modifier key listener");
     let app_key_listener_handler = app.handle().clone();
     trace!("Cloned app handle for new listener thread");
-    setup_key_listeners(&app_key_listener_handler)?;
+    setup_key_listeners(&app_key_listener_handler);
     debug!("Finished setting up key listeners");
     configure_overlay(app)?;
-    setup_main_window_close_event(app)?;
+    setup_main_window_close_event(app);
     info!("Finish app setup function");
     Ok(())
 }
@@ -285,7 +285,7 @@ fn create_sound_map(app: &App) -> Result<HashMap<String, PathBuf>, Box<dyn std::
 /// # Errors
 ///
 /// Returns an error if the listener setup fails.
-fn setup_key_listeners(app_handle: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+fn setup_key_listeners(app_handle: &AppHandle) {
     let app_handle_up = app_handle.clone();
     let app_handle_down = app_handle.clone();
     trace!("Created clones for app handlers");
@@ -322,7 +322,6 @@ fn setup_key_listeners(app_handle: &AppHandle) -> Result<(), Box<dyn std::error:
         )]
         loop {}
     }));
-    Ok(())
 }
 
 /// Configures the overlay window settings based on the app configuration.
@@ -353,7 +352,7 @@ fn configure_overlay(app: &App) -> Result<(), Box<dyn std::error::Error>> {
 /// # Errors
 ///
 /// Returns an error if the event listener setup fails.
-fn setup_main_window_close_event(app: &App) -> Result<(), Box<dyn std::error::Error>> {
+fn setup_main_window_close_event(app: &App) {
     let windows = app.webview_windows();
     app.get_webview_window("main")
         .expect("Main window should exist")
@@ -362,7 +361,7 @@ fn setup_main_window_close_event(app: &App) -> Result<(), Box<dyn std::error::Er
                 debug!("Main window requested to be closed!");
                 for (label, window) in &windows {
                     // NOTE: Only do non-main window, otherwise will get stuck in loop
-                    if label.to_ascii_lowercase() != "main" {
+                    if !label.eq_ignore_ascii_case("main") {
                         debug!("Window {label} will also be closed.");
                         if let Err(err) = window.close() {
                             error!("Failed to close window {label}: {err}");
@@ -373,5 +372,4 @@ fn setup_main_window_close_event(app: &App) -> Result<(), Box<dyn std::error::Er
                 /* Do nothing */
             }
         });
-    Ok(())
 }
