@@ -8,8 +8,8 @@
 // External Crates
 use log::{debug, error, info, trace, warn, LevelFilter};
 use std::{collections::HashMap, path::PathBuf};
-use tauri::AppHandle;
 use tauri::{path::BaseDirectory, Manager};
+use tauri::{App, AppHandle};
 // use tauri_plugin_sentry::sentry::protocol::Event as SentryEvent;
 use tauri_plugin_sentry::sentry::ClientInitGuard;
 use tauri_plugin_sentry::{minidump, sentry};
@@ -171,25 +171,51 @@ fn create_sentry_client() -> ClientInitGuard {
 //     todo!()
 // }
 
-#[allow(
-    clippy::too_many_lines,
-    reason = "This actually should be split into multiple parts, allowed only temporarily until it can be split"
-)]
-fn setup_app(
-    app: &tauri::App,
-    bindings_builder: &Builder,
-) -> Result<(), Box<dyn std::error::Error>> {
-    debug!("Start app setup function");
-    // This is also required if you want to use events
+fn setup_app(app: &App, bindings_builder: &Builder) -> Result<(), Box<dyn std::error::Error>> {
+    info!("Setting up application");
+    trace!("Mounting events for app");
     bindings_builder.mount_events(app);
-    trace!("Mounted events for app");
-    // Initialize Shortcuts plugin
+    trace!("Adding desktop plugins");
     #[cfg(desktop)]
+    add_desktop_plugins(app)?;
+    trace!("Start resolving resource model path");
+    let default_model_path = resolve_model_path(app)?;
+    trace!("Converted model path");
+    let model = Model::new(&default_model_path)?;
+    trace!("Created new model");
+    debug!("Start loading sound paths");
+    let sound_map = create_sound_map(app)?;
+    debug!("Finished creating sound map");
+    app.manage(std::sync::Mutex::new(InnerAppState::new(model, sound_map)));
+    trace!("Created initial app state");
+    debug!("Setup mouse click listener");
+    let _mouse_click_listener_handler = listen_for_mouse_click(app.handle().clone())?;
+    debug!("Setup modifier key listener");
+    let app_key_listener_handler = app.handle().clone();
+    trace!("Cloned app handle for new listener thread");
+    setup_key_listeners(&app_key_listener_handler)?;
+    debug!("Finished setting up key listeners");
+    configure_overlay(app)?;
+    setup_main_window_close_event(app)?;
+    info!("Finish app setup function");
+    Ok(())
+}
+
+/// Add desktop-only plugins to app
+///
+/// Currently adds Global Shortcut Plugin
+fn add_desktop_plugins(app: &App) -> Result<(), Box<dyn std::error::Error>> {
     app.handle()
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())?;
-    trace!("Initialized shortcut plugins.");
-    debug!("Start loading model path");
-    //  Load the model
+    Ok(())
+}
+
+/// Resolves the path to the whisper model file.
+///
+/// # Errors
+///
+/// Returns an error if the path cannot be resolved or converted.
+fn resolve_model_path(app: &App) -> Result<String, Box<dyn std::error::Error>> {
     let resource_path = app
         .path()
         .resolve("resources/whisper-model.bin", BaseDirectory::Resource)?;
@@ -197,67 +223,72 @@ fn setup_app(
     let model_path = resource_path
         .into_os_string()
         .into_string()
-        .map_err(|os_str| format!("\"{os_str:?}\" cannot be convered to string!"))?;
-    trace!("Converted model path");
-    let model = Model::new(&model_path)?;
-    trace!("Created new model");
-    debug!("Start loading sound paths");
-    let sound_map = {
-        let mut map = HashMap::with_capacity(8);
-        trace!("Created new sound map");
-        load_audio!(app, map, alert);
-        load_audio!(app, map, start_record, start);
-        load_audio!(app, map, stop_record, stop);
-        load_audio!(app, map, transcribed, finish);
-        trace!("Loaded all default sounds");
-        {
-            // TEMP: Add client sound paths, see reference
-            //       Must be configurable after release
-            let mut path_buf = PathBuf::new();
-            path_buf.push(r"C:\");
-            path_buf.push("MyFastPrograms");
-            path_buf.push("Python");
-            path_buf.push("virtuale");
-            let mut start_path = path_buf.clone();
-            let mut stop_path = path_buf.clone();
-            let mut magic_path = path_buf;
-            start_path.push("start_sound");
-            stop_path.push("stop_sound");
-            magic_path.push("magicsound");
-            start_path.set_extension("wav");
-            stop_path.set_extension("wav");
-            magic_path.set_extension("wav");
-            start_path
-                .exists()
-                .then(|| {
-                    map.insert("start".into(), start_path.clone());
-                })
-                .unwrap_or_else(|| warn!("No start path found: {start_path:?}"));
-            stop_path
-                .exists()
-                .then(|| {
-                    map.insert("stop".into(), stop_path.clone());
-                })
-                .unwrap_or_else(|| warn!("No stop path found: {stop_path:?}"));
-            magic_path
-                .exists()
-                .then(|| {
-                    map.insert("finish".into(), magic_path.clone());
-                })
-                .unwrap_or_else(|| warn!("No magic path found: {magic_path:?}"));
-            trace!("Finished looking for extra sounds");
+        .map_err(|os_str| format!("\"{os_str:?}\" cannot be converted to string!"))?;
+    Ok(model_path)
+}
+
+/// Creates a map of sound paths.
+///
+/// # Errors
+///
+/// Returns an error if the paths cannot be resolved.
+fn create_sound_map(app: &App) -> Result<HashMap<String, PathBuf>, Box<dyn std::error::Error>> {
+    let mut map = HashMap::with_capacity(8);
+    trace!("Created new sound map");
+    load_audio!(app, map, alert);
+    load_audio!(app, map, start_record, start);
+    load_audio!(app, map, stop_record, stop);
+    load_audio!(app, map, transcribed, finish);
+    trace!("Loaded all default sounds");
+    {
+        // TEMP: Add client sound paths, see reference
+        // Must be configurable after release
+        let mut path_buf = PathBuf::new();
+        path_buf.push(r"C:\");
+        path_buf.push("MyFastPrograms");
+        path_buf.push("Python");
+        path_buf.push("virtuale");
+        let mut start_path = path_buf.clone();
+        let mut stop_path = path_buf.clone();
+        let mut magic_path = path_buf;
+        start_path.push("start_sound");
+        stop_path.push("stop_sound");
+        magic_path.push("magicsound");
+        start_path.set_extension("wav");
+        stop_path.set_extension("wav");
+        magic_path.set_extension("wav");
+        start_path.exists().then(|| {
+            map.insert("start".into(), start_path.clone());
+        });
+        stop_path.exists().then(|| {
+            map.insert("stop".into(), stop_path.clone());
+        });
+        magic_path.exists().then(|| {
+            map.insert("finish".into(), magic_path.clone());
+        });
+        if !start_path.exists() {
+            warn!("No start sound path found: {start_path:?}");
         }
-        debug!("Finished creating sound map");
-        map
-    };
-    app.manage(std::sync::Mutex::new(InnerAppState::new(model, sound_map)));
-    trace!("Created initial app state");
-    debug!("Setup mouse click listener");
-    listen_for_mouse_click(app.handle().clone())?;
-    debug!("Setup modifier key listener");
-    let app_key_listener_handler = app.handle().clone();
-    trace!("Cloned app handle for new listener thread");
-    // Listen for mod keys directly and emit when found
+        if !stop_path.exists() {
+            warn!("No stop sound path found: {stop_path:?}");
+        }
+        if !magic_path.exists() {
+            warn!("No finish sound path found: {magic_path:?}");
+        }
+        trace!("Finished looking for extra sounds");
+    }
+    Ok(map)
+}
+
+/// Set up key listeners for modifier keys.
+///
+/// # Errors
+///
+/// Returns an error if the listener setup fails.
+fn setup_key_listeners(app_handle: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    let app_handle_up = app_handle.clone();
+    let app_handle_down = app_handle.clone();
+    trace!("Created clones for app handlers");
     std::mem::drop(tauri::async_runtime::spawn_blocking(move || {
         use device_query::{DeviceEvents, DeviceEventsHandler};
         use std::time::Duration;
@@ -265,65 +296,82 @@ fn setup_app(
         let device_state = DeviceEventsHandler::new(Duration::from_millis(KEY_QUERY_MILLIS))
             .expect("Failed to start event loop");
         trace!("Created device state");
-        let app_handle_up = app_key_listener_handler.clone();
-        let app_handle_down = app_key_listener_handler;
-        trace!("Created clones for app handlers");
+
         let _up_guard = device_state.on_key_up(move |key| {
-            is_modkey(*key).then(|| {
+            if is_modkey(*key) {
                 trace!("Mod Key UP Event with {key:?}");
                 let _ = ModKeyEvent::with_payload(ModKeyPayload::released(key.to_string()))
                     .emit(&app_handle_up)
                     .map_err(|err| error!("Error for mod key event release: {err}"));
-            });
+            }
         });
         trace!("Start listening for key up events");
         let _down_guard = device_state.on_key_down(move |key| {
-            is_modkey(*key).then(|| {
+            if is_modkey(*key) {
                 trace!("Mod Key Event DOWN with {key:?}");
                 let _ = ModKeyEvent::with_payload(ModKeyPayload::pressed(key.to_string()))
                     .emit(&app_handle_down)
                     .map_err(|err| error!("Error for mod key event press: {err}"));
-            });
+            }
         });
         trace!("Start listening for key down events");
+        // Keep the process alive by running an infinte loop
         #[allow(
             clippy::empty_loop,
             reason = "Require loop to ensure thread remains active"
         )]
         loop {}
     }));
+    Ok(())
+}
+
+/// Configures the overlay window settings based on the app configuration.
+///
+/// # Errors
+///
+/// Returns an error if the overlay window setup fails.
+fn configure_overlay(app: &App) -> Result<(), Box<dyn std::error::Error>> {
+    let windows = app.webview_windows();
     if cfg!(feature = "overlay") {
         info!("Ignoring mouse events in overlay");
-        app.get_webview_window("overlay")
+        windows
+            .get("overlay")
             .expect("Overlay should exist")
             .set_ignore_cursor_events(true)
             .expect("Setting to ignore cursor should work");
     } else {
         debug!("Removing overlay");
-        if let Some(overlay) = app.get_webview_window("overlay") {
+        if let Some(overlay) = windows.get("overlay") {
             overlay.close()?;
         }
     }
+    Ok(())
+}
 
-    info!("Add close all windows event when main window is closed");
+/// Sets up an event listener to close all windows when the main window is closed.
+///
+/// # Errors
+///
+/// Returns an error if the event listener setup fails.
+fn setup_main_window_close_event(app: &App) -> Result<(), Box<dyn std::error::Error>> {
     let windows = app.webview_windows();
     app.get_webview_window("main")
         .expect("Main window should exist")
         .on_window_event(move |event| {
-            if let tauri::WindowEvent::CloseRequested { api: _api, .. } = event {
+            if let tauri::WindowEvent::CloseRequested { api: _, .. } = event {
                 debug!("Main window requested to be closed!");
                 for (label, window) in &windows {
                     // NOTE: Only do non-main window, otherwise will get stuck in loop
-                    if !label.eq_ignore_ascii_case("main") {
+                    if label.to_ascii_lowercase() != "main" {
                         debug!("Window {label} will also be closed.");
-                        window
-                            .close()
-                            .unwrap_or_else(|_| panic!("Window {label} should be closable"));
+                        if let Err(err) = window.close() {
+                            error!("Failed to close window {label}: {err}");
+                        }
                     }
                 }
-            } else { /* Do nothing*/
+            } else {
+                /* Do nothing */
             }
         });
-    debug!("Finish app setup function");
     Ok(())
 }
