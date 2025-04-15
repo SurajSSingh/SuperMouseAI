@@ -55,6 +55,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q8",
     isEnglishOnly: false,
     isSuperceded: false,
+    recommendedVramForGPU: 256_000_000, // 256MB
+    recommendedRamForCPU: 512_000_000, // 512MB
   },
   {
     relativePath: "ggml-tiny.en-q8_0.bin",
@@ -64,6 +66,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q8",
     isEnglishOnly: true,
     isSuperceded: false,
+    recommendedVramForGPU: 256_000_000, // 256MB
+    recommendedRamForCPU: 512_000_000, // 512MB
   },
   {
     relativePath: "ggml-base-q5_1.bin",
@@ -73,6 +77,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q5",
     isEnglishOnly: false,
     isSuperceded: false,
+    recommendedVramForGPU: 512_000_000, // 512MB
+    recommendedRamForCPU: 1_000_000_000, // 1GB
   },
   {
     relativePath: "ggml-base.en-q5_1.bin",
@@ -82,6 +88,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q5",
     isEnglishOnly: true,
     isSuperceded: false,
+    recommendedVramForGPU: 512_000_000, // 512MB
+    recommendedRamForCPU: 1_000_000_000, // 1GB
   },
   {
     relativePath: "ggml-tiny.bin",
@@ -91,6 +99,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "full",
     isEnglishOnly: false,
     isSuperceded: false,
+    recommendedVramForGPU: 750_000_000, // 0.75GB
+    recommendedRamForCPU: 1_500_000_000, // 1.5GB
   },
   {
     relativePath: "ggml-tiny.en.bin",
@@ -100,6 +110,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "full",
     isEnglishOnly: true,
     isSuperceded: false,
+    recommendedVramForGPU: 750_000_000, // 0.75GB
+    recommendedRamForCPU: 1_500_000_000, // 1.5GB
   },
   {
     relativePath: "ggml-base-q8_0.bin",
@@ -109,6 +121,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q8",
     isEnglishOnly: false,
     isSuperceded: false,
+    recommendedVramForGPU: 750_000_000, // 0.75GB
+    recommendedRamForCPU: 1_500_000_000, // 1.5GB
   },
   {
     relativePath: "ggml-base.en-q8_0.bin",
@@ -118,6 +132,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q8",
     isEnglishOnly: true,
     isSuperceded: false,
+    recommendedVramForGPU: 750_000_000, // 0.75GB
+    recommendedRamForCPU: 1_500_000_000, // 1.5GB
   },
   {
     relativePath: "ggml-base.bin",
@@ -127,6 +143,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "full",
     isEnglishOnly: false,
     isSuperceded: false,
+    recommendedVramForGPU: 1073741824, // 1GB
+    recommendedRamForCPU: 2147483648, // 2GB
   },
   {
     relativePath: "ggml-base.en.bin",
@@ -136,6 +154,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "full",
     isEnglishOnly: true,
     isSuperceded: false,
+    recommendedVramForGPU: 1073741824, // 1GB
+    recommendedRamForCPU: 2147483648, // 2GB
   },
   {
     relativePath: "ggml-small-q5_1.bin",
@@ -145,6 +165,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q5",
     isEnglishOnly: false,
     isSuperceded: false,
+    recommendedVramForGPU: 1572864000, // 1.5GB
+    recommendedRamForCPU: 2684354560, // 2.5GB
   },
   {
     relativePath: "ggml-small.en-q5_1.bin",
@@ -154,6 +176,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q5",
     isEnglishOnly: true,
     isSuperceded: false,
+    recommendedVramForGPU: 1572864000, // 1.5GB
+    recommendedRamForCPU: 2684354560, // 2.5GB
   },
   {
     relativePath: "ggml-small-q8_0.bin",
@@ -163,6 +187,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q8",
     isEnglishOnly: false,
     isSuperceded: false,
+    recommendedVramForGPU: 1572864000, // 1.5GB
+    recommendedRamForCPU: 3145728000, // 3GB
   },
   {
     relativePath: "ggml-small.en-q8_0.bin",
@@ -172,6 +198,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q8",
     isEnglishOnly: true,
     isSuperceded: false,
+    recommendedVramForGPU: 1572864000, // 1.5GB
+    recommendedRamForCPU: 3145728000, // 3GB
   },
   {
     relativePath: "ggml-small.bin",
@@ -181,6 +209,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "full",
     isEnglishOnly: false,
     isSuperceded: false,
+    recommendedVramForGPU: 2147483648, // 2GB
+    recommendedRamForCPU: 4294967296, // 4GB
   },
   {
     relativePath: "ggml-small.en.bin",
@@ -190,6 +220,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "full",
     isEnglishOnly: true,
     isSuperceded: false,
+    recommendedVramForGPU: 2147483648, // 2GB
+    recommendedRamForCPU: 4294967296, // 4GB
   },
   {
     relativePath: "ggml-medium-q5_0.bin",
@@ -199,6 +231,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q5",
     isEnglishOnly: false,
     isSuperceded: false,
+    recommendedVramForGPU: 2147483648, // 2GB
+    recommendedRamForCPU: 4294967296, // 4GB
   },
   {
     relativePath: "ggml-medium.en-q5_0.bin",
@@ -208,6 +242,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q5",
     isEnglishOnly: true,
     isSuperceded: false,
+    recommendedVramForGPU: 2147483648, // 2GB
+    recommendedRamForCPU: 4294967296, // 4GB
   },
   {
     relativePath: "ggml-large-v3-turbo-q5_0.bin",
@@ -218,6 +254,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q5",
     isEnglishOnly: false,
     isSuperceded: false,
+    recommendedVramForGPU: 2147483648, // 2GB
+    recommendedRamForCPU: 4294967296, // 4GB
   },
   {
     relativePath: "ggml-medium-q8_0.bin",
@@ -227,6 +265,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q8",
     isEnglishOnly: false,
     isSuperceded: false,
+    recommendedVramForGPU: 3221225472, // 3GB
+    recommendedRamForCPU: 6442450944, // 6GB
   },
   {
     relativePath: "ggml-medium.en-q8_0.bin",
@@ -236,6 +276,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q8",
     isEnglishOnly: true,
     isSuperceded: false,
+    recommendedVramForGPU: 3221225472, // 3GB
+    recommendedRamForCPU: 6442450944, // 6GB
   },
   {
     relativePath: "ggml-large-v3-turbo-q8_0.bin",
@@ -246,6 +288,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q8",
     isEnglishOnly: false,
     isSuperceded: false,
+    recommendedVramForGPU: 3221225472, // 3GB
+    recommendedRamForCPU: 6442450944, // 6GB
   },
   {
     relativePath: "ggml-large-v2-q5_0.bin",
@@ -256,6 +300,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q5",
     isEnglishOnly: false,
     isSuperceded: true,
+    recommendedVramForGPU: 4294967296, // 4GB
+    recommendedRamForCPU: 8589934592, // 8GB
   },
   {
     relativePath: "ggml-large-v3-q5_0.bin",
@@ -266,6 +312,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q5",
     isEnglishOnly: false,
     isSuperceded: false,
+    recommendedVramForGPU: 4294967296, // 4GB
+    recommendedRamForCPU: 8589934592, // 8GB
   },
   {
     relativePath: "ggml-medium.bin",
@@ -275,6 +323,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "full",
     isEnglishOnly: false,
     isSuperceded: false,
+    recommendedVramForGPU: 6442450944, // 6GB
+    recommendedRamForCPU: 12884901888, // 12GB
   },
   {
     relativePath: "ggml-medium.en.bin",
@@ -284,6 +334,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "full",
     isEnglishOnly: true,
     isSuperceded: false,
+    recommendedVramForGPU: 6442450944, // 6GB
+    recommendedRamForCPU: 12884901888, // 12GB
   },
   {
     relativePath: "ggml-large-v3-turbo.bin",
@@ -294,6 +346,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "full",
     isEnglishOnly: false,
     isSuperceded: false,
+    recommendedVramForGPU: 6442450944, // 6GB
+    recommendedRamForCPU: 12884901888, // 12GB
   },
   {
     relativePath: "ggml-large-v2-q8_0.bin",
@@ -304,6 +358,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q8",
     isEnglishOnly: false,
     isSuperceded: true,
+    recommendedVramForGPU: 6442450944, // 6GB
+    recommendedRamForCPU: 12884901888, // 12GB
   },
   {
     relativePath: "ggml-large-v1.bin",
@@ -314,6 +370,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "full",
     isEnglishOnly: false,
     isSuperceded: true,
+    recommendedVramForGPU: 12884901888, // 12GB
+    recommendedRamForCPU: 25769803776, // 24GB
   },
   {
     relativePath: "ggml-large-v2.bin",
@@ -324,6 +382,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "full",
     isEnglishOnly: false,
     isSuperceded: true,
+    recommendedVramForGPU: 12884901888, // 12GB
+    recommendedRamForCPU: 25769803776, // 24GB
   },
   {
     relativePath: "ggml-large-v3.bin",
@@ -334,5 +394,7 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "full",
     isEnglishOnly: false,
     isSuperceded: false,
+    recommendedVramForGPU: 12884901888, // 12GB
+    recommendedRamForCPU: 25769803776, // 24GB
   },
 ];

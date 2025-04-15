@@ -28,10 +28,12 @@ export type WhisperModelInfo = {
   version?: "v1" | "v2" | "v3" | "v3 turbo";
   relativePath: string;
   sha256: string;
-  approxSize: number;
+  approxSize: number; // bytes
   quantizeType: "full" | "q8" | "q5";
   isEnglishOnly: boolean;
   isSuperceded: boolean | string;
+  recommendedVramForGPU?: number; // bytes
+  recommendedRamForCPU?: number; // bytes
 };
 
 /**
