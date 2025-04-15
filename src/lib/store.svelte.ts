@@ -38,6 +38,7 @@ export const ConfigItem = {
   DOWNLOADED_MODELS: "downloaded_models",
   USE_GPU: "use_gpu",
   ENABLE_TELEMETRY: "telemetry_enabled",
+  PATIENCE: "beam_search_patience",
   // THIS HAS BEEN DEPRECATED FROM FIELD
   TRANSCRIPTS: "transcripts",
 };
@@ -224,6 +225,10 @@ export class ConfigStore {
     false,
     ConfigItem.ENABLE_TELEMETRY,
   );
+  patience = new StoreStateOption<number>(
+    1.0,
+    ConfigItem.PATIENCE,
+  );
 
   // Private config data not backed by file
   includeEnglishOnlyModels = $state({ value: false });
@@ -251,6 +256,7 @@ export class ConfigStore {
     this.downloadedModels,
     this.useGPU,
     this.enableTelemetry,
+    this.patience,
   ] as const;
 
   // Derived values

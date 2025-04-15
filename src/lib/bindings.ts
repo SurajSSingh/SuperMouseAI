@@ -197,7 +197,7 @@ decorated_words: ([TextDecoration, string])[] | null; replace_inter_sentence_new
  * 
  * All items are optional. Based on arguments for [`crate::mutter::Model::transcribe_audio`].
  */
-export type TranscribeOptions = { translate: boolean | null; individual_word_timestamps: boolean | null; threads: number | null; initial_prompt: string | null; language: string | null; format: TranscriptionFormat | null }
+export type TranscribeOptions = { translate: boolean | null; individual_word_timestamps: boolean | null; threads: number | null; initial_prompt: string | null; language: string | null; format: TranscriptionFormat | null; patience: number | null }
 /**
  * Format type for a transcription
  */

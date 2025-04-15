@@ -35,6 +35,7 @@
                                 ? configStore.threads.value
                                 : null,
                         initial_prompt: configStore.initialPrompt.value,
+                        patience: configStore.patience.value,
                     },
                     {
                         removed_words: configStore.ignoredWordsList,
