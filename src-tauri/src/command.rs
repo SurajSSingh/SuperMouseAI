@@ -48,17 +48,26 @@ pub async fn transcribe(
     let app_state = app_state.lock().map_err(|err| err.to_string())?;
     let model = app_state.get_model();
     info!("Transcribe using {}", app_state.get_model_info());
+    trace!("Creating abort transcription callback");
     let abort_callback: Option<fn() -> bool> =
         if options.include_callback.is_some_and(|is_true| is_true) {
             // TODO: Figure out how to send off via an event from JS side
-            Some(|| false)
+            Some(|| {
+                trace!("Evaluating abort transcription => false");
+                false
+            })
         } else {
             None
         };
     let progress_callback = if options.include_callback.is_some_and(|is_true| is_true) {
+        trace!("Creating transcript progress callback");
         let handle = app_handle.clone();
+        trace!("Cloned app handle");
         Some(move |precentage| {
-            let _ = TranscriptionProgressEvent::with_payload(precentage)
+            trace!("Creating transcription progress event");
+            let event = TranscriptionProgressEvent::with_payload(precentage);
+            trace!("Emitting transcription progress event");
+            let _ = event
                 .emit(&handle)
                 .map_err(|err| error!("Transcription Progress event error: {err}"));
         })
