@@ -36,6 +36,7 @@
                                 : null,
                         initial_prompt: configStore.initialPrompt.value,
                         patience: configStore.patience.value,
+                        include_callback: false,
                     },
                     {
                         removed_words: configStore.ignoredWordsList,

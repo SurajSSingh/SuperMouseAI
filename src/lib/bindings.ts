@@ -109,11 +109,15 @@ async getSystemInfo() : Promise<SystemInfo> {
 export const events = __makeEvents__<{
 modKeyEvent: ModKeyEvent,
 mouseClickEvent: MouseClickEvent,
-mouseMoveEvent: MouseMoveEvent
+mouseMoveEvent: MouseMoveEvent,
+transcriptionProgressEvent: TranscriptionProgressEvent,
+transcriptionSegmentEvent: TranscriptionSegmentEvent
 }>({
 modKeyEvent: "mod-key-event",
 mouseClickEvent: "mouse-click-event",
-mouseMoveEvent: "mouse-move-event"
+mouseMoveEvent: "mouse-move-event",
+transcriptionProgressEvent: "transcription-progress-event",
+transcriptionSegmentEvent: "transcription-segment-event"
 })
 
 /** user-defined constants **/
@@ -197,11 +201,33 @@ decorated_words: ([TextDecoration, string])[] | null; replace_inter_sentence_new
  * 
  * All items are optional. Based on arguments for [`crate::mutter::Model::transcribe_audio`].
  */
-export type TranscribeOptions = { translate: boolean | null; individual_word_timestamps: boolean | null; threads: number | null; initial_prompt: string | null; language: string | null; format: TranscriptionFormat | null; patience: number | null }
+export type TranscribeOptions = { translate: boolean | null; individual_word_timestamps: boolean | null; threads: number | null; initial_prompt: string | null; language: string | null; format: TranscriptionFormat | null; patience: number | null; include_callback: boolean | null }
 /**
  * Format type for a transcription
  */
 export type TranscriptionFormat = "Text" | "SRT" | "VTT"
+/**
+ * Event representing the progress for the current transcription
+ * 
+ * ### Payload
+ * 
+ * [i32] : The integer percentage value (0-100)
+ * _NOTE: Whisper Transcription progress is not very granular._
+ */
+export type TranscriptionProgressEvent = number
+/**
+ * Event representing the progress for the current transcription
+ * 
+ * ### Payload
+ * 
+ * - `is_lossy` [bool] : Whether the transcription data is lossy
+ * - [`SegmentCallbackData`]: The current segment that was transcribed _(fields lifted directly into struct)_:
+ * - `segment` [i32]: Segment index
+ * - `start_timestamp` [i64]: Start of the segment
+ * - `end_timestamp` [i64]: End of the segment
+ * - `text` [`String`]: The text segment
+ */
+export type TranscriptionSegmentEvent = { is_lossy: boolean; segment: number; start_timestamp: number; end_timestamp: number; text: string }
 
 /** tauri-specta globals **/
 

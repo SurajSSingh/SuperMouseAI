@@ -9,12 +9,15 @@
 
     let xOffset = $state(-20);
     let yOffset = $state(-20);
+    let progress = $state(0);
 
     let currentState: RecordingStates | undefined = $state();
     let scale = 1;
 
     $effect(() => {
         let unlistenMoveEvent: UnlistenFn | undefined;
+        let unlistenStateEvent: UnlistenFn | undefined;
+        let unlistenProgressEvent: UnlistenFn | undefined;
         // currentMonitor().then((monitor) => {
         //     if (monitor) {
         //         debug(
@@ -28,15 +31,22 @@
                 follower.style.left = `${e.payload.x + xOffset}px`;
                 follower.style.top = `${e.payload.y + yOffset}px`;
             });
-            listen("stateUpdate", (e) => {
+            unlistenStateEvent = await listen("stateUpdate", (e) => {
                 debug(`State of recording updated: ${JSON.stringify(e)}`);
                 currentState = (e.payload as { state: RecordingStates }).state;
             });
+            unlistenProgressEvent =
+                await events.transcriptionProgressEvent.listen((e) => {
+                    debug(`Transcription Progress: ${JSON.stringify(e)}`);
+                    progress = e.payload;
+                });
         };
         run();
         return () => {
             debug("Close overlay");
             unlistenMoveEvent?.();
+            unlistenStateEvent?.();
+            unlistenProgressEvent?.();
         };
     });
 
@@ -53,7 +63,10 @@
 
 <div id="follower" bind:this={follower} class={currentState}>
     <div id="circle1"></div>
-    <div id="circle2"></div>
+    <div id="circle2">
+        <!-- TODO(eventually): Re-enable once progress is working again -->
+        <!-- {currentState === "processing" ? progress : null} -->
+    </div>
 </div>
 
 <style>
@@ -102,7 +115,17 @@
     }
 
     #follower.processing #circle2 {
-        background: rgba(20, 104, 239, 0.1);
+        text-align: center;
+        position: absolute;
+        top: 50%;
+        margin: 0;
+        margin-top: 1rem;
+        color: magenta;
+        text-shadow:
+            -1px 0 white,
+            0 1px white,
+            1px 0 white,
+            0 -1px white;
     }
 
     /* Keyframe animations */
