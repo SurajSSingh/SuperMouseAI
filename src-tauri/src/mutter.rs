@@ -9,7 +9,8 @@ use log::{debug, error, trace};
 use rodio::{source::UniformSourceIterator, Decoder, Source};
 use std::io::Cursor;
 use whisper_rs::{
-    FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperError,
+    FullParams, SamplingStrategy, SegmentCallbackData, WhisperContext, WhisperContextParameters,
+    WhisperError,
 };
 
 /// Model struct. Can be constructed with [`Model::new`] or [`Model::download`].
@@ -81,6 +82,10 @@ impl Model {
         language: Option<&str>,
         threads: Option<u16>,
         patience: Option<f32>,
+        abort_callback: Option<impl FnMut() -> bool + 'static>,
+        progress_callback: Option<impl FnMut(i32) + 'static>,
+        new_segment_lossy_callback: Option<impl FnMut(SegmentCallbackData) + 'static>,
+        new_segment_callback: Option<impl FnMut(SegmentCallbackData) + 'static>,
     ) -> Result<Transcript, ModelError> {
         trace!("Decoding audio.");
         let samples = decode(audio.as_ref().to_vec())?;
@@ -93,6 +98,10 @@ impl Model {
             language,
             threads,
             patience,
+            abort_callback,
+            progress_callback,
+            new_segment_lossy_callback,
+            new_segment_callback,
         )
     }
 
@@ -125,6 +134,10 @@ impl Model {
         language: Option<&str>,
         threads: Option<u16>,
         patience: Option<f32>,
+        abort_callback: Option<impl FnMut() -> bool + 'static>,
+        progress_callback: Option<impl FnMut(i32) + 'static>,
+        new_segment_lossy_callback: Option<impl FnMut(SegmentCallbackData) + 'static>,
+        new_segment_callback: Option<impl FnMut(SegmentCallbackData) + 'static>,
     ) -> Result<Transcript, ModelError> {
         debug!("Start transcribing audio");
         trace!(
@@ -150,6 +163,20 @@ impl Model {
         params.set_print_timestamps(false);
         params.set_token_timestamps(word_timestamps);
         params.set_split_on_word(true);
+
+        trace!("Adding Callbacks");
+        if let Some(closure) = abort_callback {
+            params.set_abort_callback_safe(closure);
+        }
+        if let Some(closure) = progress_callback {
+            params.set_progress_callback_safe(closure);
+        }
+        if let Some(closure) = new_segment_lossy_callback {
+            params.set_segment_callback_safe_lossy(closure);
+        }
+        if let Some(closure) = new_segment_callback {
+            params.set_segment_callback_safe(closure);
+        }
 
         trace!("Basic params for Whisper Set");
 

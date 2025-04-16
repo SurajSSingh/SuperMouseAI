@@ -44,6 +44,39 @@ pub async fn transcribe(
     let app_state = app_state.lock().map_err(|err| err.to_string())?;
     let model = app_state.get_model();
     info!("Transcribe using {}", app_state.get_model_info());
+    let abort_callback: Option<fn() -> bool> =
+        if options.include_callback.is_some_and(|is_true| is_true) {
+            // TODO: Figure out how to send off via an event from JS side
+            // Some(())
+            None
+        } else {
+            None
+        };
+    let progress_callback = if options.include_callback.is_some_and(|is_true| is_true) {
+        Some(|precentage| debug!("Current transcription progress: {precentage}"))
+    } else {
+        None
+    };
+    let lossy_segment_callback = if options.include_callback.is_some_and(|is_true| is_true) {
+        Some(|segment: whisper_rs::SegmentCallbackData| {
+            debug!(
+                "New Lossy Segment: [{}-{}]#{}: {}",
+                segment.start_timestamp, segment.end_timestamp, segment.segment, segment.text
+            )
+        })
+    } else {
+        None
+    };
+    let not_lossy_segment_callback = if options.include_callback.is_some_and(|is_true| is_true) {
+        Some(|segment: whisper_rs::SegmentCallbackData| {
+            debug!(
+                "New Non-Lossy Segment: [{}-{}]#{}: {}",
+                segment.start_timestamp, segment.end_timestamp, segment.segment, segment.text
+            )
+        })
+    } else {
+        None
+    };
     let transcription = model
         .transcribe_audio(
             &audio_data,
@@ -58,6 +91,10 @@ pub async fn transcribe(
                 threads => threads,
             },
             options.patience,
+            abort_callback,
+            progress_callback,
+            lossy_segment_callback,
+            not_lossy_segment_callback,
         )
         .map_err(|err| {
             log::error!("Transcription Error: {err:?}");

@@ -189,6 +189,7 @@ pub struct TranscribeOptions {
     pub language: Option<String>,
     pub format: Option<TranscriptionFormat>,
     pub patience: Option<f32>,
+    pub include_callback: Option<bool>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
