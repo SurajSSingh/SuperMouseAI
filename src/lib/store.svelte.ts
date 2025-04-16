@@ -226,7 +226,7 @@ export class ConfigStore {
     ConfigItem.ENABLE_TELEMETRY,
   );
   patience = new StoreStateOption<number>(
-    1.0,
+    2.0,
     ConfigItem.PATIENCE,
   );
 
