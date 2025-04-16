@@ -40,10 +40,22 @@ export type WhisperModelInfo = {
  * Information related to a transcription
  */
 export type TranscriptionInfo = {
+  /** The plaintext transcription */
   text: string;
+  /** What model ran the transcription */
   model?: string;
+  /** Who provided the model */
+  provider: "whisper-cpp" | "openai";
+  /** Was processing done on the GPU */
   onGPU?: boolean;
+  /** How long did the processing take in ms */
   processingTime?: number;
+  /** Which strategy was used and with what values */
+  strategy?: {
+    type: "greedy";
+    bestOf: number;
+    temperature: number;
+  } | { type: "beam"; beamSize: number; patience: number };
 };
 
 /**

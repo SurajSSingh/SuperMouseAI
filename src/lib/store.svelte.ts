@@ -342,7 +342,7 @@ export class ConfigStore {
       this.transcriptions.value =
         (await this.fileStore.get(ConfigItem.TRANSCRIPTS) as string[]).map(
           (text) => {
-            return { text };
+            return { text, provider: "whisper-cpp" };
           },
         );
       // Save before deleting
@@ -383,9 +383,17 @@ export class ConfigStore {
     return this.#version;
   }
 
-  addTranscription(transcript: string): void {
+  addTranscription(transcript: string, processingTime?: number): void {
     debug(`Add new transcript with size: ${transcript.length}`);
-    this.transcriptions.value.push({ text: transcript });
+    this.transcriptions.value.push({
+      text: transcript,
+      model: this.currentModel.value,
+      provider: "whisper-cpp",
+      // TODO(eventually): This may not be accurate if user changes value mid-transcription
+      //                   IDEA: Disable while transcribing
+      onGPU: this.useGPU.value,
+      processingTime,
+    });
     this.currentIndex.value = this.transcriptLength - 1;
   }
 
