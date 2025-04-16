@@ -18,6 +18,10 @@ jobs:
           deno-version: v2.x
 
       # Run checks
+      - name: Check Types
+        run: |-
+          deno task check
+
       - name: Check Deno Formatting
         run: |-
           deno fmt --check ./src
