@@ -4,6 +4,53 @@ All notable changes to this project will be documented in this file.
 
 ## [current]
 
+### 🚀 Features
+
+- *(frontend)* :label: Add recommendations for (V)RAM
+- *(backend)* :sparkles: Add option to use custom patience value
+- *(frontend)* :sparkles: Add input to change patience value
+- *(backend)* :sparkles: Add callbacks for Whisper events
+- *(backend)* :label: Add typed events for transcription callback
+- *(frontend)* :construction: Add frontend side for callback feature
+- :sparkles: Add transcription details
+
+### 🐛 Bug Fixes
+
+- *(frontend)* :bug: Fix missing clear all transcript function
+
+### 🚜 Refactor
+
+- *(backend)* :rotating_light: Add and fix more clippy lints
+- *(backend)* :rotating_light: Fix remaining nursery lint warnings
+- *(backend)* :recycle: Split apart builder code
+- *(backend)* :rotating_light: Fix clippy lint on changes
+- *(backend)* :recycle: Split apart setup code
+- *(backend)* :rotating_light: Fix lint errors introduced by AI
+- *(frontend)* :construction: Add alternative option for mouse position
+- *(frontend)* :recycle: Revamp toast notification
+- *(backend)* :loud_sound: Add trace log for abort and progress callbacks
+- *(frontend)* :recycle: Improve Transcription Info Type
+- *(frontend)* Change default patience to 2
+- *(backend)* :recycle: Model transcribe function changes
+
+### 📚 Documentation
+
+- *(backend)* :memo: Add lint allow reason
+
+### ⚙️ Miscellaneous Tasks
+
+- *(backend)* :white_check_mark: Add new clippy lint subtypes
+- *(backend)* :test_tube: Add pedantic clippy lint
+- *(backend)* :rotating_light: Use clippy --fix for simple lint fixes
+- *(backend)* :rotating_light: Fix remaining pedantic lints
+- *(backend)* :rotating_light: Add nursery lints and apply auto fix
+- :label: Update bindings.ts docs changes
+- :rotating_light: Fix lint error for vite config
+- *(backend)* :rotating_light: Fix lint issue in mutter
+- :wrench: Add full check Deno task
+
+## [0.8.3] - 2025-04-10
+
 ### 🐛 Bug Fixes
 
 - *(frontend)* :goal_net: Add catch for JS async errors
@@ -15,6 +62,7 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Update version to v0.8.2
+- :bookmark: Bump to v0.8.3
 
 ## [0.8.2] - 2025-04-09
 
