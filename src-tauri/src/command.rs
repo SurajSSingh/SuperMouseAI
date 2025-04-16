@@ -33,7 +33,7 @@ pub async fn transcribe(
     app_handle: AppHandle,
     audio_data: Vec<u8>,
     options: Option<TranscribeOptions>,
-) -> Result<String, String> {
+) -> Result<(String, f64), String> {
     let options = options.unwrap_or_default();
     log::info!("Transcribing with parameters: translate={:?}, use_timestamp={:?}, threads={:?}, prompt={:?}, lang={:?}, fmt={:?}, patience={:?}",
         options.translate,
@@ -124,10 +124,13 @@ pub async fn transcribe(
                 ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
             }
         })?;
-    Ok(options
-        .format
-        .unwrap_or_default()
-        .convert_transcript(&transcription))
+    Ok((
+        options
+            .format
+            .unwrap_or_default()
+            .convert_transcript(&transcription),
+        transcription.processing_time.as_secs_f64(),
+    ))
 }
 
 #[tauri::command]
@@ -136,7 +139,7 @@ pub async fn transcribe(
 pub async fn process_text(
     text: String,
     options: Option<TextProcessOptions>,
-) -> Result<String, String> {
+) -> Result<(String, f64), String> {
     info!("Running processing text command");
     let mut updated_text = text;
     let options = options.unwrap_or_default();
@@ -159,7 +162,8 @@ pub async fn process_text(
         })?;
         updated_text = regex.replace_all(&updated_text, "$1 ").to_string();
     }
-    Ok(updated_text.trim().to_string())
+    // TODO: Get actual processing time
+    Ok((updated_text.trim().to_string(), 0.0))
 }
 
 #[tauri::command]
@@ -171,13 +175,12 @@ pub async fn transcribe_with_post_process(
     audio_data: Vec<u8>,
     transcribe_options: Option<TranscribeOptions>,
     processing_options: Option<TextProcessOptions>,
-) -> Result<String, String> {
+) -> Result<(String, f64), String> {
     info!("Running transcription & processing command");
-    process_text(
-        transcribe(app_state, app_handle, audio_data, transcribe_options).await?,
-        processing_options,
-    )
-    .await
+    let (text, transcription_time) =
+        transcribe(app_state, app_handle, audio_data, transcribe_options).await?;
+    let (new_text, processing_time) = process_text(text, processing_options).await?;
+    Ok((new_text, transcription_time + processing_time))
 }
 
 #[tauri::command]

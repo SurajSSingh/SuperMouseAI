@@ -51,7 +51,7 @@
                     );
                     return;
                 }
-                configStore.addTranscription(result.data);
+                configStore.addTranscription(result.data[0], result.data[1]);
             }
             onFinishProcessing?.(configStore.currentTranscript);
         } catch (err) {
@@ -105,6 +105,48 @@
         }}
         disabled={configStore.isTranscriptsEmpty}>Delete Current</Button
     >
+    {#if configStore.currentTranscriptObject !== null}
+        <details>
+            <summary>Transcription Info</summary>
+            <p>
+                Model used: {configStore.currentTranscriptObject.model ||
+                    "Default"}
+            </p>
+            <p>
+                Model Provider: {configStore.currentTranscriptObject.provider ||
+                    "whisper-cpp"}
+            </p>
+            <p>
+                GPU used? {configStore.currentTranscriptObject.onGPU || true}
+            </p>
+            <p>
+                Processing Time: {configStore.currentTranscriptObject.processingTime?.toFixed(
+                    3,
+                ) || "???"} seconds
+            </p>
+            {#if configStore.currentTranscriptObject.strategy?.type === "beam"}
+                <p>Strategy: Beam</p>
+                <p>
+                    Decoders used: {configStore.currentTranscriptObject.strategy
+                        .beamSize}
+                </p>
+                <p>
+                    Patience: {configStore.currentTranscriptObject.strategy
+                        .patience}
+                </p>
+            {:else if configStore.currentTranscriptObject.strategy?.type === "greedy"}
+                <p>Strategy: Greedy</p>
+                <p>
+                    Decoders used: {configStore.currentTranscriptObject.strategy
+                        .bestOf}
+                </p>
+                <p>
+                    Temperature: {configStore.currentTranscriptObject.strategy
+                        .temperature}
+                </p>
+            {/if}
+        </details>
+    {/if}
     <Textarea
         color={configStore.transcriptions.value.length > 0
             ? "success"

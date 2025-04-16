@@ -10,7 +10,7 @@ export const commands = {
  * 
  * Check [crate::mutter::Model::transcribe_audio] for details on arguments
  */
-async transcribe(audioData: number[], options: TranscribeOptions | null) : Promise<Result<string, string>> {
+async transcribe(audioData: number[], options: TranscribeOptions | null) : Promise<Result<[string, number], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("transcribe", { audioData, options }) };
 } catch (e) {
@@ -43,7 +43,7 @@ async pasteText() : Promise<Result<null, string>> {
 /**
  * Process the text
  */
-async processText(text: string, options: TextProcessOptions | null) : Promise<Result<string, string>> {
+async processText(text: string, options: TextProcessOptions | null) : Promise<Result<[string, number], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("process_text", { text, options }) };
 } catch (e) {
@@ -54,7 +54,7 @@ async processText(text: string, options: TextProcessOptions | null) : Promise<Re
 /**
  * Run [transcribe] function then pass to [process_text] for post processing.
  */
-async transcribeWithPostProcess(audioData: number[], transcribeOptions: TranscribeOptions | null, processingOptions: TextProcessOptions | null) : Promise<Result<string, string>> {
+async transcribeWithPostProcess(audioData: number[], transcribeOptions: TranscribeOptions | null, processingOptions: TextProcessOptions | null) : Promise<Result<[string, number], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("transcribe_with_post_process", { audioData, transcribeOptions, processingOptions }) };
 } catch (e) {

@@ -267,6 +267,11 @@ export class ConfigStore {
       ? this.transcriptions.value[this.currentIndex.value].text
       : "",
   );
+  currentTranscriptObject = $derived(
+    !this.isTranscriptsEmpty
+      ? this.transcriptions.value[this.currentIndex.value]
+      : null,
+  );
   ignoredWordsList = $derived(this.ignoredWords.value.split("\n"));
   // NOTE: A main key will alway exist for a valid shortcut
   // deno-lint-ignore no-non-null-assertion
@@ -393,6 +398,13 @@ export class ConfigStore {
       //                   IDEA: Disable while transcribing
       onGPU: this.useGPU.value,
       processingTime,
+      // TODO(eventually): React to changes from user
+      strategy: {
+        type: "beam",
+        // TODO(eventually): Get decoder value from store
+        beamSize: 5,
+        patience: this.patience.value,
+      },
     });
     this.currentIndex.value = this.transcriptLength - 1;
   }
