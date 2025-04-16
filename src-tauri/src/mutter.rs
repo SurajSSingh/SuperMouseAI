@@ -73,6 +73,10 @@ impl Model {
     /// - [`ModelError`]
     /// # Returns
     /// [Transcript]    
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "Temporary allowed to prevent full refactoring into options struct"
+    )]
     pub fn transcribe_audio(
         &self,
         audio: impl AsRef<[u8]>,
@@ -125,6 +129,10 @@ impl Model {
     /// This function shouldn't panic, but may due to the underlying -sys c bindings.
     /// # Returns
     /// [Transcript]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "Temporary allowed to prevent full refactoring into options struct"
+    )]
     pub fn transcribe_pcm_s16le(
         &self,
         audio: &[f32],
