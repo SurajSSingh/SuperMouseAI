@@ -70,9 +70,13 @@
             max="10"
             step="0.25"
             bind:value={configStore.patience.value}
-            class="p-1 rounded-sm border-1"
+            class="p-1 rounded-sm border-1 w-1/2"
         />
-        <p class="fieldset-label">df</p>
+        <p class="fieldset-label">
+            How long to wait before considering the current word. Longer spans
+            give more context, which can make it more accurate, but takes longer
+            to process and can hallucinate on silence.
+        </p>
     </div>
     <div class="mb-4">
         <label for="prompt-option" class=" font-semibold">Initial Prompt</label>
