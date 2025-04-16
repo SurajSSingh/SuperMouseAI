@@ -106,6 +106,7 @@ impl Model {
             progress_callback,
             new_segment_lossy_callback,
             new_segment_callback,
+            None,
         )
     }
 
@@ -131,6 +132,7 @@ impl Model {
     /// [Transcript]
     #[allow(
         clippy::too_many_arguments,
+        unused_variables,
         reason = "Temporary allowed to prevent full refactoring into options struct"
     )]
     pub fn transcribe_pcm_s16le(
@@ -146,6 +148,7 @@ impl Model {
         progress_callback: Option<impl FnMut(i32) + 'static>,
         new_segment_lossy_callback: Option<impl FnMut(SegmentCallbackData) + 'static>,
         new_segment_callback: Option<impl FnMut(SegmentCallbackData) + 'static>,
+        beam_size: Option<i32>,
     ) -> Result<Transcript, ModelError> {
         debug!("Start transcribing audio");
         trace!(
@@ -153,8 +156,10 @@ impl Model {
             audio.len()
         );
 
+        let cpu_count = num_cpus::get() as i32;
+
         let mut params = FullParams::new(SamplingStrategy::BeamSearch {
-            beam_size: 5,
+            beam_size: beam_size.map(|decoder| decoder.min(cpu_count)).unwrap_or(5),
             patience: patience.map_or_else(|| 1.0, |p| p.min(0.0)),
         });
 
@@ -172,24 +177,25 @@ impl Model {
         params.set_token_timestamps(word_timestamps);
         params.set_split_on_word(true);
 
-        trace!("Adding Callbacks");
-        if let Some(closure) = abort_callback {
-            params.set_abort_callback_safe(closure);
-        }
-        if let Some(closure) = progress_callback {
-            params.set_progress_callback_safe(closure);
-        }
-        if let Some(closure) = new_segment_lossy_callback {
-            params.set_segment_callback_safe_lossy(closure);
-        }
-        if let Some(closure) = new_segment_callback {
-            params.set_segment_callback_safe(closure);
-        }
+        // TODO: Uncomment when I can figure out how to fix crashing bug
+        // trace!("Adding Callbacks");
+        // if let Some(closure) = abort_callback {
+        //     params.set_abort_callback_safe(closure);
+        // }
+        // if let Some(closure) = progress_callback {
+        //     params.set_progress_callback_safe(closure);
+        // }
+        // if let Some(closure) = new_segment_lossy_callback {
+        //     params.set_segment_callback_safe_lossy(closure);
+        // }
+        // if let Some(closure) = new_segment_callback {
+        //     params.set_segment_callback_safe(closure);
+        // }
 
         trace!("Basic params for Whisper Set");
 
         #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
-        let threads = threads.map_or_else(|| num_cpus::get() as i32, i32::from);
+        let threads = threads.map_or_else(|| cpu_count, i32::from);
 
         trace!("Using {threads} threads");
 
