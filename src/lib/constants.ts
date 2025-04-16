@@ -12,6 +12,8 @@ export const DEFAULT_MODEL: WhisperModelInfo = {
   quantizeType: "q5",
   isEnglishOnly: false,
   isSuperceded: false,
+  recommendedVramForGPU: 128_000_000, // 128MB
+  recommendedRamForCPU: 256_000_000, // 256MB
 };
 
 /**
@@ -46,6 +48,8 @@ export const WHISPER_GGML_MODELS: WhisperModelInfo[] = [
     quantizeType: "q5",
     isEnglishOnly: true,
     isSuperceded: false,
+    recommendedVramForGPU: 128_000_000, // 128MB
+    recommendedRamForCPU: 256_000_000, // 256MB
   },
   {
     relativePath: "ggml-tiny-q8_0.bin",

@@ -32,8 +32,8 @@ export type WhisperModelInfo = {
   quantizeType: "full" | "q8" | "q5";
   isEnglishOnly: boolean;
   isSuperceded: boolean | string;
-  recommendedVramForGPU?: number; // bytes
-  recommendedRamForCPU?: number; // bytes
+  recommendedVramForGPU: number; // bytes
+  recommendedRamForCPU: number; // bytes
 };
 
 /**
