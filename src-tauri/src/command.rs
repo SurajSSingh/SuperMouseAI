@@ -7,7 +7,10 @@
 
 // Crate level use (imports)
 use crate::{
-    events::{MouseClickEvent, MouseMoveEvent},
+    events::{
+        new_lossy_transcript_segment_event, new_transcript_segment_event, MouseClickEvent,
+        MouseMoveEvent, TranscriptionProgressEvent,
+    },
     mutter::ModelError,
     types::{AppState, MouseButtonType, SystemInfo, TextProcessOptions, TranscribeOptions},
 };
@@ -27,6 +30,7 @@ use tauri_specta::{collect_commands, Commands, Event};
 /// Check [crate::mutter::Model::transcribe_audio] for details on arguments
 pub async fn transcribe(
     app_state: State<'_, AppState>,
+    app_handle: AppHandle,
     audio_data: Vec<u8>,
     options: Option<TranscribeOptions>,
 ) -> Result<String, String> {
@@ -47,32 +51,40 @@ pub async fn transcribe(
     let abort_callback: Option<fn() -> bool> =
         if options.include_callback.is_some_and(|is_true| is_true) {
             // TODO: Figure out how to send off via an event from JS side
-            // Some(())
-            None
+            Some(|| false)
         } else {
             None
         };
     let progress_callback = if options.include_callback.is_some_and(|is_true| is_true) {
-        Some(|precentage| debug!("Current transcription progress: {precentage}"))
+        let handle = app_handle.clone();
+        Some(move |precentage| {
+            let _ = TranscriptionProgressEvent::with_payload(precentage)
+                .emit(&handle)
+                .map_err(|err| error!("Transcription Progress event error: {err}"));
+        })
     } else {
         None
     };
     let lossy_segment_callback = if options.include_callback.is_some_and(|is_true| is_true) {
-        Some(|segment: whisper_rs::SegmentCallbackData| {
-            debug!(
-                "New Lossy Segment: [{}-{}]#{}: {}",
-                segment.start_timestamp, segment.end_timestamp, segment.segment, segment.text
-            )
+        let handle = app_handle.clone();
+        Some(move |segment: whisper_rs::SegmentCallbackData| {
+            let _ = new_lossy_transcript_segment_event(segment)
+                .emit(&handle)
+                .map_err(|err| error!("Transcription Segment event error: {err}"));
         })
     } else {
         None
     };
     let not_lossy_segment_callback = if options.include_callback.is_some_and(|is_true| is_true) {
-        Some(|segment: whisper_rs::SegmentCallbackData| {
-            debug!(
-                "New Non-Lossy Segment: [{}-{}]#{}: {}",
-                segment.start_timestamp, segment.end_timestamp, segment.segment, segment.text
-            )
+        #[allow(
+            clippy::redundant_clone,
+            reason = "May want to use app handle later on"
+        )]
+        let handle = app_handle.clone();
+        Some(move |segment: whisper_rs::SegmentCallbackData| {
+            let _ = new_transcript_segment_event(segment)
+                .emit(&handle)
+                .map_err(|err| error!("Transcription Segment event error: {err}"));
         })
     } else {
         None
@@ -146,13 +158,14 @@ pub async fn process_text(
 /// Run [transcribe] function then pass to [process_text] for post processing.
 pub async fn transcribe_with_post_process(
     app_state: State<'_, AppState>,
+    app_handle: AppHandle,
     audio_data: Vec<u8>,
     transcribe_options: Option<TranscribeOptions>,
     processing_options: Option<TextProcessOptions>,
 ) -> Result<String, String> {
     info!("Running transcription & processing command");
     process_text(
-        transcribe(app_state, audio_data, transcribe_options).await?,
+        transcribe(app_state, app_handle, audio_data, transcribe_options).await?,
         processing_options,
     )
     .await
