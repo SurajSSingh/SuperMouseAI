@@ -15,7 +15,7 @@ file_not_found:
     
     ; Download the Vulkan SDK installer
     DetailPrint "Downloading latest SDK from $0 ."
-    inetc::get $0 $1
+    NSISdl::download $0 $1
     Pop $0
     ${If} $0 == "success"
         DetailPrint "Vulkan SDK downloaded successfully"
