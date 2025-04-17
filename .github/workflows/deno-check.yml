@@ -17,7 +17,15 @@ jobs:
         with:
           deno-version: v2.x
 
+      - name: Install Dependencies
+        run: |-
+          deno install
+
       # Run checks
+      - name: Check Types
+        run: |-
+          deno task check
+
       - name: Check Deno Formatting
         run: |-
           deno fmt --check ./src

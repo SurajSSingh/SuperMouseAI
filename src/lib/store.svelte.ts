@@ -38,6 +38,7 @@ export const ConfigItem = {
   DOWNLOADED_MODELS: "downloaded_models",
   USE_GPU: "use_gpu",
   ENABLE_TELEMETRY: "telemetry_enabled",
+  PATIENCE: "beam_search_patience",
   // THIS HAS BEEN DEPRECATED FROM FIELD
   TRANSCRIPTS: "transcripts",
 };
@@ -224,6 +225,10 @@ export class ConfigStore {
     false,
     ConfigItem.ENABLE_TELEMETRY,
   );
+  patience = new StoreStateOption<number>(
+    2.0,
+    ConfigItem.PATIENCE,
+  );
 
   // Private config data not backed by file
   includeEnglishOnlyModels = $state({ value: false });
@@ -251,6 +256,7 @@ export class ConfigStore {
     this.downloadedModels,
     this.useGPU,
     this.enableTelemetry,
+    this.patience,
   ] as const;
 
   // Derived values
@@ -260,6 +266,11 @@ export class ConfigStore {
     !this.isTranscriptsEmpty
       ? this.transcriptions.value[this.currentIndex.value].text
       : "",
+  );
+  currentTranscriptObject = $derived(
+    !this.isTranscriptsEmpty
+      ? this.transcriptions.value[this.currentIndex.value]
+      : null,
   );
   ignoredWordsList = $derived(this.ignoredWords.value.split("\n"));
   // NOTE: A main key will alway exist for a valid shortcut
@@ -336,7 +347,7 @@ export class ConfigStore {
       this.transcriptions.value =
         (await this.fileStore.get(ConfigItem.TRANSCRIPTS) as string[]).map(
           (text) => {
-            return { text };
+            return { text, provider: "whisper-cpp" };
           },
         );
       // Save before deleting
@@ -377,9 +388,24 @@ export class ConfigStore {
     return this.#version;
   }
 
-  addTranscription(transcript: string): void {
+  addTranscription(transcript: string, processingTime?: number): void {
     debug(`Add new transcript with size: ${transcript.length}`);
-    this.transcriptions.value.push({ text: transcript });
+    this.transcriptions.value.push({
+      text: transcript,
+      model: this.currentModel.value,
+      provider: "whisper-cpp",
+      // TODO(eventually): This may not be accurate if user changes value mid-transcription
+      //                   IDEA: Disable while transcribing
+      onGPU: this.useGPU.value,
+      processingTime,
+      // TODO(eventually): React to changes from user
+      strategy: {
+        type: "beam",
+        // TODO(eventually): Get decoder value from store
+        beamSize: 5,
+        patience: this.patience.value,
+      },
+    });
     this.currentIndex.value = this.transcriptLength - 1;
   }
 
@@ -397,6 +423,11 @@ export class ConfigStore {
       this.currentIndex.value = this.transcriptLength - 1;
     }
     if (this.isTranscriptsEmpty) this.currentIndex.value = 0;
+  }
+
+  clearTranscripts(): void {
+    this.transcriptions.value = [];
+    this.currentIndex.value = 0;
   }
 
   prevIndex(): void {

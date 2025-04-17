@@ -9,7 +9,8 @@ use log::{debug, error, trace};
 use rodio::{source::UniformSourceIterator, Decoder, Source};
 use std::io::Cursor;
 use whisper_rs::{
-    FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperError,
+    FullParams, SamplingStrategy, SegmentCallbackData, WhisperContext, WhisperContextParameters,
+    WhisperError,
 };
 
 /// Model struct. Can be constructed with [`Model::new`] or [`Model::download`].
@@ -42,7 +43,7 @@ impl Model {
         path: &str,
         params: WhisperContextParameters,
     ) -> Result<Self, WhisperError> {
-        trace!("Loading model {}", path);
+        trace!("Loading model {path}");
         // Sanity check - make sure the path exists
         let path_converted = std::path::Path::new(path);
         if !path_converted.exists() {
@@ -72,6 +73,10 @@ impl Model {
     /// - [`ModelError`]
     /// # Returns
     /// [Transcript]    
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "Temporary allowed to prevent full refactoring into options struct"
+    )]
     pub fn transcribe_audio(
         &self,
         audio: impl AsRef<[u8]>,
@@ -80,6 +85,11 @@ impl Model {
         initial_prompt: Option<&str>,
         language: Option<&str>,
         threads: Option<u16>,
+        patience: Option<f32>,
+        abort_callback: Option<impl FnMut() -> bool + 'static>,
+        progress_callback: Option<impl FnMut(i32) + 'static>,
+        new_segment_lossy_callback: Option<impl FnMut(SegmentCallbackData) + 'static>,
+        new_segment_callback: Option<impl FnMut(SegmentCallbackData) + 'static>,
     ) -> Result<Transcript, ModelError> {
         trace!("Decoding audio.");
         let samples = decode(audio.as_ref().to_vec())?;
@@ -91,6 +101,12 @@ impl Model {
             initial_prompt,
             language,
             threads,
+            patience,
+            abort_callback,
+            progress_callback,
+            new_segment_lossy_callback,
+            new_segment_callback,
+            None,
         )
     }
 
@@ -114,6 +130,12 @@ impl Model {
     /// This function shouldn't panic, but may due to the underlying -sys c bindings.
     /// # Returns
     /// [Transcript]
+    #[allow(
+        clippy::too_many_arguments,
+        unused_variables,
+        clippy::needless_pass_by_value,
+        reason = "Temporary allowed to prevent full refactoring into options struct"
+    )]
     pub fn transcribe_pcm_s16le(
         &self,
         audio: &[f32],
@@ -122,6 +144,12 @@ impl Model {
         initial_prompt: Option<&str>,
         language: Option<&str>,
         threads: Option<u16>,
+        patience: Option<f32>,
+        abort_callback: Option<impl FnMut() -> bool + 'static>,
+        progress_callback: Option<impl FnMut(i32) + 'static>,
+        new_segment_lossy_callback: Option<impl FnMut(SegmentCallbackData) + 'static>,
+        new_segment_callback: Option<impl FnMut(SegmentCallbackData) + 'static>,
+        beam_size: Option<i32>,
     ) -> Result<Transcript, ModelError> {
         debug!("Start transcribing audio");
         trace!(
@@ -129,9 +157,16 @@ impl Model {
             audio.len()
         );
 
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_possible_wrap,
+            reason = "Number of cores on current CPUs should be well below 2^31"
+        )]
+        let cpu_count = num_cpus::get() as i32;
+
         let mut params = FullParams::new(SamplingStrategy::BeamSearch {
-            beam_size: 5,
-            patience: 1.0,
+            beam_size: beam_size.map_or(5, |decoder| decoder.min(cpu_count)),
+            patience: patience.map_or_else(|| 1.0, |p| p.min(0.0)),
         });
 
         if let Some(prompt) = initial_prompt {
@@ -148,12 +183,27 @@ impl Model {
         params.set_token_timestamps(word_timestamps);
         params.set_split_on_word(true);
 
+        // TODO: Uncomment when I can figure out how to fix crashing bug
+        // trace!("Adding Callbacks");
+        // if let Some(closure) = abort_callback {
+        //     params.set_abort_callback_safe(closure);
+        // }
+        // if let Some(closure) = progress_callback {
+        //     params.set_progress_callback_safe(closure);
+        // }
+        // if let Some(closure) = new_segment_lossy_callback {
+        //     params.set_segment_callback_safe_lossy(closure);
+        // }
+        // if let Some(closure) = new_segment_callback {
+        //     params.set_segment_callback_safe(closure);
+        // }
+
         trace!("Basic params for Whisper Set");
 
         #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
-        let threads = threads.map_or_else(|| num_cpus::get() as i32, i32::from);
+        let threads = threads.map_or_else(|| cpu_count, i32::from);
 
-        trace!("Using {} threads", threads);
+        trace!("Using {threads} threads");
 
         params.set_n_threads(threads);
 
@@ -172,7 +222,7 @@ impl Model {
             error!("Failed to get segments");
             ModelError::WhisperError(e)
         })?;
-        trace!("Number of segments: {}", num_segments);
+        trace!("Number of segments: {num_segments}");
 
         let mut words = Vec::new();
         let mut utterances = Vec::new();
@@ -194,7 +244,7 @@ impl Model {
                 continue;
             }
 
-            trace!("Getting word timestamps for segment {}", segment_idx);
+            trace!("Getting word timestamps for segment {segment_idx}");
 
             let num_tokens = state
                 .full_n_tokens(segment_idx)

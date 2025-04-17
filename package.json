@@ -1,6 +1,6 @@
 {
   "name": "super-mouse-ai",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "description": "",
   "type": "module",
   "scripts": {
@@ -10,6 +10,7 @@
     "next-minor": "deno run -A npm:tauri-version minor --no-git && git-cliff -o CHANGELOG.md",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "full-check": "echo 'Type check:' && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && echo 'Format check:' && deno fmt --check && echo 'Lint check:' && deno lint .",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "tauri": "tauri",
     "rebind": "echo \"Refreshing ./src/lib/bindings.ts\"; deno task tauri dev --no-dev-server-wait --no-dev-server --no-watch -f export-bindings-only"

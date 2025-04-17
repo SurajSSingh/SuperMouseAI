@@ -36,9 +36,10 @@
         shortcut: string,
         returns,
     ) => {
-        notifier?.showError(
+        notifier.showToast(
             `Could not check if ${shortcut} is registered (check for spelling issues)`,
-            "Shortcut Finding Error",
+            "error",
+            { subtitle: "Shortcut Finding Error" },
         );
         return returns;
     };
@@ -46,9 +47,10 @@
         shortcut: string,
         returns,
     ) => {
-        notifier?.showError(
+        notifier.showToast(
             `Could not register the shortcut: ${shortcut} (may have spelling issues or already be registered)`,
-            "Shortcut Registration Error",
+            "error",
+            { subtitle: "Shortcut Registration Error" },
         );
         return returns;
     };
@@ -56,9 +58,10 @@
         shortcut: string,
         returns,
     ) => {
-        notifier?.showError(
+        notifier.showToast(
             `Could not unregister the shortcut: ${shortcut} (may have spelling issues or already be unregistered)`,
-            "Shortcut Unregister Error",
+            "error",
+            { subtitle: "Shortcut Unregister Error" },
         );
         return returns;
     };
@@ -66,7 +69,10 @@
         shortcut: string,
         returns,
     ) => {
-        notifier?.showSuccess(`Shortcut ${shortcut} has been registered`);
+        notifier.showToast(
+            `Shortcut ${shortcut} has been registered`,
+            "success",
+        );
         return returns;
     };
 
@@ -350,8 +356,10 @@
                         modCtrl = false;
                         setupShortcut(true, true);
                     } else {
-                        notifier?.showInfo(
+                        notifier.showToast(
                             "Must have at least one modifer key!",
+                            "warn",
+                            { sound: "alert" },
                         );
                     }
                 },
@@ -366,8 +374,10 @@
                         modShift = false;
                         setupShortcut(true, true);
                     } else {
-                        notifier?.showInfo(
+                        notifier.showToast(
                             "Must have at least one modifer key!",
+                            "warn",
+                            { sound: "alert" },
                         );
                     }
                 },
@@ -382,8 +392,10 @@
                         modAlt = false;
                         setupShortcut(true, true);
                     } else {
-                        notifier?.showInfo(
+                        notifier.showToast(
                             "Must have at least one modifer key!",
+                            "warn",
+                            { sound: "alert" },
                         );
                     }
                 },
@@ -398,8 +410,10 @@
                         modSuper = false;
                         setupShortcut(true, true);
                     } else {
-                        notifier?.showInfo(
+                        notifier.showToast(
                             "Must have at least one modifer key!",
+                            "warn",
+                            { sound: "alert" },
                         );
                     }
                 },

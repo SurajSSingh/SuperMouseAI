@@ -24,11 +24,11 @@ pub struct InnerAppState {
 }
 
 impl InnerAppState {
-    pub fn new(model: Model, sound_map: HashMap<String, PathBuf>) -> Self {
+    pub const fn new(model: Model, sound_map: HashMap<String, PathBuf>) -> Self {
         // Load model into memory by evaluating short silence
         // FIXME: Need to do this in another thread, otherwise UI freezes
         // let _ = model.transcribe_pcm_s16le(&[0.0; 20_000], false, false, None, None, None);
-        InnerAppState {
+        Self {
             model: ModelHolder {
                 default: model,
                 custom: None,
@@ -39,12 +39,9 @@ impl InnerAppState {
 
     /// Get sound by the provided name or by prepending `default_` to the beginning.
     pub fn get_sound_path(&self, sound_name: &str) -> Option<&PathBuf> {
-        debug!("Getting sound: {}", sound_name);
+        debug!("Getting sound: {sound_name}");
         self.sound_map.get(sound_name).or_else(|| {
-            warn!(
-                "No sound with name '{}', falling back to 'default_{}'",
-                sound_name, sound_name
-            );
+            warn!("No sound with name '{sound_name}', falling back to 'default_{sound_name}'");
             self.sound_map.get(&format!("default_{}", &sound_name))
         })
     }
@@ -73,8 +70,7 @@ impl InnerAppState {
         self.model
             .custom
             .as_ref()
-            .map(|holder| &holder.0)
-            .unwrap_or(&self.model.default)
+            .map_or(&self.model.default, |holder| &holder.0)
     }
 
     pub fn get_model_info(&self) -> String {
@@ -106,9 +102,9 @@ pub enum MouseButtonType {
 impl From<&MouseButton> for MouseButtonType {
     fn from(mb: &MouseButton) -> Self {
         match mb {
-            MouseButton::Left => MouseButtonType::Left,
-            MouseButton::Middle => MouseButtonType::Middle,
-            MouseButton::Right => MouseButtonType::Right,
+            MouseButton::Left => Self::Left,
+            MouseButton::Middle => Self::Middle,
+            MouseButton::Right => Self::Right,
         }
     }
 }
@@ -122,17 +118,17 @@ pub struct ModKeyPayload {
 
 impl ModKeyPayload {
     /// New Modifier Key Event
-    pub fn new(key: String, is_pressed: bool) -> Self {
+    pub const fn new(key: String, is_pressed: bool) -> Self {
         Self { key, is_pressed }
     }
 
     /// New pressed event for given key
-    pub fn pressed(key: String) -> Self {
+    pub const fn pressed(key: String) -> Self {
         Self::new(key, true)
     }
 
     /// New release event for given key
-    pub fn released(key: String) -> Self {
+    pub const fn released(key: String) -> Self {
         Self::new(key, false)
     }
 }
@@ -140,7 +136,7 @@ impl ModKeyPayload {
 /// Given a key, check if it matches one of the (specific) modifier keys.
 ///
 /// The main modifiers are: Alt, Control, Meta, Option, and Shift (both left and right).
-pub fn is_modkey(key: &device_query::Keycode) -> bool {
+pub const fn is_modkey(key: device_query::Keycode) -> bool {
     use device_query::Keycode as K;
     matches!(
         key,
@@ -164,19 +160,19 @@ pub fn is_modkey(key: &device_query::Keycode) -> bool {
 pub enum TranscriptionFormat {
     #[default]
     Text,
-    #[allow(clippy::upper_case_acronyms)]
+    #[allow(clippy::upper_case_acronyms, reason = "Proper name of format type")]
     SRT,
-    #[allow(clippy::upper_case_acronyms)]
+    #[allow(clippy::upper_case_acronyms, reason = "Proper name of format type")]
     VTT,
 }
 
 impl TranscriptionFormat {
     /// Convert a given transcript to its string form based on the current format type.
-    pub fn convert_transcript(&self, transcript: crate::transcript::Transcript) -> String {
+    pub fn convert_transcript(self, transcript: &crate::transcript::Transcript) -> String {
         match self {
-            TranscriptionFormat::Text => transcript.as_text(),
-            TranscriptionFormat::SRT => transcript.as_srt(),
-            TranscriptionFormat::VTT => transcript.as_vtt(),
+            Self::Text => transcript.as_text(),
+            Self::SRT => transcript.as_srt(),
+            Self::VTT => transcript.as_vtt(),
         }
     }
 }
@@ -184,7 +180,7 @@ impl TranscriptionFormat {
 #[derive(Clone, PartialEq, Debug, Default, Serialize, Deserialize, Type)]
 /// Options for the transcribing function.
 ///
-/// All items are optional. Based on arguments for [crate::mutter::Model::transcribe_audio].
+/// All items are optional. Based on arguments for [`crate::mutter::Model::transcribe_audio`].
 pub struct TranscribeOptions {
     pub translate: Option<bool>,
     pub individual_word_timestamps: Option<bool>,
@@ -192,6 +188,8 @@ pub struct TranscribeOptions {
     pub initial_prompt: Option<String>,
     pub language: Option<String>,
     pub format: Option<TranscriptionFormat>,
+    pub patience: Option<f32>,
+    pub include_callback: Option<bool>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Type)]
@@ -205,7 +203,7 @@ pub enum TextDecoration {
     Mark,
 }
 
-#[derive(Clone, PartialEq, Debug, Default, Serialize, Deserialize, Type)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize, Type)]
 /// Options for the text post-processing function.
 ///
 /// All items are optional.

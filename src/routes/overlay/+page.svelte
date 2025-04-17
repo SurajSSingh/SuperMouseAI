@@ -2,38 +2,71 @@
     import { events } from "$lib/bindings";
     import { type RecordingStates } from "$lib/types";
     import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+    import { currentMonitor, cursorPosition } from "@tauri-apps/api/window";
     import { debug } from "@tauri-apps/plugin-log";
 
     let follower: HTMLElement;
 
     let xOffset = $state(-20);
     let yOffset = $state(-20);
+    let progress = $state(0);
 
     let currentState: RecordingStates | undefined = $state();
+    let scale = 1;
 
     $effect(() => {
         let unlistenMoveEvent: UnlistenFn | undefined;
+        let unlistenStateEvent: UnlistenFn | undefined;
+        let unlistenProgressEvent: UnlistenFn | undefined;
+        // currentMonitor().then((monitor) => {
+        //     if (monitor) {
+        //         debug(
+        //             `Got Monitor: ${monitor.name}(${JSON.stringify(monitor.size)}@${monitor.scaleFactor}x)`,
+        //         );
+        //         scale = monitor.scaleFactor;
+        //     }
+        // });
         const run = async () => {
             unlistenMoveEvent = await events.mouseMoveEvent.listen((e) => {
                 follower.style.left = `${e.payload.x + xOffset}px`;
                 follower.style.top = `${e.payload.y + yOffset}px`;
             });
-            listen("stateUpdate", (e) => {
+            unlistenStateEvent = await listen("stateUpdate", (e) => {
                 debug(`State of recording updated: ${JSON.stringify(e)}`);
                 currentState = (e.payload as { state: RecordingStates }).state;
             });
+            unlistenProgressEvent =
+                await events.transcriptionProgressEvent.listen((e) => {
+                    debug(`Transcription Progress: ${JSON.stringify(e)}`);
+                    progress = e.payload;
+                });
         };
         run();
         return () => {
             debug("Close overlay");
             unlistenMoveEvent?.();
+            unlistenStateEvent?.();
+            unlistenProgressEvent?.();
         };
     });
+
+    // $effect(() => {
+    //     let interval;
+
+    //     setInterval(async () => {
+    //         const position = await cursorPosition();
+    //         follower.style.left = `${Math.ceil(position.x / scale) + xOffset}px`;
+    //         follower.style.top = `${Math.ceil(position.y / scale) + yOffset}px`;
+    //     }, 30);
+    // });
 </script>
 
 <div id="follower" bind:this={follower} class={currentState}>
     <div id="circle1"></div>
-    <div id="circle2"></div>
+    <div id="circle2">
+        <!-- TODO(eventually): Re-enable once progress is working again -->
+        <!-- {currentState === "processing" ? progress : null} -->
+    </div>
 </div>
 
 <style>
@@ -82,7 +115,17 @@
     }
 
     #follower.processing #circle2 {
-        background: rgba(20, 104, 239, 0.1);
+        text-align: center;
+        position: absolute;
+        top: 50%;
+        margin: 0;
+        margin-top: 1rem;
+        color: magenta;
+        text-shadow:
+            -1px 0 white,
+            0 1px white,
+            1px 0 white,
+            0 -1px white;
     }
 
     /* Keyframe animations */

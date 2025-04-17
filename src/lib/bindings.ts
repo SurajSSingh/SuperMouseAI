@@ -10,7 +10,7 @@ export const commands = {
  * 
  * Check [crate::mutter::Model::transcribe_audio] for details on arguments
  */
-async transcribe(audioData: number[], options: TranscribeOptions | null) : Promise<Result<string, string>> {
+async transcribe(audioData: number[], options: TranscribeOptions | null) : Promise<Result<[string, number], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("transcribe", { audioData, options }) };
 } catch (e) {
@@ -43,7 +43,7 @@ async pasteText() : Promise<Result<null, string>> {
 /**
  * Process the text
  */
-async processText(text: string, options: TextProcessOptions | null) : Promise<Result<string, string>> {
+async processText(text: string, options: TextProcessOptions | null) : Promise<Result<[string, number], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("process_text", { text, options }) };
 } catch (e) {
@@ -54,7 +54,7 @@ async processText(text: string, options: TextProcessOptions | null) : Promise<Re
 /**
  * Run [transcribe] function then pass to [process_text] for post processing.
  */
-async transcribeWithPostProcess(audioData: number[], transcribeOptions: TranscribeOptions | null, processingOptions: TextProcessOptions | null) : Promise<Result<string, string>> {
+async transcribeWithPostProcess(audioData: number[], transcribeOptions: TranscribeOptions | null, processingOptions: TextProcessOptions | null) : Promise<Result<[string, number], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("transcribe_with_post_process", { audioData, transcribeOptions, processingOptions }) };
 } catch (e) {
@@ -109,11 +109,15 @@ async getSystemInfo() : Promise<SystemInfo> {
 export const events = __makeEvents__<{
 modKeyEvent: ModKeyEvent,
 mouseClickEvent: MouseClickEvent,
-mouseMoveEvent: MouseMoveEvent
+mouseMoveEvent: MouseMoveEvent,
+transcriptionProgressEvent: TranscriptionProgressEvent,
+transcriptionSegmentEvent: TranscriptionSegmentEvent
 }>({
 modKeyEvent: "mod-key-event",
 mouseClickEvent: "mouse-click-event",
-mouseMoveEvent: "mouse-move-event"
+mouseMoveEvent: "mouse-move-event",
+transcriptionProgressEvent: "transcription-progress-event",
+transcriptionSegmentEvent: "transcription-segment-event"
 })
 
 /** user-defined constants **/
@@ -127,7 +131,7 @@ mouseMoveEvent: "mouse-move-event"
  * 
  * ### Payload
  * 
- * [ModKeyPayload] : The modifer key that is pressed/released
+ * [`ModKeyPayload`] : The modifer key that is pressed/released
  */
 export type ModKeyEvent = ModKeyPayload
 /**
@@ -145,7 +149,7 @@ export type MouseButtonType = "Left" | "Middle" | "Right"
  * 
  * ### Payload
  * 
- * [MouseButtonType] : Which button was pressed
+ * [`MouseButtonType`] : Which button was pressed
  */
 export type MouseClickEvent = MouseButtonType
 /**
@@ -153,8 +157,8 @@ export type MouseClickEvent = MouseButtonType
  * 
  * ### Payload
  * 
- * x [i32] : Absolute X value of mosue (from 0 to SCREEN_WIDTH)
- * y [i32] : Absolute Y value of mouse (from 0 to SCREEN_HEIGHT)
+ * x [i32] : Absolute X value of mosue (from 0 to `SCREEN_WIDTH`)
+ * y [i32] : Absolute Y value of mouse (from 0 to `SCREEN_HEIGHT`)
  */
 export type MouseMoveEvent = { x: number; y: number }
 /**
@@ -195,13 +199,35 @@ decorated_words: ([TextDecoration, string])[] | null; replace_inter_sentence_new
 /**
  * Options for the transcribing function.
  * 
- * All items are optional. Based on arguments for [crate::mutter::Model::transcribe_audio].
+ * All items are optional. Based on arguments for [`crate::mutter::Model::transcribe_audio`].
  */
-export type TranscribeOptions = { translate: boolean | null; individual_word_timestamps: boolean | null; threads: number | null; initial_prompt: string | null; language: string | null; format: TranscriptionFormat | null }
+export type TranscribeOptions = { translate: boolean | null; individual_word_timestamps: boolean | null; threads: number | null; initial_prompt: string | null; language: string | null; format: TranscriptionFormat | null; patience: number | null; include_callback: boolean | null }
 /**
  * Format type for a transcription
  */
 export type TranscriptionFormat = "Text" | "SRT" | "VTT"
+/**
+ * Event representing the progress for the current transcription
+ * 
+ * ### Payload
+ * 
+ * [i32] : The integer percentage value (0-100)
+ * _NOTE: Whisper Transcription progress is not very granular._
+ */
+export type TranscriptionProgressEvent = number
+/**
+ * Event representing the progress for the current transcription
+ * 
+ * ### Payload
+ * 
+ * - `is_lossy` [bool] : Whether the transcription data is lossy
+ * - [`SegmentCallbackData`]: The current segment that was transcribed _(fields lifted directly into struct)_:
+ * - `segment` [i32]: Segment index
+ * - `start_timestamp` [i64]: Start of the segment
+ * - `end_timestamp` [i64]: End of the segment
+ * - `text` [`String`]: The text segment
+ */
+export type TranscriptionSegmentEvent = { is_lossy: boolean; segment: number; start_timestamp: number; end_timestamp: number; text: string }
 
 /** tauri-specta globals **/
 

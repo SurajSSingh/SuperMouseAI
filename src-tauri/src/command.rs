@@ -1,8 +1,16 @@
 //! All things related to Rust of the Super Mouse AI app
 
+#![allow(clippy::used_underscore_binding)]
+// When Specta builds the type bindings, it uses it's own Result,
+// which causes a lint warning. Thus, the aboe lint is disabled
+// for this file
+
 // Crate level use (imports)
 use crate::{
-    events::{MouseClickEvent, MouseMoveEvent},
+    events::{
+        new_lossy_transcript_segment_event, new_transcript_segment_event, MouseClickEvent,
+        MouseMoveEvent, TranscriptionProgressEvent,
+    },
     mutter::ModelError,
     types::{AppState, MouseButtonType, SystemInfo, TextProcessOptions, TranscribeOptions},
 };
@@ -22,22 +30,74 @@ use tauri_specta::{collect_commands, Commands, Event};
 /// Check [crate::mutter::Model::transcribe_audio] for details on arguments
 pub async fn transcribe(
     app_state: State<'_, AppState>,
+    app_handle: AppHandle,
     audio_data: Vec<u8>,
     options: Option<TranscribeOptions>,
-) -> Result<String, String> {
+) -> Result<(String, f64), String> {
     let options = options.unwrap_or_default();
-    log::info!("Transcribing with parameters: translate={:?}, use_timestamp={:?}, threads={:?}, prompt={:?}, lang={:?}, fmt={:?}", 
-    options.translate,
-    options.individual_word_timestamps,
-    options.threads,
-    options.initial_prompt,
-    options.language,
-    options.format,
-);
+    log::info!("Transcribing with parameters: translate={:?}, use_timestamp={:?}, threads={:?}, prompt={:?}, lang={:?}, fmt={:?}, patience={:?}",
+        options.translate,
+        options.individual_word_timestamps,
+        options.threads,
+        options.initial_prompt,
+        options.language,
+        options.format,
+        options.patience,
+    );
     info!("Running transcription command");
     let app_state = app_state.lock().map_err(|err| err.to_string())?;
     let model = app_state.get_model();
     info!("Transcribe using {}", app_state.get_model_info());
+    trace!("Creating abort transcription callback");
+    let abort_callback: Option<fn() -> bool> =
+        if options.include_callback.is_some_and(|is_true| is_true) {
+            // TODO: Figure out how to send off via an event from JS side
+            Some(|| {
+                trace!("Evaluating abort transcription => false");
+                false
+            })
+        } else {
+            None
+        };
+    let progress_callback = if options.include_callback.is_some_and(|is_true| is_true) {
+        trace!("Creating transcript progress callback");
+        let handle = app_handle.clone();
+        trace!("Cloned app handle");
+        Some(move |precentage| {
+            trace!("Creating transcription progress event");
+            let event = TranscriptionProgressEvent::with_payload(precentage);
+            trace!("Emitting transcription progress event");
+            let _ = event
+                .emit(&handle)
+                .map_err(|err| error!("Transcription Progress event error: {err}"));
+        })
+    } else {
+        None
+    };
+    let lossy_segment_callback = if options.include_callback.is_some_and(|is_true| is_true) {
+        let handle = app_handle.clone();
+        Some(move |segment: whisper_rs::SegmentCallbackData| {
+            let _ = new_lossy_transcript_segment_event(segment)
+                .emit(&handle)
+                .map_err(|err| error!("Transcription Segment event error: {err}"));
+        })
+    } else {
+        None
+    };
+    let not_lossy_segment_callback = if options.include_callback.is_some_and(|is_true| is_true) {
+        #[allow(
+            clippy::redundant_clone,
+            reason = "May want to use app handle later on"
+        )]
+        let handle = app_handle.clone();
+        Some(move |segment: whisper_rs::SegmentCallbackData| {
+            let _ = new_transcript_segment_event(segment)
+                .emit(&handle)
+                .map_err(|err| error!("Transcription Segment event error: {err}"));
+        })
+    } else {
+        None
+    };
     let transcription = model
         .transcribe_audio(
             &audio_data,
@@ -51,18 +111,26 @@ pub async fn transcribe(
                 Some(0) => None,
                 threads => threads,
             },
+            options.patience,
+            abort_callback,
+            progress_callback,
+            lossy_segment_callback,
+            not_lossy_segment_callback,
         )
         .map_err(|err| {
-            log::error!("Transcription Error: {:?}", err);
+            log::error!("Transcription Error: {err:?}");
             match err {
                 ModelError::WhisperError(whisper_error) => whisper_error.to_string(),
                 ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
             }
         })?;
-    Ok(options
-        .format
-        .unwrap_or_default()
-        .convert_transcript(transcription))
+    Ok((
+        options
+            .format
+            .unwrap_or_default()
+            .convert_transcript(&transcription),
+        transcription.processing_time.as_secs_f64(),
+    ))
 }
 
 #[tauri::command]
@@ -71,7 +139,7 @@ pub async fn transcribe(
 pub async fn process_text(
     text: String,
     options: Option<TextProcessOptions>,
-) -> Result<String, String> {
+) -> Result<(String, f64), String> {
     info!("Running processing text command");
     let mut updated_text = text;
     let options = options.unwrap_or_default();
@@ -94,7 +162,8 @@ pub async fn process_text(
         })?;
         updated_text = regex.replace_all(&updated_text, "$1 ").to_string();
     }
-    Ok(updated_text.trim().to_string())
+    // TODO: Get actual processing time
+    Ok((updated_text.trim().to_string(), 0.0))
 }
 
 #[tauri::command]
@@ -102,16 +171,16 @@ pub async fn process_text(
 /// Run [transcribe] function then pass to [process_text] for post processing.
 pub async fn transcribe_with_post_process(
     app_state: State<'_, AppState>,
+    app_handle: AppHandle,
     audio_data: Vec<u8>,
     transcribe_options: Option<TranscribeOptions>,
     processing_options: Option<TextProcessOptions>,
-) -> Result<String, String> {
+) -> Result<(String, f64), String> {
     info!("Running transcription & processing command");
-    process_text(
-        transcribe(app_state, audio_data, transcribe_options).await?,
-        processing_options,
-    )
-    .await
+    let (text, transcription_time) =
+        transcribe(app_state, app_handle, audio_data, transcribe_options).await?;
+    let (new_text, processing_time) = process_text(text, processing_options).await?;
+    Ok((new_text, transcription_time + processing_time))
 }
 
 #[tauri::command]
@@ -124,7 +193,7 @@ pub async fn play_sound(app_state: State<'_, AppState>, sound_name: String) -> R
         .lock()
         .map_err(|err| err.to_string())?
         .get_sound_path(&sound_name)
-        .ok_or(format!("Could not find sound with name: {}", sound_name))
+        .ok_or_else(|| format!("Could not find sound with name: {sound_name}"))
         .and_then(|path| File::open(path).map_err(|err| err.to_string()))
         .map(BufReader::new)
         .and_then(|file| Decoder::new(file).map_err(|err| err.to_string()))?;
@@ -144,19 +213,19 @@ pub async fn play_sound(app_state: State<'_, AppState>, sound_name: String) -> R
 ///
 /// Returns either the callback id or an error message.
 ///
-/// Adapted from https://github.com/crabnebula-dev/koi-pond/blob/main/src-tauri/src/lib.rs under MIT License
+/// Adapted from <https://github.com/crabnebula-dev/koi-pond/blob/main/src-tauri/src/lib.rs> under MIT License
 pub fn listen_for_mouse_click(app_handle: AppHandle) -> Result<u8, String> {
     Mouse::new()
         .hook(Box::new(move |e| match e {
             MouseEvent::Press(button) => MouseClickEvent::with_payload(MouseButtonType::from(button))
                 .emit(&app_handle)
                 .map_err(|e| {
-                    error!("App Handle expected to emit press event with button playload but could not: {}", e);
+                    error!("App Handle expected to emit press event with button playload but could not: {e}");
                 })
                 .unwrap_or_default(),
             MouseEvent::Release(_button) => { /* Do Nothing Yet */ }
-            MouseEvent::AbsoluteMove(x, y) =>  MouseMoveEvent::with_payload(x, y).emit(&app_handle).map_err(|e| {
-                error!("App Handle expected to emit mouse move event but could not: {}", e);
+            MouseEvent::AbsoluteMove(x, y) =>  MouseMoveEvent::with_payload(*x, *y).emit(&app_handle).map_err(|e| {
+                error!("App Handle expected to emit mouse move event but could not: {e}");
             })
             .unwrap_or_default(),
             _ => (),
@@ -170,7 +239,7 @@ pub fn listen_for_mouse_click(app_handle: AppHandle) -> Result<u8, String> {
 pub async fn write_text(text: String) -> Result<(), String> {
     info!("Running auto-write text command");
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
-    trace!("Enigo setup: {:?}", enigo);
+    trace!("Enigo setup: {enigo:?}");
     enigo.text(&text).map_err(|e| e.to_string())?;
     // Use len rather then actual text to prevent leaking info in logs
     trace!("Enigo Wrote {} bytes", text.len());
@@ -183,7 +252,7 @@ pub async fn write_text(text: String) -> Result<(), String> {
 pub fn paste_text() -> Result<(), String> {
     info!("Running paste from clipboard command");
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
-    trace!("Enigo setup: {:?}", enigo);
+    trace!("Enigo setup: {enigo:?}");
     let cmd_or_ctrl = match std::env::consts::OS {
         "macos" => enigo::Key::Meta,
         "windows" | "linux" => enigo::Key::Control,
@@ -195,19 +264,19 @@ pub fn paste_text() -> Result<(), String> {
     enigo
         .key(cmd_or_ctrl, enigo::Direction::Press)
         .map_err(|e| {
-            error!("Input error: {}", e);
+            error!("Input error: {e}");
             e.to_string()
         })?;
     enigo
         .key(enigo::Key::Unicode('v'), enigo::Direction::Click)
         .map_err(|e| {
-            error!("Input error: {}", e);
+            error!("Input error: {e}");
             e.to_string()
         })?;
     enigo
         .key(cmd_or_ctrl, enigo::Direction::Release)
         .map_err(|e| {
-            error!("Input error: {}", e);
+            error!("Input error: {e}");
             e.to_string()
         })?;
     trace!("Enigo Pasted text");
@@ -225,7 +294,7 @@ pub async fn set_window_top(
     webview_window
         .set_always_on_top(override_value.unwrap_or(true))
         .map_err(|err| {
-            log::error!("Could not set window to top value: {}", err);
+            log::error!("Could not set window to top value: {err}");
             err.to_string()
         })
 }
@@ -251,7 +320,9 @@ pub async fn update_model(
     } else {
         info!("Removing Custom Model");
         app_state.remove_custom_model();
-    };
+    }
+    // Explict drop to unlock the Mutex (mostly to fix lint issue)
+    drop(app_state);
     Ok(())
 }
 
@@ -269,7 +340,15 @@ pub async fn get_system_info() -> SystemInfo {
             .without_processes(),
     );
 
+    #[allow(
+        clippy::cast_precision_loss,
+        reason = "Total CPU core is unlikely to exceed 2^52 for consumer systems"
+    )]
     let cpu_core_count = sys.cpus().len() as f64;
+    #[allow(
+        clippy::cast_precision_loss,
+        reason = "Total Memory in bytes is unlikely to exceed 2^52 for consumer systems"
+    )]
     let total_memory_gb = (sys.total_memory() as f64) / 1_000_000_000_f64;
     // sys.cpus().first().unwrap().frequency();
 
@@ -290,6 +369,10 @@ pub async fn get_system_info() -> SystemInfo {
                     debug!("Got Apple GPU using Unified Memory for GPU, use RAM value");
                     total_memory_gb
                 }
+                #[allow(
+                    clippy::cast_precision_loss,
+                    reason = "Total VRAM in bytes is unlikely to exceed 2^52 for consumer systems"
+                )]
                 (bytes, _) => (bytes as f64) / 1_000_000_000_f64,
             }
         }
@@ -307,6 +390,7 @@ pub async fn get_system_info() -> SystemInfo {
 }
 
 /// Gets all collected commands for Super Mouse AI application to be used by builder
+#[must_use]
 pub fn get_collected_commands() -> Commands<Wry> {
     collect_commands![
         transcribe,

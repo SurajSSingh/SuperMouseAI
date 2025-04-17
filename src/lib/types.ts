@@ -28,20 +28,34 @@ export type WhisperModelInfo = {
   version?: "v1" | "v2" | "v3" | "v3 turbo";
   relativePath: string;
   sha256: string;
-  approxSize: number;
+  approxSize: number; // bytes
   quantizeType: "full" | "q8" | "q5";
   isEnglishOnly: boolean;
   isSuperceded: boolean | string;
+  recommendedVramForGPU: number; // bytes
+  recommendedRamForCPU: number; // bytes
 };
 
 /**
  * Information related to a transcription
  */
 export type TranscriptionInfo = {
+  /** The plaintext transcription */
   text: string;
+  /** What model ran the transcription */
   model?: string;
+  /** Who provided the model */
+  provider: "whisper-cpp" | "openai";
+  /** Was processing done on the GPU */
   onGPU?: boolean;
+  /** How long did the processing take in ms */
   processingTime?: number;
+  /** Which strategy was used and with what values */
+  strategy?: {
+    type: "greedy";
+    bestOf: number;
+    temperature: number;
+  } | { type: "beam"; beamSize: number; patience: number };
 };
 
 /**
