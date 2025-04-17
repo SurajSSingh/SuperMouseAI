@@ -101,7 +101,7 @@ pub fn export_bindings() -> Builder {
     ) {
         Ok(()) => debug!("Exported TypeScript bindings"),
         Err(err) => warn!("Export Binding Issue: {err}"),
-    };
+    }
     builder
 }
 

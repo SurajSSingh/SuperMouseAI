@@ -320,7 +320,7 @@ pub async fn update_model(
     } else {
         info!("Removing Custom Model");
         app_state.remove_custom_model();
-    };
+    }
     // Explict drop to unlock the Mutex (mostly to fix lint issue)
     drop(app_state);
     Ok(())

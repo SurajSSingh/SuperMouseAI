@@ -133,6 +133,7 @@ impl Model {
     #[allow(
         clippy::too_many_arguments,
         unused_variables,
+        clippy::needless_pass_by_value,
         reason = "Temporary allowed to prevent full refactoring into options struct"
     )]
     pub fn transcribe_pcm_s16le(
@@ -156,10 +157,15 @@ impl Model {
             audio.len()
         );
 
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_possible_wrap,
+            reason = "Number of cores on current CPUs should be well below 2^31"
+        )]
         let cpu_count = num_cpus::get() as i32;
 
         let mut params = FullParams::new(SamplingStrategy::BeamSearch {
-            beam_size: beam_size.map(|decoder| decoder.min(cpu_count)).unwrap_or(5),
+            beam_size: beam_size.map_or(5, |decoder| decoder.min(cpu_count)),
             patience: patience.map_or_else(|| 1.0, |p| p.min(0.0)),
         });
 
