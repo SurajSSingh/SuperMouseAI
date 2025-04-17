@@ -26,7 +26,7 @@ file_not_found:
     ${EndIf}
 
     ; Execute the downloaded installer silently
-    ExecWait '"$1" --no-graphics --silent' $0
+    ExecWait '"$1" --accept-licenses --default-answer --confirm-command install' $0
     ${If} $0 == 0
         DetailPrint "Vulkan SDK installation completed successfully"
     ${Else}
