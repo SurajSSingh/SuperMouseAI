@@ -1,7 +1,9 @@
 ; Adapted from <https://github.com/thewh1teagle/vibe/blob/main/desktop/src-tauri/vc_redist.nsh>
+
+!addplugindir .\plugins
+
 Section
 ; Check if Vulkan runtime is already installed
-FileSeek $0 0 SETEND ; Reset file pointer
 IfFileExists "$WINDIR\System32\vulkan-1.dll" file_found file_not_found
 file_found:
     DetailPrint "Vulkan runtime found! Skipping installation."
@@ -12,7 +14,8 @@ file_not_found:
     StrCpy $1 "$TEMP\vulkan_sdk.exe"
     
     ; Download the Vulkan SDK installer
-    NSISdl::download $0 $1
+    DetailPrint "Downloading latest SDK from $0 ."
+    inetc::get $0 $1
     Pop $0
     ${If} $0 == "success"
         DetailPrint "Vulkan SDK downloaded successfully"
