@@ -45,21 +45,20 @@ pub async fn transcribe(
         options.patience,
     );
     info!("Running transcription command");
-    let app_state = app_state.lock().map_err(|err| err.to_string())?;
-    let model = app_state.get_model();
+    let mut app_state = app_state.lock().await;
     info!("Transcribe using {}", app_state.get_model_info());
+    let (model, _loading_time) = app_state.get_model().await?;
     trace!("Creating abort transcription callback");
-    let abort_callback: Option<fn() -> bool> =
-        if options.include_callback.is_some_and(|is_true| is_true) {
-            // TODO: Figure out how to send off via an event from JS side
-            Some(|| {
-                trace!("Evaluating abort transcription => false");
-                false
-            })
-        } else {
-            None
-        };
-    let progress_callback = if options.include_callback.is_some_and(|is_true| is_true) {
+    let _: Option<fn() -> bool> = if options.include_callback.is_some_and(|is_true| is_true) {
+        // TODO: Figure out how to send off via an event from JS side
+        Some(|| {
+            trace!("Evaluating abort transcription => false");
+            false
+        })
+    } else {
+        None
+    };
+    let _ = if options.include_callback.is_some_and(|is_true| is_true) {
         trace!("Creating transcript progress callback");
         let handle = app_handle.clone();
         trace!("Cloned app handle");
@@ -74,7 +73,7 @@ pub async fn transcribe(
     } else {
         None
     };
-    let lossy_segment_callback = if options.include_callback.is_some_and(|is_true| is_true) {
+    let _ = if options.include_callback.is_some_and(|is_true| is_true) {
         let handle = app_handle.clone();
         Some(move |segment: whisper_rs::SegmentCallbackData| {
             let _ = new_lossy_transcript_segment_event(segment)
@@ -84,7 +83,7 @@ pub async fn transcribe(
     } else {
         None
     };
-    let not_lossy_segment_callback = if options.include_callback.is_some_and(|is_true| is_true) {
+    let _ = if options.include_callback.is_some_and(|is_true| is_true) {
         #[allow(
             clippy::redundant_clone,
             reason = "May want to use app handle later on"
@@ -98,39 +97,40 @@ pub async fn transcribe(
     } else {
         None
     };
-    let transcription = model
-        .transcribe_audio(
-            &audio_data,
-            options.translate.unwrap_or(false),
-            options.individual_word_timestamps.unwrap_or(false),
-            options.initial_prompt.as_deref(),
-            options.language.as_deref(),
-            // Make sure not to pass 0 for CPU thread,
-            // otherwise model crashes
-            match options.threads {
-                Some(0) => None,
-                threads => threads,
-            },
-            options.patience,
-            abort_callback,
-            progress_callback,
-            lossy_segment_callback,
-            not_lossy_segment_callback,
-        )
-        .map_err(|err| {
-            log::error!("Transcription Error: {err:?}");
-            match err {
-                ModelError::WhisperError(whisper_error) => whisper_error.to_string(),
-                ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
-            }
-        })?;
-    Ok((
-        options
-            .format
-            .unwrap_or_default()
-            .convert_transcript(&transcription),
-        transcription.processing_time.as_secs_f64(),
-    ))
+    Ok(model.default_transcribe(audio_data).await?)
+    // let transcription = model
+    //     .transcribe_audio(
+    //         &audio_data,
+    //         options.translate.unwrap_or(false),
+    //         options.individual_word_timestamps.unwrap_or(false),
+    //         options.initial_prompt.as_deref(),
+    //         options.language.as_deref(),
+    //         // Make sure not to pass 0 for CPU thread,
+    //         // otherwise model crashes
+    //         match options.threads {
+    //             Some(0) => None,
+    //             threads => threads,
+    //         },
+    //         options.patience,
+    //         abort_callback,
+    //         progress_callback,
+    //         lossy_segment_callback,
+    //         not_lossy_segment_callback,
+    //     )
+    //     .map_err(|err| {
+    //         log::error!("Transcription Error: {err:?}");
+    //         match err {
+    //             ModelError::WhisperError(whisper_error) => whisper_error.to_string(),
+    //             ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
+    //         }
+    //     })?;
+    // Ok((
+    //     options
+    //         .format
+    //         .unwrap_or_default()
+    //         .convert_transcript(&transcription),
+    //     transcription.processing_time.as_secs_f64(),
+    // ))
 }
 
 #[tauri::command]
@@ -191,7 +191,7 @@ pub async fn play_sound(app_state: State<'_, AppState>, sound_name: String) -> R
     // Get sound source
     let source = app_state
         .lock()
-        .map_err(|err| err.to_string())?
+        .await
         .get_sound_path(&sound_name)
         .ok_or_else(|| format!("Could not find sound with name: {sound_name}"))
         .and_then(|path| File::open(path).map_err(|err| err.to_string()))
@@ -308,7 +308,7 @@ pub async fn update_model(
     use_gpu: Option<bool>,
 ) -> Result<(), String> {
     info!("Updating model to use");
-    let mut app_state = app_state.lock().map_err(|err| err.to_string())?;
+    let mut app_state = app_state.lock().await;
     if let Some(path) = path {
         info!("Replacing Custom Model");
         app_state
@@ -389,27 +389,27 @@ pub async fn get_system_info() -> SystemInfo {
     }
 }
 
-#[tauri::command]
-#[specta::specta]
-pub async fn transcribe_with_ct2rs(
-    app_state: State<'_, AppState>,
-    // app_handle: AppHandle,
-    audio_data: Vec<u8>,
-) -> Result<(String, f64), String> {
-    use ct2rs::Whisper;
-    use tauri::Manager;
-    let app_state = app_state.lock().map_err(|err| err.to_string())?;
-    let whisper = app_state.get_model_ctrs();
-    let samples = crate::mutter::decode(audio_data).map_err(|err| err.to_string())?;
-    let st = std::time::Instant::now();
-    let res = whisper
-        .generate(&samples, Some("en"), false, &Default::default())
-        .map_err(|err| err.to_string())?;
-    Ok((
-        res.join(" |:==:| "),
-        std::time::Instant::now().duration_since(st).as_secs_f64(),
-    ))
-}
+// #[tauri::command]
+// #[specta::specta]
+// pub async fn transcribe_with_ct2rs(
+//     app_state: State<'_, AppState>,
+//     // app_handle: AppHandle,
+//     audio_data: Vec<u8>,
+// ) -> Result<(String, f64), String> {
+//     use ct2rs::Whisper;
+//     use tauri::Manager;
+//     let app_state = app_state.lock().map_err(|err| err.to_string())?;
+//     let whisper = app_state.get_model_ctrs();
+//     let samples = crate::mutter::decode(audio_data).map_err(|err| err.to_string())?;
+//     let st = std::time::Instant::now();
+//     let res = whisper
+//         .generate(&samples, Some("en"), false, &Default::default())
+//         .map_err(|err| err.to_string())?;
+//     Ok((
+//         res.join(" |:==:| "),
+//         std::time::Instant::now().duration_since(st).as_secs_f64(),
+//     ))
+// }
 
 #[tauri::command]
 #[specta::specta]
@@ -499,12 +499,12 @@ pub async fn transcribe_with_kalosm(
     let mut full_text = String::new();
     let mut elapsed = 0.0;
     while let Some(segment) = transcribe.next().await {
-        elapsed += segment.duration();
+        elapsed += segment.elapsed_time().as_secs_f64();
         full_text.push_str(segment.text());
         debug!(
-            "Additional Segment Info: Confidence={}, Elapsed={:?}, NS_Prob={}, Progress={}, Remaining={:?}, Range={:?}, Start={}",
+            "Additional Segment Info: Confidence={}, Duration={:?}, NS_Prob={}, Progress={}, Remaining={:?}, Range={:?}, Start={}",
             segment.confidence(),
-            segment.elapsed_time(),
+            segment.duration(),
             segment.probability_of_no_speech(),
             segment.progress(),
             segment.remaining_time(),
@@ -514,6 +514,88 @@ pub async fn transcribe_with_kalosm(
     }
     debug!("Finished Kalosm with {}", st.elapsed().as_secs_f64());
     Ok((full_text, elapsed))
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn transcribe_whisper_run_each(
+    app_state: State<'_, AppState>,
+    app_handle: AppHandle,
+    audio_data: Vec<u8>,
+) -> Result<[(String, f64, f64); 4], String> {
+    debug!("Running multiple models to test speed");
+    let model_dir_path_buf = tauri::Manager::path(&app_handle)
+        .app_local_data_dir()
+        .map_err(|err| err.to_string())?;
+    debug!("Top level model path dir: {model_dir_path_buf:?}");
+    let mut app_state = app_state.lock().await;
+    debug!(
+        "Main Whisper model path dir: {:?}",
+        model_dir_path_buf.join("models")
+    );
+    let mut result = [
+        (String::new(), 0.0, 0.0),
+        (String::new(), 0.0, 0.0),
+        (String::new(), 0.0, 0.0),
+        (String::new(), 0.0, 0.0),
+    ];
+    // Whisper.cpp
+    {
+        debug!("Load Whisper-rs model");
+        let (model, loading) = app_state
+            .get_and_load_model_from(
+                crate::types::ModelType::WhisperCPP,
+                model_dir_path_buf.join("whisper-cpp-model.bin"),
+            )
+            .await?;
+        debug!("Loading Time for Whisper.cpp: {loading}");
+        let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
+        result[0] = (text, loading, processing);
+        app_state.unload_model()?;
+    }
+    // CTranslate2
+    {
+        debug!("Load CT2-rs model");
+        let (model, loading) = app_state
+            .get_and_load_model_from(
+                crate::types::ModelType::CT2RS,
+                model_dir_path_buf.join("ct2rs"),
+            )
+            .await?;
+        debug!("Loading Time for CT2RS: {loading}");
+        let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
+        result[1] = (text, loading, processing);
+        app_state.unload_model()?;
+    }
+    // Sherpa-ONNX
+    {
+        debug!("Load sherpa-onnx-rs model");
+        let (model, loading) = app_state
+            .get_and_load_model_from(
+                crate::types::ModelType::SherpaONNX,
+                model_dir_path_buf.join("sherpa-onnx"),
+            )
+            .await?;
+        debug!("Loading Time for Sherpa-ONNX: {loading}");
+        let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
+        result[2] = (text, loading, processing);
+        app_state.unload_model()?;
+    }
+    // Kalosm (Candle)
+    {
+        debug!("Load kalosm model");
+        let (model, loading) = app_state
+            .get_and_load_model_from(
+                crate::types::ModelType::Candle,
+                model_dir_path_buf.join("kalosm"),
+            )
+            .await?;
+        debug!("Loading Time for Kalosm: {loading}");
+        let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
+        result[3] = (text, loading, processing);
+        app_state.unload_model()?;
+    }
+    Ok(result)
 }
 
 /// Gets all collected commands for Super Mouse AI application to be used by builder
@@ -529,8 +611,9 @@ pub fn get_collected_commands() -> Commands<Wry> {
         write_text,
         update_model,
         get_system_info,
-        transcribe_with_ct2rs,
+        // transcribe_with_ct2rs,
         transcribe_with_sherpa,
-        transcribe_with_kalosm
+        transcribe_with_kalosm,
+        transcribe_whisper_run_each
     ]
 }

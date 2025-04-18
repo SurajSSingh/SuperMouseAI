@@ -101,14 +101,6 @@ async updateModel(path: string | null, useGpu: boolean | null) : Promise<Result<
 async getSystemInfo() : Promise<SystemInfo> {
     return await TAURI_INVOKE("get_system_info");
 },
-async transcribeWithCt2rs(audioData: number[]) : Promise<Result<[string, number], string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("transcribe_with_ct2rs", { audioData }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
 async transcribeWithSherpa(audioData: number[]) : Promise<Result<[string, number], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("transcribe_with_sherpa", { audioData }) };
@@ -120,6 +112,14 @@ async transcribeWithSherpa(audioData: number[]) : Promise<Result<[string, number
 async transcribeWithKalosm(audioData: number[]) : Promise<Result<[string, number], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("transcribe_with_kalosm", { audioData }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async transcribeWhisperRunEach(audioData: number[]) : Promise<Result<[([string, number, number]), ([string, number, number]), ([string, number, number]), ([string, number, number])], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("transcribe_whisper_run_each", { audioData }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };

@@ -27,24 +27,28 @@
                     `Call command to transcribe audio and then process text.`,
                 );
                 const audio_bytes = await blobChunksToBytes(workingChunks);
-                let result = await commands.transcribeWithPostProcess(
+                let result = await commands.transcribeWhisperRunEach(
                     // @ts-ignore Uint8Array should be number[]-like
                     audio_bytes,
-                    {
-                        threads:
-                            configStore.threads.value > 0
-                                ? configStore.threads.value
-                                : null,
-                        initial_prompt: configStore.initialPrompt.value,
-                        patience: configStore.patience.value,
-                        include_callback: false,
-                    },
-                    {
-                        removed_words: configStore.ignoredWordsList,
-                        replace_inter_sentence_newlines:
-                            configStore.interNLRemove.value,
-                    },
                 );
+                // let result = await commands.transcribeWithPostProcess(
+                //     // @ts-ignore Uint8Array should be number[]-like
+                //     audio_bytes,
+                //     {
+                //         threads:
+                //             configStore.threads.value > 0
+                //                 ? configStore.threads.value
+                //                 : null,
+                //         initial_prompt: configStore.initialPrompt.value,
+                //         patience: configStore.patience.value,
+                //         include_callback: false,
+                //     },
+                //     {
+                //         removed_words: configStore.ignoredWordsList,
+                //         replace_inter_sentence_newlines:
+                //             configStore.interNLRemove.value,
+                //     },
+                // );
                 debug(`Finish `);
                 if (result.status === "error") {
                     onError?.(
@@ -52,15 +56,41 @@
                     );
                     return;
                 }
+                console.dir(result);
+                result.data.forEach(([text, loading, processing], i) => {
+                    let header;
+                    switch (i) {
+                        case 0:
+                            header = "Whisper-rs";
+                            break;
+                        case 1:
+                            header = "CTranslate2-rs";
+                            break;
+                        case 2:
+                            header = "Sherpa-ONNX-rs";
+                            break;
+                        case 3:
+                            header = "Kalosm";
+                            break;
+
+                        default:
+                            header = `Model #{i+1}`;
+                            break;
+                    }
+                    console.log(
+                        `${header}: l=${loading.toFixed(3)} + p=${processing.toFixed(3)} sec => t=${(loading + processing).toFixed(2)}`,
+                    );
+                    console.log(text);
+                });
                 // @ts-ignore Uint8Array should be number[]-like
-                const ress = await commands.transcribeWithKalosm(audio_bytes);
-                if (ress.status === "ok") {
-                    console.log("Processing time: ", ress.data[1]);
-                    console.log(ress.data[0]);
-                } else {
-                    console.error(ress.error);
-                }
-                configStore.addTranscription(result.data[0], result.data[1]);
+                // const ress = await commands.transcribeWithKalosm(audio_bytes);
+                // if (ress.status === "ok") {
+                //     console.log("Processing time: ", ress.data[1]);
+                //     console.log(ress.data[0]);
+                // } else {
+                //     console.error(ress.error);
+                // }
+                // configStore.addTranscription(result.data[0], result.data[1]);
             }
             onFinishProcessing?.(configStore.currentTranscript);
         } catch (err) {

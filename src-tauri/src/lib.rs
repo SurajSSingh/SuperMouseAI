@@ -180,30 +180,13 @@ fn setup_app(app: &App, bindings_builder: &Builder) -> Result<(), Box<dyn std::e
     add_desktop_plugins(app)?;
     trace!("Start resolving resource model path");
     let default_model_path = resolve_model_path(app)?;
-    trace!("Converted model path");
-    let model = Model::new(&default_model_path)?;
     trace!("Created new model");
     debug!("Start loading sound paths");
     let sound_map = create_sound_map(app)?;
     debug!("Finished creating sound map");
-    let mut model_path_buf = app
-        .path()
-        .app_local_data_dir()
-        .map_err(|err| err.to_string())?;
-    model_path_buf.push("ct2rs");
-    // model_path_buf.push("model.bin");
-    debug!("Found model: {}", model_path_buf.exists());
-    if !model_path_buf.exists() {
-        return Err("Model not found at path".to_string().into());
-    }
-    let model_path = model_path_buf
-        .into_os_string()
-        .into_string()
-        .map_err(|err| format!("Unconverted: {err:?}"))?;
-    let whisper =
-        ct2rs::Whisper::new(model_path, Default::default()).map_err(|err| err.to_string())?;
-    app.manage(std::sync::Mutex::new(InnerAppState::new(
-        model, whisper, sound_map,
+    app.manage(tauri::async_runtime::Mutex::new(InnerAppState::new(
+        PathBuf::from(default_model_path),
+        sound_map,
     )));
     trace!("Created initial app state");
     debug!("Setup mouse click listener");
