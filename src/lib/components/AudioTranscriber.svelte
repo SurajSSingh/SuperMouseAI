@@ -26,9 +26,10 @@
                 debug(
                     `Call command to transcribe audio and then process text.`,
                 );
+                const audio_bytes = await blobChunksToBytes(workingChunks);
                 let result = await commands.transcribeWithPostProcess(
                     // @ts-ignore Uint8Array should be number[]-like
-                    await blobChunksToBytes(workingChunks),
+                    audio_bytes,
                     {
                         threads:
                             configStore.threads.value > 0
@@ -50,6 +51,14 @@
                         `An error occured while transcribing/processing data: ${result.error}`,
                     );
                     return;
+                }
+                // @ts-ignore Uint8Array should be number[]-like
+                const ress = await commands.transcribeWithCt2rs(audio_bytes);
+                if (ress.status === "ok") {
+                    console.log("Processing time: ", ress.data[1]);
+                    console.log(ress.data[0]);
+                } else {
+                    console.error(ress.error);
                 }
                 configStore.addTranscription(result.data[0], result.data[1]);
             }

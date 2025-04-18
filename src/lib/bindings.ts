@@ -100,6 +100,14 @@ async updateModel(path: string | null, useGpu: boolean | null) : Promise<Result<
  */
 async getSystemInfo() : Promise<SystemInfo> {
     return await TAURI_INVOKE("get_system_info");
+},
+async transcribeWithCt2rs(audioData: number[]) : Promise<Result<[string, number], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("transcribe_with_ct2rs", { audioData }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 

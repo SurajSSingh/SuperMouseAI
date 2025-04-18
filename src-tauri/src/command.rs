@@ -389,6 +389,28 @@ pub async fn get_system_info() -> SystemInfo {
     }
 }
 
+#[tauri::command]
+#[specta::specta]
+pub async fn transcribe_with_ct2rs(
+    app_state: State<'_, AppState>,
+    // app_handle: AppHandle,
+    audio_data: Vec<u8>,
+) -> Result<(String, f64), String> {
+    use ct2rs::Whisper;
+    use tauri::Manager;
+    let app_state = app_state.lock().map_err(|err| err.to_string())?;
+    let whisper = app_state.get_model_ctrs();
+    let samples = crate::mutter::decode(audio_data).map_err(|err| err.to_string())?;
+    let st = std::time::Instant::now();
+    let res = whisper
+        .generate(&samples, Some("en"), false, &Default::default())
+        .map_err(|err| err.to_string())?;
+    Ok((
+        res.join(" |:==:| "),
+        std::time::Instant::now().duration_since(st).as_secs_f64(),
+    ))
+}
+
 /// Gets all collected commands for Super Mouse AI application to be used by builder
 #[must_use]
 pub fn get_collected_commands() -> Commands<Wry> {
@@ -401,6 +423,7 @@ pub fn get_collected_commands() -> Commands<Wry> {
         set_window_top,
         write_text,
         update_model,
-        get_system_info
+        get_system_info,
+        transcribe_with_ct2rs
     ]
 }

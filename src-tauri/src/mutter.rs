@@ -2,7 +2,11 @@
 //! <https://github.com/sigaloid/mutter>
 //!
 //! Used under [MIT OR Apache-2.0 License](https://github.com/sigaloid/mutter/blob/main/Cargo.toml#L5C1-L6C1)
-use std::time::Instant;
+use std::{
+    error::Error,
+    fmt::{Display, Write},
+    time::Instant,
+};
 
 use crate::transcript::{Transcript, Utterance};
 use log::{debug, error, trace};
@@ -292,6 +296,20 @@ pub enum ModelError {
     /// [`rodio::decoder::DecoderError`]. Error decoding audio.
     DecodingError(rodio::decoder::DecoderError),
 }
+
+impl Display for ModelError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "Model Error: {}",
+            match self {
+                ModelError::WhisperError(whisper_error) => whisper_error.to_string(),
+                ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
+            }
+        ))
+    }
+}
+
+impl Error for ModelError {}
 
 /// Decode a byte array of audio into a float array
 ///

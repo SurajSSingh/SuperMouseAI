@@ -19,20 +19,26 @@ pub struct ModelHolder {
 /// This holds all data that is expected to
 /// persist throughout the app's runtime.
 pub struct InnerAppState {
-    pub(crate) model: ModelHolder,
+    pub(crate) model_wcpp: ModelHolder,
+    pub(crate) model_ctrs: ct2rs::Whisper,
     pub(crate) sound_map: HashMap<String, PathBuf>,
 }
 
 impl InnerAppState {
-    pub const fn new(model: Model, sound_map: HashMap<String, PathBuf>) -> Self {
+    pub fn new(
+        model: Model,
+        ct2rs_model: ct2rs::Whisper,
+        sound_map: HashMap<String, PathBuf>,
+    ) -> Self {
         // Load model into memory by evaluating short silence
         // FIXME: Need to do this in another thread, otherwise UI freezes
         // let _ = model.transcribe_pcm_s16le(&[0.0; 20_000], false, false, None, None, None);
         Self {
-            model: ModelHolder {
+            model_wcpp: ModelHolder {
                 default: model,
                 custom: None,
             },
+            model_ctrs: ct2rs_model,
             sound_map,
         }
     }
@@ -56,25 +62,29 @@ impl InnerAppState {
         params.use_gpu(use_gpu);
         let new_model = Model::new_with_params(&path, params)?;
         // _ will drop old model
-        let _ = self.model.custom.replace((new_model, path));
+        let _ = self.model_wcpp.custom.replace((new_model, path));
         Ok(())
     }
 
     /// Removes a custom model
     pub fn remove_custom_model(&mut self) {
         // _ will drop old model
-        let _ = self.model.custom.take();
+        let _ = self.model_wcpp.custom.take();
     }
 
     pub fn get_model(&self) -> &Model {
-        self.model
+        self.model_wcpp
             .custom
             .as_ref()
-            .map_or(&self.model.default, |holder| &holder.0)
+            .map_or(&self.model_wcpp.default, |holder| &holder.0)
+    }
+
+    pub fn get_model_ctrs(&self) -> &ct2rs::Whisper {
+        &self.model_ctrs
     }
 
     pub fn get_model_info(&self) -> String {
-        match &self.model {
+        match &self.model_wcpp {
             ModelHolder { custom: None, .. } => "Default Model".to_string(),
             ModelHolder {
                 custom: Some((_, path)),

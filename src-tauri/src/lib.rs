@@ -186,7 +186,25 @@ fn setup_app(app: &App, bindings_builder: &Builder) -> Result<(), Box<dyn std::e
     debug!("Start loading sound paths");
     let sound_map = create_sound_map(app)?;
     debug!("Finished creating sound map");
-    app.manage(std::sync::Mutex::new(InnerAppState::new(model, sound_map)));
+    let mut model_path_buf = app
+        .path()
+        .app_local_data_dir()
+        .map_err(|err| err.to_string())?;
+    model_path_buf.push("ct2rs");
+    // model_path_buf.push("model.bin");
+    debug!("Found model: {}", model_path_buf.exists());
+    if !model_path_buf.exists() {
+        return Err("Model not found at path".to_string().into());
+    }
+    let model_path = model_path_buf
+        .into_os_string()
+        .into_string()
+        .map_err(|err| format!("Unconverted: {err:?}"))?;
+    let whisper =
+        ct2rs::Whisper::new(model_path, Default::default()).map_err(|err| err.to_string())?;
+    app.manage(std::sync::Mutex::new(InnerAppState::new(
+        model, whisper, sound_map,
+    )));
     trace!("Created initial app state");
     debug!("Setup mouse click listener");
     let _mouse_click_listener_handler = listen_for_mouse_click(app.handle().clone())?;
