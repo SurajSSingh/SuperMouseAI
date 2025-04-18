@@ -411,6 +411,63 @@ pub async fn transcribe_with_ct2rs(
     ))
 }
 
+#[tauri::command]
+#[specta::specta]
+pub async fn transcribe_with_sherpa(
+    // app_state: State<'_, AppState>,
+    app_handle: AppHandle,
+    audio_data: Vec<u8>,
+) -> Result<(String, f64), String> {
+    use sherpa_rs::whisper::{WhisperConfig, WhisperRecognizer};
+    use tauri::Manager;
+    let mut model_path_buf = app_handle
+        .path()
+        .app_local_data_dir()
+        .map_err(|err| err.to_string())?;
+    model_path_buf.push("sherpa-onnx-whisper-tiny");
+    debug!("Found dir: {}", model_path_buf.exists());
+    if !model_path_buf.exists() {
+        return Err("Model not found at path".to_string().into());
+    }
+    let config = WhisperConfig {
+        decoder: model_path_buf
+            .clone()
+            .join("tiny-decoder.onnx")
+            .to_str()
+            .ok_or("Decoder not found".to_string())?
+            .to_string(),
+        encoder: model_path_buf
+            .clone()
+            .join("tiny-encoder.onnx")
+            .to_str()
+            .ok_or("Encoder not found".to_string())?
+            .to_string(),
+        tokens: model_path_buf
+            .join("tiny-tokens.txt")
+            .to_str()
+            .ok_or("Tokens not found".to_string())?
+            .to_string(),
+        language: "en".into(),
+        bpe_vocab: None,
+        num_threads: Some(1),
+        tail_paddings: None,
+        provider: None,
+        debug: false,
+    };
+    let mut whisper = WhisperRecognizer::new(config).map_err(|err| err.to_string())?;
+    let decoded = crate::mutter::decode(audio_data).map_err(|err| err.to_string())?;
+    let samples = decoded[..].chunks(16000 * 10).collect::<Vec<_>>();
+    let st = std::time::Instant::now();
+    let mut full_text = String::new();
+    for sample in samples {
+        let res = whisper.transcribe(16000, &sample);
+        debug!("{:?}", res.timestamps);
+        debug!("{:?}", res.tokens);
+        full_text.push_str(&res.text);
+    }
+    Ok((full_text, st.elapsed().as_secs_f64()))
+}
+
 /// Gets all collected commands for Super Mouse AI application to be used by builder
 #[must_use]
 pub fn get_collected_commands() -> Commands<Wry> {
@@ -424,6 +481,7 @@ pub fn get_collected_commands() -> Commands<Wry> {
         write_text,
         update_model,
         get_system_info,
-        transcribe_with_ct2rs
+        transcribe_with_ct2rs,
+        transcribe_with_sherpa
     ]
 }

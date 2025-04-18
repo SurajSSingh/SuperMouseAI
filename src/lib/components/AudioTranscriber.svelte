@@ -53,7 +53,7 @@
                     return;
                 }
                 // @ts-ignore Uint8Array should be number[]-like
-                const ress = await commands.transcribeWithCt2rs(audio_bytes);
+                const ress = await commands.transcribeWithSherpa(audio_bytes);
                 if (ress.status === "ok") {
                     console.log("Processing time: ", ress.data[1]);
                     console.log(ress.data[0]);

@@ -108,6 +108,14 @@ async transcribeWithCt2rs(audioData: number[]) : Promise<Result<[string, number]
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async transcribeWithSherpa(audioData: number[]) : Promise<Result<[string, number], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("transcribe_with_sherpa", { audioData }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
