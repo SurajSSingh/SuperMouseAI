@@ -116,6 +116,14 @@ async transcribeWithSherpa(audioData: number[]) : Promise<Result<[string, number
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async transcribeWithKalosm(audioData: number[]) : Promise<Result<[string, number], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("transcribe_with_kalosm", { audioData }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 

@@ -468,6 +468,54 @@ pub async fn transcribe_with_sherpa(
     Ok((full_text, st.elapsed().as_secs_f64()))
 }
 
+#[tauri::command]
+#[specta::specta]
+pub async fn transcribe_with_kalosm(
+    // app_state: State<'_, AppState>,
+    app_handle: AppHandle,
+    audio_data: Vec<u8>,
+) -> Result<(String, f64), String> {
+    use kalosm::sound::*;
+    use tauri::Manager;
+    let mut model_path_buf = app_handle
+        .path()
+        .app_local_data_dir()
+        .map_err(|err| err.to_string())?;
+    model_path_buf.push("kalosm");
+    debug!("Found dir: {}", model_path_buf.exists());
+    if !model_path_buf.exists() {
+        return Err("Model not found at path".to_string().into());
+    }
+    let whisper = Whisper::builder()
+        .with_cache(kalosm_common::Cache::new(model_path_buf))
+        .with_source(WhisperSource::QuantizedTinyEn)
+        .build()
+        .await
+        .map_err(|err| err.to_string())?;
+    let decoded = crate::mutter::decode(audio_data).map_err(|err| err.to_string())?;
+    let samples = kalosm::sound::rodio::buffer::SamplesBuffer::new(1, 16000, decoded);
+    let st = std::time::Instant::now();
+    let mut transcribe = whisper.transcribe(samples);
+    let mut full_text = String::new();
+    let mut elapsed = 0.0;
+    while let Some(segment) = transcribe.next().await {
+        elapsed += segment.duration();
+        full_text.push_str(segment.text());
+        debug!(
+            "Additional Segment Info: Confidence={}, Elapsed={:?}, NS_Prob={}, Progress={}, Remaining={:?}, Range={:?}, Start={}",
+            segment.confidence(),
+            segment.elapsed_time(),
+            segment.probability_of_no_speech(),
+            segment.progress(),
+            segment.remaining_time(),
+            segment.sample_range(),
+            segment.start()
+        )
+    }
+    debug!("Finished Kalosm with {}", st.elapsed().as_secs_f64());
+    Ok((full_text, elapsed))
+}
+
 /// Gets all collected commands for Super Mouse AI application to be used by builder
 #[must_use]
 pub fn get_collected_commands() -> Commands<Wry> {
@@ -482,6 +530,7 @@ pub fn get_collected_commands() -> Commands<Wry> {
         update_model,
         get_system_info,
         transcribe_with_ct2rs,
-        transcribe_with_sherpa
+        transcribe_with_sherpa,
+        transcribe_with_kalosm
     ]
 }
