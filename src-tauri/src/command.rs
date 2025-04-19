@@ -411,62 +411,62 @@ pub async fn get_system_info() -> SystemInfo {
 //     ))
 // }
 
-#[tauri::command]
-#[specta::specta]
-pub async fn transcribe_with_sherpa(
-    // app_state: State<'_, AppState>,
-    app_handle: AppHandle,
-    audio_data: Vec<u8>,
-) -> Result<(String, f64), String> {
-    use sherpa_rs::whisper::{WhisperConfig, WhisperRecognizer};
-    use tauri::Manager;
-    let mut model_path_buf = app_handle
-        .path()
-        .app_local_data_dir()
-        .map_err(|err| err.to_string())?;
-    model_path_buf.push("sherpa-onnx-whisper-tiny");
-    debug!("Found dir: {}", model_path_buf.exists());
-    if !model_path_buf.exists() {
-        return Err("Model not found at path".to_string().into());
-    }
-    let config = WhisperConfig {
-        decoder: model_path_buf
-            .clone()
-            .join("tiny-decoder.onnx")
-            .to_str()
-            .ok_or("Decoder not found".to_string())?
-            .to_string(),
-        encoder: model_path_buf
-            .clone()
-            .join("tiny-encoder.onnx")
-            .to_str()
-            .ok_or("Encoder not found".to_string())?
-            .to_string(),
-        tokens: model_path_buf
-            .join("tiny-tokens.txt")
-            .to_str()
-            .ok_or("Tokens not found".to_string())?
-            .to_string(),
-        language: "en".into(),
-        bpe_vocab: None,
-        num_threads: Some(1),
-        tail_paddings: None,
-        provider: None,
-        debug: false,
-    };
-    let mut whisper = WhisperRecognizer::new(config).map_err(|err| err.to_string())?;
-    let decoded = crate::mutter::decode(audio_data).map_err(|err| err.to_string())?;
-    let samples = decoded[..].chunks(16000 * 10).collect::<Vec<_>>();
-    let st = std::time::Instant::now();
-    let mut full_text = String::new();
-    for sample in samples {
-        let res = whisper.transcribe(16000, &sample);
-        debug!("{:?}", res.timestamps);
-        debug!("{:?}", res.tokens);
-        full_text.push_str(&res.text);
-    }
-    Ok((full_text, st.elapsed().as_secs_f64()))
-}
+// #[tauri::command]
+// #[specta::specta]
+// pub async fn transcribe_with_sherpa(
+//     // app_state: State<'_, AppState>,
+//     app_handle: AppHandle,
+//     audio_data: Vec<u8>,
+// ) -> Result<(String, f64), String> {
+//     use sherpa_rs::whisper::{WhisperConfig, WhisperRecognizer};
+//     use tauri::Manager;
+//     let mut model_path_buf = app_handle
+//         .path()
+//         .app_local_data_dir()
+//         .map_err(|err| err.to_string())?;
+//     model_path_buf.push("sherpa-onnx-whisper-tiny");
+//     debug!("Found dir: {}", model_path_buf.exists());
+//     if !model_path_buf.exists() {
+//         return Err("Model not found at path".to_string().into());
+//     }
+//     let config = WhisperConfig {
+//         decoder: model_path_buf
+//             .clone()
+//             .join("tiny-decoder.onnx")
+//             .to_str()
+//             .ok_or("Decoder not found".to_string())?
+//             .to_string(),
+//         encoder: model_path_buf
+//             .clone()
+//             .join("tiny-encoder.onnx")
+//             .to_str()
+//             .ok_or("Encoder not found".to_string())?
+//             .to_string(),
+//         tokens: model_path_buf
+//             .join("tiny-tokens.txt")
+//             .to_str()
+//             .ok_or("Tokens not found".to_string())?
+//             .to_string(),
+//         language: "en".into(),
+//         bpe_vocab: None,
+//         num_threads: Some(1),
+//         tail_paddings: None,
+//         provider: None,
+//         debug: false,
+//     };
+//     let mut whisper = WhisperRecognizer::new(config).map_err(|err| err.to_string())?;
+//     let decoded = crate::mutter::decode(audio_data).map_err(|err| err.to_string())?;
+//     let samples = decoded[..].chunks(16000 * 10).collect::<Vec<_>>();
+//     let st = std::time::Instant::now();
+//     let mut full_text = String::new();
+//     for sample in samples {
+//         let res = whisper.transcribe(16000, &sample);
+//         debug!("{:?}", res.timestamps);
+//         debug!("{:?}", res.tokens);
+//         full_text.push_str(&res.text);
+//     }
+//     Ok((full_text, st.elapsed().as_secs_f64()))
+// }
 
 #[tauri::command]
 #[specta::specta]
@@ -568,19 +568,19 @@ pub async fn transcribe_whisper_run_each(
         app_state.unload_model()?;
     }
     // Sherpa-ONNX
-    {
-        debug!("Load sherpa-onnx-rs model");
-        let (model, loading) = app_state
-            .get_and_load_model_from(
-                crate::types::ModelType::SherpaONNX,
-                model_dir_path_buf.join("sherpa-onnx"),
-            )
-            .await?;
-        debug!("Loading Time for Sherpa-ONNX: {loading}");
-        let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
-        result[2] = (text, loading, processing);
-        app_state.unload_model()?;
-    }
+    // {
+    //     debug!("Load sherpa-onnx-rs model");
+    //     let (model, loading) = app_state
+    //         .get_and_load_model_from(
+    //             crate::types::ModelType::SherpaONNX,
+    //             model_dir_path_buf.join("sherpa-onnx"),
+    //         )
+    //         .await?;
+    //     debug!("Loading Time for Sherpa-ONNX: {loading}");
+    //     let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
+    //     result[2] = (text, loading, processing);
+    //     app_state.unload_model()?;
+    // }
     // Kalosm (Candle)
     {
         debug!("Load kalosm model");
@@ -612,7 +612,7 @@ pub fn get_collected_commands() -> Commands<Wry> {
         update_model,
         get_system_info,
         // transcribe_with_ct2rs,
-        transcribe_with_sherpa,
+        // transcribe_with_sherpa,
         transcribe_with_kalosm,
         transcribe_whisper_run_each
     ]

@@ -53,7 +53,7 @@ tauri-plugin-http = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-upload = "2"
-sherpa-rs = { version = "0.6.6", default-features = false, features = [] }
+# sherpa-rs = { version = "0.6.6", default-features = false, features = [] }
 kalosm-common = "0.4.0"
 
 [target.'cfg(target_os = "windows")'.dependencies]

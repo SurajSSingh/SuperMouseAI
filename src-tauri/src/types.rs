@@ -6,7 +6,7 @@ use kalosm::sound::Whisper as KalosmWhisper;
 use log::{debug, warn};
 use mouce::common::MouseButton;
 use serde::{Deserialize, Serialize};
-use sherpa_rs::whisper::{WhisperConfig, WhisperRecognizer};
+// use sherpa_rs::whisper::{WhisperConfig, WhisperRecognizer};
 use specta::Type;
 use std::{
     collections::HashMap,
@@ -27,7 +27,7 @@ pub struct ModelHolder {
 pub enum ModelType {
     WhisperCPP,
     CT2RS,
-    SherpaONNX,
+    // SherpaONNX,
     Candle,
     Unknown,
 }
@@ -41,7 +41,7 @@ pub enum WhisperModel {
     Unloaded(ModelType, Box<Path>),
     WhisperCPP(Model, Box<Path>),
     CT2RS(Box<CT2RSWhisper>, Box<Path>),
-    SherpaONNX(WhisperRecognizer, Box<Path>),
+    // SherpaONNX(WhisperRecognizer, Box<Path>),
     Candle(KalosmWhisper, Box<Path>),
 }
 
@@ -52,7 +52,7 @@ impl WhisperModel {
             WhisperModel::Unloaded(_, path)
             | WhisperModel::WhisperCPP(_, path)
             | WhisperModel::CT2RS(_, path)
-            | WhisperModel::SherpaONNX(_, path)
+            // | WhisperModel::SherpaONNX(_, path)
             | WhisperModel::Candle(_, path) => path.as_ref(),
         }
     }
@@ -70,7 +70,7 @@ impl WhisperModel {
             WhisperModel::Unloaded(model, _) => WhisperModel::Unloaded(model, new_path),
             WhisperModel::WhisperCPP(model, _) => WhisperModel::WhisperCPP(model, new_path),
             WhisperModel::CT2RS(model, _) => WhisperModel::CT2RS(model, new_path),
-            WhisperModel::SherpaONNX(model, _) => WhisperModel::SherpaONNX(model, new_path),
+            // WhisperModel::SherpaONNX(model, _) => WhisperModel::SherpaONNX(model, new_path),
             WhisperModel::Candle(model, _) => WhisperModel::Candle(model, new_path),
             other => other,
         })
@@ -94,7 +94,7 @@ impl WhisperModel {
         match self {
             WhisperModel::WhisperCPP(_, _) => ModelType::WhisperCPP,
             WhisperModel::CT2RS(_, _) => ModelType::CT2RS,
-            WhisperModel::SherpaONNX(_, _) => ModelType::SherpaONNX,
+            // WhisperModel::SherpaONNX(_, _) => ModelType::SherpaONNX,
             WhisperModel::Candle(_, _) => ModelType::Candle,
             _ => ModelType::Unknown,
         }
@@ -129,36 +129,36 @@ impl WhisperModel {
                         ),
                         start_time.elapsed().as_secs_f64(),
                     ),
-                    ModelType::SherpaONNX => (
-                        Self::SherpaONNX(
-                            WhisperRecognizer::new(WhisperConfig {
-                                decoder: path
-                                    .join("tiny-decoder.onnx")
-                                    .to_str()
-                                    .ok_or("Decoder not found".to_string())?
-                                    .to_string(),
-                                encoder: path
-                                    .join("tiny-encoder.onnx")
-                                    .to_str()
-                                    .ok_or("Encoder not found".to_string())?
-                                    .to_string(),
-                                tokens: path
-                                    .join("tiny-tokens.txt")
-                                    .to_str()
-                                    .ok_or("Tokens not found".to_string())?
-                                    .to_string(),
-                                language: "en".into(),
-                                bpe_vocab: None,
-                                num_threads: Some(1),
-                                tail_paddings: None,
-                                provider: None,
-                                debug: false,
-                            })
-                            .map_err(|err| err.to_string())?,
-                            path,
-                        ),
-                        start_time.elapsed().as_secs_f64(),
-                    ),
+                    // ModelType::SherpaONNX => (
+                    //     Self::SherpaONNX(
+                    //         WhisperRecognizer::new(WhisperConfig {
+                    //             decoder: path
+                    //                 .join("tiny-decoder.onnx")
+                    //                 .to_str()
+                    //                 .ok_or("Decoder not found".to_string())?
+                    //                 .to_string(),
+                    //             encoder: path
+                    //                 .join("tiny-encoder.onnx")
+                    //                 .to_str()
+                    //                 .ok_or("Encoder not found".to_string())?
+                    //                 .to_string(),
+                    //             tokens: path
+                    //                 .join("tiny-tokens.txt")
+                    //                 .to_str()
+                    //                 .ok_or("Tokens not found".to_string())?
+                    //                 .to_string(),
+                    //             language: "en".into(),
+                    //             bpe_vocab: None,
+                    //             num_threads: Some(1),
+                    //             tail_paddings: None,
+                    //             provider: None,
+                    //             debug: false,
+                    //         })
+                    //         .map_err(|err| err.to_string())?,
+                    //         path,
+                    //     ),
+                    //     start_time.elapsed().as_secs_f64(),
+                    // ),
                     ModelType::Candle => (
                         Self::Candle(
                             KalosmWhisper::builder()
@@ -185,7 +185,7 @@ impl WhisperModel {
             WhisperModel::Unloaded(_, path)
             | WhisperModel::WhisperCPP(_, path)
             | WhisperModel::CT2RS(_, path)
-            | WhisperModel::SherpaONNX(_, path)
+            // | WhisperModel::SherpaONNX(_, path)
             | WhisperModel::Candle(_, path) => path,
         }
     }
@@ -194,7 +194,7 @@ impl WhisperModel {
         match self {
             model @ WhisperModel::WhisperCPP(_, _)
             | model @ WhisperModel::CT2RS(_, _)
-            | model @ WhisperModel::SherpaONNX(_, _)
+            // | model @ WhisperModel::SherpaONNX(_, _)
             | model @ WhisperModel::Candle(_, _) => Ok(Self::Unloaded(
                 model.get_model_type(),
                 model.unload_and_get_path(),
@@ -258,24 +258,24 @@ impl WhisperModel {
                     .join(sep);
                 Ok((full_text, start_time.elapsed().as_secs_f64()))
             }
-            WhisperModel::SherpaONNX(whisper_recognizer, _) => {
-                let decoded = decode(audio_data).map_err(|err| err.to_string())?;
-                let samples = decoded[..].chunks(16000 * 20).collect::<Vec<_>>();
-                let start_time = std::time::Instant::now();
-                let full_text = samples
-                    .into_iter()
-                    .map(|sample| whisper_recognizer.transcribe(16000, &sample))
-                    .fold(String::new(), |mut text, segment| {
-                        debug!(
-                            "Additional Segment Info: Lang={}, Timestamps={:?}, Tokens={:?}",
-                            segment.lang, segment.timestamps, segment.tokens
-                        );
-                        text.push_str(&segment.text);
-                        text.push_str(sep);
-                        text
-                    });
-                Ok((full_text, start_time.elapsed().as_secs_f64()))
-            }
+            // WhisperModel::SherpaONNX(whisper_recognizer, _) => {
+            //     let decoded = decode(audio_data).map_err(|err| err.to_string())?;
+            //     let samples = decoded[..].chunks(16000 * 20).collect::<Vec<_>>();
+            //     let start_time = std::time::Instant::now();
+            //     let full_text = samples
+            //         .into_iter()
+            //         .map(|sample| whisper_recognizer.transcribe(16000, &sample))
+            //         .fold(String::new(), |mut text, segment| {
+            //             debug!(
+            //                 "Additional Segment Info: Lang={}, Timestamps={:?}, Tokens={:?}",
+            //                 segment.lang, segment.timestamps, segment.tokens
+            //             );
+            //             text.push_str(&segment.text);
+            //             text.push_str(sep);
+            //             text
+            //         });
+            //     Ok((full_text, start_time.elapsed().as_secs_f64()))
+            // }
             WhisperModel::Candle(whisper, _) => {
                 let decoded = decode(audio_data).map_err(|err| err.to_string())?;
                 let samples = kalosm::sound::rodio::buffer::SamplesBuffer::new(1, 16000, decoded);
@@ -324,9 +324,9 @@ impl std::fmt::Display for WhisperModel {
             WhisperModel::CT2RS(_, path) => {
                 f.write_fmt(format_args!("CTranslate2 model at `{}`", path.display()))
             }
-            WhisperModel::SherpaONNX(_, path) => {
-                f.write_fmt(format_args!("Sherpa-Onnx model at `{}`", path.display()))
-            }
+            // WhisperModel::SherpaONNX(_, path) => {
+            //     f.write_fmt(format_args!("Sherpa-Onnx model at `{}`", path.display()))
+            // }
             WhisperModel::Candle(_, path) => {
                 f.write_fmt(format_args!("Candle model at `{}`", path.display()))
             }
