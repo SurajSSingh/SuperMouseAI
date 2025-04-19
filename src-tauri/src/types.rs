@@ -1,7 +1,7 @@
 //! Data types and associated functions for those types.
 
 use crate::mutter::{decode, Model};
-use ct2rs::Whisper as CT2RSWhisper;
+// use ct2rs::Whisper as CT2RSWhisper;
 use kalosm::sound::Whisper as KalosmWhisper;
 use log::{debug, warn};
 use mouce::common::MouseButton;
@@ -26,7 +26,7 @@ pub struct ModelHolder {
 /// Which type of ASR model is used
 pub enum ModelType {
     WhisperCPP,
-    CT2RS,
+    // CT2RS,
     // SherpaONNX,
     Candle,
     Unknown,
@@ -40,7 +40,7 @@ pub enum WhisperModel {
     None,
     Unloaded(ModelType, Box<Path>),
     WhisperCPP(Model, Box<Path>),
-    CT2RS(Box<CT2RSWhisper>, Box<Path>),
+    // CT2RS(Box<CT2RSWhisper>, Box<Path>),
     // SherpaONNX(WhisperRecognizer, Box<Path>),
     Candle(KalosmWhisper, Box<Path>),
 }
@@ -51,7 +51,7 @@ impl WhisperModel {
             WhisperModel::None => Path::new("").into(),
             WhisperModel::Unloaded(_, path)
             | WhisperModel::WhisperCPP(_, path)
-            | WhisperModel::CT2RS(_, path)
+            // | WhisperModel::CT2RS(_, path)
             // | WhisperModel::SherpaONNX(_, path)
             | WhisperModel::Candle(_, path) => path.as_ref(),
         }
@@ -69,7 +69,7 @@ impl WhisperModel {
         Ok(match self {
             WhisperModel::Unloaded(model, _) => WhisperModel::Unloaded(model, new_path),
             WhisperModel::WhisperCPP(model, _) => WhisperModel::WhisperCPP(model, new_path),
-            WhisperModel::CT2RS(model, _) => WhisperModel::CT2RS(model, new_path),
+            // WhisperModel::CT2RS(model, _) => WhisperModel::CT2RS(model, new_path),
             // WhisperModel::SherpaONNX(model, _) => WhisperModel::SherpaONNX(model, new_path),
             WhisperModel::Candle(model, _) => WhisperModel::Candle(model, new_path),
             other => other,
@@ -93,7 +93,7 @@ impl WhisperModel {
     pub fn get_model_type(&self) -> ModelType {
         match self {
             WhisperModel::WhisperCPP(_, _) => ModelType::WhisperCPP,
-            WhisperModel::CT2RS(_, _) => ModelType::CT2RS,
+            // WhisperModel::CT2RS(_, _) => ModelType::CT2RS,
             // WhisperModel::SherpaONNX(_, _) => ModelType::SherpaONNX,
             WhisperModel::Candle(_, _) => ModelType::Candle,
             _ => ModelType::Unknown,
@@ -119,16 +119,16 @@ impl WhisperModel {
                         ),
                         start_time.elapsed().as_secs_f64(),
                     ),
-                    ModelType::CT2RS => (
-                        Self::CT2RS(
-                            Box::new(
-                                CT2RSWhisper::new(&path, Default::default())
-                                    .map_err(|err| err.to_string())?,
-                            ),
-                            path,
-                        ),
-                        start_time.elapsed().as_secs_f64(),
-                    ),
+                    // ModelType::CT2RS => (
+                    //     Self::CT2RS(
+                    //         Box::new(
+                    //             CT2RSWhisper::new(&path, Default::default())
+                    //                 .map_err(|err| err.to_string())?,
+                    //         ),
+                    //         path,
+                    //     ),
+                    //     start_time.elapsed().as_secs_f64(),
+                    // ),
                     // ModelType::SherpaONNX => (
                     //     Self::SherpaONNX(
                     //         WhisperRecognizer::new(WhisperConfig {
@@ -184,7 +184,7 @@ impl WhisperModel {
             WhisperModel::None => Path::new("").into(),
             WhisperModel::Unloaded(_, path)
             | WhisperModel::WhisperCPP(_, path)
-            | WhisperModel::CT2RS(_, path)
+            // | WhisperModel::CT2RS(_, path)
             // | WhisperModel::SherpaONNX(_, path)
             | WhisperModel::Candle(_, path) => path,
         }
@@ -193,7 +193,7 @@ impl WhisperModel {
     pub fn unload_model(self) -> Result<Self, String> {
         match self {
             model @ WhisperModel::WhisperCPP(_, _)
-            | model @ WhisperModel::CT2RS(_, _)
+            // | model @ WhisperModel::CT2RS(_, _)
             // | model @ WhisperModel::SherpaONNX(_, _)
             | model @ WhisperModel::Candle(_, _) => Ok(Self::Unloaded(
                 model.get_model_type(),
@@ -249,15 +249,15 @@ impl WhisperModel {
                     transcript.processing_time.as_secs_f64(),
                 ))
             }
-            WhisperModel::CT2RS(whisper, _) => {
-                let samples = decode(audio_data).map_err(|err| err.to_string())?;
-                let start_time = std::time::Instant::now();
-                let full_text = whisper
-                    .generate(&samples, Some("en"), false, &Default::default())
-                    .map_err(|err| err.to_string())?
-                    .join(sep);
-                Ok((full_text, start_time.elapsed().as_secs_f64()))
-            }
+            // WhisperModel::CT2RS(whisper, _) => {
+            //     let samples = decode(audio_data).map_err(|err| err.to_string())?;
+            //     let start_time = std::time::Instant::now();
+            //     let full_text = whisper
+            //         .generate(&samples, Some("en"), false, &Default::default())
+            //         .map_err(|err| err.to_string())?
+            //         .join(sep);
+            //     Ok((full_text, start_time.elapsed().as_secs_f64()))
+            // }
             // WhisperModel::SherpaONNX(whisper_recognizer, _) => {
             //     let decoded = decode(audio_data).map_err(|err| err.to_string())?;
             //     let samples = decoded[..].chunks(16000 * 20).collect::<Vec<_>>();
@@ -321,9 +321,9 @@ impl std::fmt::Display for WhisperModel {
             WhisperModel::WhisperCPP(_, path) => {
                 f.write_fmt(format_args!("WhisperCPP model at `{}`", path.display()))
             }
-            WhisperModel::CT2RS(_, path) => {
-                f.write_fmt(format_args!("CTranslate2 model at `{}`", path.display()))
-            }
+            // WhisperModel::CT2RS(_, path) => {
+            //     f.write_fmt(format_args!("CTranslate2 model at `{}`", path.display()))
+            // }
             // WhisperModel::SherpaONNX(_, path) => {
             //     f.write_fmt(format_args!("Sherpa-Onnx model at `{}`", path.display()))
             // }

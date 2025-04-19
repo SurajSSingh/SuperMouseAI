@@ -554,19 +554,19 @@ pub async fn transcribe_whisper_run_each(
         app_state.unload_model()?;
     }
     // CTranslate2
-    {
-        debug!("Load CT2-rs model");
-        let (model, loading) = app_state
-            .get_and_load_model_from(
-                crate::types::ModelType::CT2RS,
-                model_dir_path_buf.join("ct2rs"),
-            )
-            .await?;
-        debug!("Loading Time for CT2RS: {loading}");
-        let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
-        result[1] = (text, loading, processing);
-        app_state.unload_model()?;
-    }
+    // {
+    //     debug!("Load CT2-rs model");
+    //     let (model, loading) = app_state
+    //         .get_and_load_model_from(
+    //             crate::types::ModelType::CT2RS,
+    //             model_dir_path_buf.join("ct2rs"),
+    //         )
+    //         .await?;
+    //     debug!("Loading Time for CT2RS: {loading}");
+    //     let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
+    //     result[1] = (text, loading, processing);
+    //     app_state.unload_model()?;
+    // }
     // Sherpa-ONNX
     // {
     //     debug!("Load sherpa-onnx-rs model");
