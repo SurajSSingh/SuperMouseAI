@@ -64,7 +64,12 @@ kalosm = { version = "0.4.0", features = ["sound"] }
 
 [target.'cfg(all(target_os = "macos", target_arch="aarch64"))'.dependencies]
 whisper-rs = { version = "0.14.2", features = ["metal", "coreml"] }
-ct2rs = { version = "0.9.7", features = ["whisper", "accelerate"] }
+ct2rs = { version = "0.9.7", features = [
+    "whisper",
+    "accelerate",
+    "flash-attention",
+    "tensor-parallel",
+] }
 kalosm = { version = "0.4.0", features = ["sound", "metal"] }
 
 [target.'cfg(all(target_os = "macos", target_arch="x86_64"))'.dependencies]

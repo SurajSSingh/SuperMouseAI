@@ -57,30 +57,11 @@
                     return;
                 }
                 console.dir(result);
-                result.data.forEach(([text, loading, processing], i) => {
-                    let header;
-                    switch (i) {
-                        case 0:
-                            header = "Whisper-rs";
-                            break;
-                        case 1:
-                            header = "CTranslate2-rs";
-                            break;
-                        case 2:
-                            header = "Sherpa-ONNX-rs";
-                            break;
-                        case 3:
-                            header = "Kalosm";
-                            break;
-
-                        default:
-                            header = `Model #{i+1}`;
-                            break;
-                    }
+                result.data.forEach((d, i) => {
                     console.log(
-                        `${header}: l=${loading.toFixed(3)} + p=${processing.toFixed(3)} sec => t=${(loading + processing).toFixed(2)}`,
+                        `${d.model_name}: l=${d.loading_sec.toFixed(3)} + p=${d.processing_sec.toFixed(3)} sec => t=${(d.loading_sec + d.processing_sec).toFixed(2)} / ${d.memory_usage} GB`,
                     );
-                    console.log(text);
+                    console.log(d.text);
                 });
                 // @ts-ignore Uint8Array should be number[]-like
                 // const ress = await commands.transcribeWithKalosm(audio_bytes);

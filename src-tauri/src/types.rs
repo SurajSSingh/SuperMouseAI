@@ -13,13 +13,7 @@ use std::{
     path::{Path, PathBuf},
     time::Instant,
 };
-use whisper_rs::{WhisperContextParameters, WhisperError};
-
-/// A struct to hold both the default and custom model together, enabling for easy switching
-pub struct ModelHolder {
-    default: Model,
-    custom: Option<(Model, String)>,
-}
+use whisper_rs::WhisperContextParameters;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
@@ -46,6 +40,7 @@ pub enum WhisperModel {
 }
 
 impl WhisperModel {
+    #[allow(unused, reason = "Useful later on")]
     pub fn path(&self) -> &Path {
         match self {
             WhisperModel::None => Path::new("").into(),
@@ -57,6 +52,7 @@ impl WhisperModel {
         }
     }
 
+    #[allow(unused, reason = "Useful later on")]
     pub fn new() -> Self {
         WhisperModel::None
     }
@@ -332,6 +328,17 @@ impl std::fmt::Display for WhisperModel {
             }
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
+pub struct ModelTranscribeData {
+    pub model_name: String,
+    pub text: String,
+    pub memory_usage: f64,
+    // TODO: Figure out how to make GPU send and sync
+    // pub vram_usage: f64,
+    pub loading_sec: f64,
+    pub processing_sec: f64,
 }
 
 /// "Global" state for the application.

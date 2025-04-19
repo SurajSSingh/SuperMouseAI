@@ -101,14 +101,6 @@ async updateModel(path: string | null, useGpu: boolean | null) : Promise<Result<
 async getSystemInfo() : Promise<SystemInfo> {
     return await TAURI_INVOKE("get_system_info");
 },
-async transcribeWithSherpa(audioData: number[]) : Promise<Result<[string, number], string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("transcribe_with_sherpa", { audioData }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
 async transcribeWithKalosm(audioData: number[]) : Promise<Result<[string, number], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("transcribe_with_kalosm", { audioData }) };
@@ -117,7 +109,7 @@ async transcribeWithKalosm(audioData: number[]) : Promise<Result<[string, number
     else return { status: "error", error: e  as any };
 }
 },
-async transcribeWhisperRunEach(audioData: number[]) : Promise<Result<[([string, number, number]), ([string, number, number]), ([string, number, number]), ([string, number, number])], string>> {
+async transcribeWhisperRunEach(audioData: number[]) : Promise<Result<ModelTranscribeData[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("transcribe_whisper_run_each", { audioData }) };
 } catch (e) {
@@ -162,6 +154,7 @@ export type ModKeyEvent = ModKeyPayload
  * Information about modifier key event (pressed or released)
  */
 export type ModKeyPayload = { key: string; is_pressed: boolean }
+export type ModelTranscribeData = { model_name: string; text: string; memory_usage: number; loading_sec: number; processing_sec: number }
 /**
  * Enum representing mouse button type
  * 

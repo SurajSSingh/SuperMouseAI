@@ -12,13 +12,17 @@ use crate::{
         MouseMoveEvent, TranscriptionProgressEvent,
     },
     mutter::ModelError,
-    types::{AppState, MouseButtonType, SystemInfo, TextProcessOptions, TranscribeOptions},
+    types::{
+        AppState, ModelTranscribeData, MouseButtonType, SystemInfo, TextProcessOptions,
+        TranscribeOptions,
+    },
 };
 use enigo::{Enigo, Keyboard, Settings};
-use log::{debug, error, info, trace};
+use gfxinfo::Gpu;
+use log::{debug, error, info, trace, warn};
 use mouce::{common::MouseEvent, Mouse, MouseActions};
 use rodio::{Decoder, OutputStream, Sink};
-use std::{fs::File, io::BufReader};
+use std::{fs::File, io::BufReader, sync::Arc};
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 use tauri::{AppHandle, State, Wry};
 use tauri_specta::{collect_commands, Commands, Event};
@@ -522,7 +526,7 @@ pub async fn transcribe_whisper_run_each(
     app_state: State<'_, AppState>,
     app_handle: AppHandle,
     audio_data: Vec<u8>,
-) -> Result<[(String, f64, f64); 4], String> {
+) -> Result<Vec<ModelTranscribeData>, String> {
     debug!("Running multiple models to test speed");
     let model_dir_path_buf = tauri::Manager::path(&app_handle)
         .app_local_data_dir()
@@ -533,12 +537,22 @@ pub async fn transcribe_whisper_run_each(
         "Main Whisper model path dir: {:?}",
         model_dir_path_buf.join("models")
     );
-    let mut result = [
-        (String::new(), 0.0, 0.0),
-        (String::new(), 0.0, 0.0),
-        (String::new(), 0.0, 0.0),
-        (String::new(), 0.0, 0.0),
-    ];
+    let mem_info = MemoryRefreshKind::nothing().with_ram();
+    let mut sys = System::new_with_specifics(
+        RefreshKind::nothing()
+            .with_memory(mem_info)
+            .without_cpu()
+            .without_processes(),
+    );
+    let mut result = Vec::with_capacity(5);
+    sys.refresh_memory();
+    result.push(ModelTranscribeData {
+        model_name: "Baseline".to_string(),
+        text: "".to_string(),
+        memory_usage: sys.used_memory() as f64 / 1_000_000_000_f64,
+        loading_sec: 0.0,
+        processing_sec: 0.0,
+    });
     // Whisper.cpp
     {
         debug!("Load Whisper-rs model");
@@ -550,7 +564,14 @@ pub async fn transcribe_whisper_run_each(
             .await?;
         debug!("Loading Time for Whisper.cpp: {loading}");
         let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
-        result[0] = (text, loading, processing);
+        sys.refresh_memory();
+        result.push(ModelTranscribeData {
+            model_name: model.to_string(),
+            memory_usage: sys.used_memory() as f64 / 1_000_000_000_f64,
+            text,
+            loading_sec: loading,
+            processing_sec: processing,
+        });
         app_state.unload_model()?;
     }
     // CTranslate2
@@ -564,7 +585,14 @@ pub async fn transcribe_whisper_run_each(
             .await?;
         debug!("Loading Time for CT2RS: {loading}");
         let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
-        result[1] = (text, loading, processing);
+        sys.refresh_memory();
+        result.push(ModelTranscribeData {
+            model_name: model.to_string(),
+            memory_usage: sys.used_memory() as f64 / 1_000_000_000_f64,
+            text,
+            loading_sec: loading,
+            processing_sec: processing,
+        });
         app_state.unload_model()?;
     }
     // Sherpa-ONNX
@@ -578,7 +606,16 @@ pub async fn transcribe_whisper_run_each(
     //         .await?;
     //     debug!("Loading Time for Sherpa-ONNX: {loading}");
     //     let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
-    //     result[2] = (text, loading, processing);
+    //     sys.refresh_memory();
+    //     result.push(ModelTranscribeData {
+    //         model_name: model.to_string(),
+    //         memory_usage: sys.used_memory() as f64 / 1_000_000_000_f64,
+    //         vram_usage: (&gpu).as_ref()
+    //             .map(|gpu| gpu.info().used_vram() as f64 / 1_000_000_000_f64)
+    //             .unwrap_or(f64::NAN),
+    //         loading_sec: loading,
+    //         processing_sec: processing,
+    //     });
     //     app_state.unload_model()?;
     // }
     // Kalosm (Candle)
@@ -592,7 +629,14 @@ pub async fn transcribe_whisper_run_each(
             .await?;
         debug!("Loading Time for Kalosm: {loading}");
         let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
-        result[3] = (text, loading, processing);
+        sys.refresh_memory();
+        result.push(ModelTranscribeData {
+            model_name: model.to_string(),
+            memory_usage: sys.used_memory() as f64 / 1_000_000_000_f64,
+            text,
+            loading_sec: loading,
+            processing_sec: processing,
+        });
         app_state.unload_model()?;
     }
     Ok(result)
