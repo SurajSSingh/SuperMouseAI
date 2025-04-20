@@ -60,27 +60,27 @@ futures-util = "0.3.31"
 [target.'cfg(target_os = "windows")'.dependencies]
 # NOTE: CUDA feature separate feature flag
 whisper-rs = { version = "0.14.2", features = ["vulkan"] }
-ct2rs = { version = "0.9.7", features = ["whisper"] }
+# ct2rs = { version = "0.9.7", features = ["whisper"] }
 rwhisper = { version = "0.4.1" }
 
 [target.'cfg(all(target_os = "macos", target_arch="aarch64"))'.dependencies]
 whisper-rs = { version = "0.14.2", features = ["metal", "coreml"] }
-ct2rs = { version = "0.9.7", features = [
-    "whisper",
-    "accelerate",
-    "flash-attention",
-    "tensor-parallel",
-] }
+# ct2rs = { version = "0.9.7", features = [
+#     "whisper",
+#     "accelerate",
+#     "flash-attention",
+#     "tensor-parallel",
+# ] }
 rwhisper = { version = "0.4.1", features = ["metal", "accelerate"] }
 
 [target.'cfg(all(target_os = "macos", target_arch="x86_64"))'.dependencies]
 whisper-rs = { version = "0.14.2", features = ["metal"] }
-ct2rs = { version = "0.9.7", features = ["whisper"] }
+# ct2rs = { version = "0.9.7", features = ["whisper"] }
 rwhisper = { version = "0.4.1", features = ["metal"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 whisper-rs = { version = "0.14.2", features = [] }
-ct2rs = { version = "0.9.7", features = ["whisper"] }
+# ct2rs = { version = "0.9.7", features = ["whisper"] }
 rwhisper = { version = "0.4.1" }
 
 [features]
