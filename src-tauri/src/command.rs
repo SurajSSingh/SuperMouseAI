@@ -495,26 +495,26 @@ pub async fn transcribe_whisper_run_each(
     //     app_state.unload_model()?;
     // }
     // RWhisper (Candle)
-    {
-        debug!("Load rwhisper model");
-        let (model, loading) = app_state
-            .get_and_load_model_from(
-                crate::types::ModelType::RWhisper,
-                model_dir_path_buf.join("rwhisper"),
-            )
-            .await?;
-        debug!("Loading Time for RWhisper: {loading}");
-        let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
-        sys.refresh_memory();
-        result.push(ModelTranscribeData {
-            model_name: model.to_string(),
-            memory_usage: sys.used_memory() as f64 / 1_000_000_000_f64,
-            text,
-            loading_sec: loading,
-            processing_sec: processing,
-        });
-        app_state.unload_model()?;
-    }
+    // {
+    //     debug!("Load rwhisper model");
+    //     let (model, loading) = app_state
+    //         .get_and_load_model_from(
+    //             crate::types::ModelType::RWhisper,
+    //             model_dir_path_buf.join("rwhisper"),
+    //         )
+    //         .await?;
+    //     debug!("Loading Time for RWhisper: {loading}");
+    //     let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
+    //     sys.refresh_memory();
+    //     result.push(ModelTranscribeData {
+    //         model_name: model.to_string(),
+    //         memory_usage: sys.used_memory() as f64 / 1_000_000_000_f64,
+    //         text,
+    //         loading_sec: loading,
+    //         processing_sec: processing,
+    //     });
+    //     app_state.unload_model()?;
+    // }
     Ok(result)
 }
 

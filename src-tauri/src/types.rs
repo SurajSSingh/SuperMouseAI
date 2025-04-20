@@ -6,7 +6,7 @@ use futures_util::StreamExt;
 use log::{debug, warn};
 use mouce::common::MouseButton;
 use rodio::buffer::SamplesBuffer;
-use rwhisper::{Whisper as RWhisper, WhisperSource};
+// use rwhisper::{Whisper as RWhisper, WhisperSource};
 use serde::{Deserialize, Serialize};
 // use sherpa_rs::whisper::{WhisperConfig, WhisperRecognizer};
 use specta::Type;
@@ -24,7 +24,7 @@ pub enum ModelType {
     WhisperCPP,
     // CT2RS,
     // SherpaONNX,
-    RWhisper,
+    // RWhisper,
     Unknown,
 }
 
@@ -38,7 +38,7 @@ pub enum WhisperModel {
     WhisperCPP(Model, Box<Path>),
     // CT2RS(Box<CT2RSWhisper>, Box<Path>),
     // SherpaONNX(WhisperRecognizer, Box<Path>),
-    RWhisper(RWhisper, Box<Path>),
+    // RWhisper(RWhisper, Box<Path>),
 }
 
 impl WhisperModel {
@@ -47,10 +47,10 @@ impl WhisperModel {
         match self {
             WhisperModel::None => Path::new("").into(),
             WhisperModel::Unloaded(_, path)
-            | WhisperModel::WhisperCPP(_, path)
             // | WhisperModel::CT2RS(_, path)
             // | WhisperModel::SherpaONNX(_, path)
-            | WhisperModel::RWhisper(_, path) => path.as_ref(),
+            // | WhisperModel::RWhisper(_, path) 
+            | WhisperModel::WhisperCPP(_, path) => path.as_ref(),
         }
     }
 
@@ -69,7 +69,7 @@ impl WhisperModel {
             WhisperModel::WhisperCPP(model, _) => WhisperModel::WhisperCPP(model, new_path),
             // WhisperModel::CT2RS(model, _) => WhisperModel::CT2RS(model, new_path),
             // WhisperModel::SherpaONNX(model, _) => WhisperModel::SherpaONNX(model, new_path),
-            WhisperModel::RWhisper(model, _) => WhisperModel::RWhisper(model, new_path),
+            // WhisperModel::RWhisper(model, _) => WhisperModel::RWhisper(model, new_path),
             other => other,
         })
     }
@@ -93,7 +93,7 @@ impl WhisperModel {
             WhisperModel::WhisperCPP(_, _) => ModelType::WhisperCPP,
             // WhisperModel::CT2RS(_, _) => ModelType::CT2RS,
             // WhisperModel::SherpaONNX(_, _) => ModelType::SherpaONNX,
-            WhisperModel::RWhisper(_, _) => ModelType::RWhisper,
+            // WhisperModel::RWhisper(_, _) => ModelType::RWhisper,
             _ => ModelType::Unknown,
         }
     }
@@ -157,18 +157,18 @@ impl WhisperModel {
                     //     ),
                     //     start_time.elapsed().as_secs_f64(),
                     // ),
-                    ModelType::RWhisper => (
-                        Self::RWhisper(
-                            RWhisper::builder()
-                                .with_cache(kalosm_common::Cache::new(path.clone().into_path_buf()))
-                                .with_source(WhisperSource::QuantizedTinyEn)
-                                .build()
-                                .await
-                                .map_err(|err| err.to_string())?,
-                            path,
-                        ),
-                        start_time.elapsed().as_secs_f64(),
-                    ),
+                    // ModelType::RWhisper => (
+                    //     Self::RWhisper(
+                    //         RWhisper::builder()
+                    //             .with_cache(kalosm_common::Cache::new(path.clone().into_path_buf()))
+                    //             .with_source(WhisperSource::QuantizedTinyEn)
+                    //             .build()
+                    //             .await
+                    //             .map_err(|err| err.to_string())?,
+                    //         path,
+                    //     ),
+                    //     start_time.elapsed().as_secs_f64(),
+                    // ),
                     ModelType::Unknown => unreachable!("See above branch"),
                 })
             }
@@ -181,10 +181,10 @@ impl WhisperModel {
         match self {
             WhisperModel::None => Path::new("").into(),
             WhisperModel::Unloaded(_, path)
-            | WhisperModel::WhisperCPP(_, path)
             // | WhisperModel::CT2RS(_, path)
             // | WhisperModel::SherpaONNX(_, path)
-            | WhisperModel::RWhisper(_, path) => path,
+            // | WhisperModel::RWhisper(_, path) 
+            | WhisperModel::WhisperCPP(_, path)=> path,
         }
     }
 
@@ -193,7 +193,8 @@ impl WhisperModel {
             model @ WhisperModel::WhisperCPP(_, _)
             // | model @ WhisperModel::CT2RS(_, _)
             // | model @ WhisperModel::SherpaONNX(_, _)
-            | model @ WhisperModel::RWhisper(_, _) => Ok(Self::Unloaded(
+            // model @ WhisperModel::WhisperCPP(_, _)| model @ WhisperModel::RWhisper(_, _) 
+            => Ok(Self::Unloaded(
                 model.get_model_type(),
                 model.unload_and_get_path(),
             )),
@@ -246,62 +247,61 @@ impl WhisperModel {
                     ),
                     transcript.processing_time.as_secs_f64(),
                 ))
-            }
-            // WhisperModel::CT2RS(whisper, _) => {
-            //     let samples = decode(audio_data).map_err(|err| err.to_string())?;
-            //     let start_time = std::time::Instant::now();
-            //     let full_text = whisper
-            //         .generate(&samples, Some("en"), false, &Default::default())
-            //         .map_err(|err| err.to_string())?
-            //         .join(sep);
-            //     Ok((full_text, start_time.elapsed().as_secs_f64()))
-            // }
-            // WhisperModel::SherpaONNX(whisper_recognizer, _) => {
-            //     let decoded = decode(audio_data).map_err(|err| err.to_string())?;
-            //     let samples = decoded[..].chunks(16000 * 20).collect::<Vec<_>>();
-            //     let start_time = std::time::Instant::now();
-            //     let full_text = samples
-            //         .into_iter()
-            //         .map(|sample| whisper_recognizer.transcribe(16000, &sample))
-            //         .fold(String::new(), |mut text, segment| {
-            //             debug!(
-            //                 "Additional Segment Info: Lang={}, Timestamps={:?}, Tokens={:?}",
-            //                 segment.lang, segment.timestamps, segment.tokens
-            //             );
-            //             text.push_str(&segment.text);
-            //             text.push_str(sep);
-            //             text
-            //         });
-            //     Ok((full_text, start_time.elapsed().as_secs_f64()))
-            // }
-            WhisperModel::RWhisper(whisper, _) => {
-                let decoded = decode(audio_data).map_err(|err| err.to_string())?;
-                let samples = SamplesBuffer::new(1, 16000, decoded);
-                let start_time = std::time::Instant::now();
-                let mut transcribe = whisper.transcribe(samples);
-                let mut full_text = String::new();
-                let mut elapsed = 0.0;
-                while let Some(segment) = transcribe.next().await {
-                    elapsed += segment.elapsed_time().as_secs_f64();
-                    full_text.push_str(segment.text());
-                    full_text.push_str(sep);
-                    debug!(
-                        "Additional Segment Info: Confidence={}, Duration={:?}, NS_Prob={}, Progress={}, Remaining={:?}, Range={:?}, Start={}",
-                        segment.confidence(),
-                        segment.duration(),
-                        segment.probability_of_no_speech(),
-                        segment.progress(),
-                        segment.remaining_time(),
-                        segment.sample_range(),
-                        segment.start()
-                    )
-                }
-                debug!(
-                    "Finished RWhisper with {}",
-                    start_time.elapsed().as_secs_f64()
-                );
-                Ok((full_text, elapsed))
-            }
+            } // WhisperModel::CT2RS(whisper, _) => {
+              //     let samples = decode(audio_data).map_err(|err| err.to_string())?;
+              //     let start_time = std::time::Instant::now();
+              //     let full_text = whisper
+              //         .generate(&samples, Some("en"), false, &Default::default())
+              //         .map_err(|err| err.to_string())?
+              //         .join(sep);
+              //     Ok((full_text, start_time.elapsed().as_secs_f64()))
+              // }
+              // WhisperModel::SherpaONNX(whisper_recognizer, _) => {
+              //     let decoded = decode(audio_data).map_err(|err| err.to_string())?;
+              //     let samples = decoded[..].chunks(16000 * 20).collect::<Vec<_>>();
+              //     let start_time = std::time::Instant::now();
+              //     let full_text = samples
+              //         .into_iter()
+              //         .map(|sample| whisper_recognizer.transcribe(16000, &sample))
+              //         .fold(String::new(), |mut text, segment| {
+              //             debug!(
+              //                 "Additional Segment Info: Lang={}, Timestamps={:?}, Tokens={:?}",
+              //                 segment.lang, segment.timestamps, segment.tokens
+              //             );
+              //             text.push_str(&segment.text);
+              //             text.push_str(sep);
+              //             text
+              //         });
+              //     Ok((full_text, start_time.elapsed().as_secs_f64()))
+              // }
+              // WhisperModel::RWhisper(whisper, _) => {
+              //     let decoded = decode(audio_data).map_err(|err| err.to_string())?;
+              //     let samples = SamplesBuffer::new(1, 16000, decoded);
+              //     let start_time = std::time::Instant::now();
+              //     let mut transcribe = whisper.transcribe(samples);
+              //     let mut full_text = String::new();
+              //     let mut elapsed = 0.0;
+              //     while let Some(segment) = transcribe.next().await {
+              //         elapsed += segment.elapsed_time().as_secs_f64();
+              //         full_text.push_str(segment.text());
+              //         full_text.push_str(sep);
+              //         debug!(
+              //             "Additional Segment Info: Confidence={}, Duration={:?}, NS_Prob={}, Progress={}, Remaining={:?}, Range={:?}, Start={}",
+              //             segment.confidence(),
+              //             segment.duration(),
+              //             segment.probability_of_no_speech(),
+              //             segment.progress(),
+              //             segment.remaining_time(),
+              //             segment.sample_range(),
+              //             segment.start()
+              //         )
+              //     }
+              //     debug!(
+              //         "Finished RWhisper with {}",
+              //         start_time.elapsed().as_secs_f64()
+              //     );
+              //     Ok((full_text, elapsed))
+              // }
         }
     }
 }
@@ -317,16 +317,15 @@ impl std::fmt::Display for WhisperModel {
             )),
             WhisperModel::WhisperCPP(_, path) => {
                 f.write_fmt(format_args!("WhisperCPP model at `{}`", path.display()))
-            }
-            // WhisperModel::CT2RS(_, path) => {
-            //     f.write_fmt(format_args!("CTranslate2 model at `{}`", path.display()))
-            // }
-            // WhisperModel::SherpaONNX(_, path) => {
-            //     f.write_fmt(format_args!("Sherpa-Onnx model at `{}`", path.display()))
-            // }
-            WhisperModel::RWhisper(_, path) => {
-                f.write_fmt(format_args!("Candle model at `{}`", path.display()))
-            }
+            } // WhisperModel::CT2RS(_, path) => {
+              //     f.write_fmt(format_args!("CTranslate2 model at `{}`", path.display()))
+              // }
+              // WhisperModel::SherpaONNX(_, path) => {
+              //     f.write_fmt(format_args!("Sherpa-Onnx model at `{}`", path.display()))
+              // }
+              // WhisperModel::RWhisper(_, path) => {
+              //     f.write_fmt(format_args!("Candle model at `{}`", path.display()))
+              // }
         }
     }
 }
