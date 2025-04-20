@@ -447,7 +447,7 @@ impl InnerAppState {
     }
 
     /// Replace the custom model being used
-    pub fn replace_custom_model(&mut self, path: String, use_gpu: bool) -> Result<(), String> {
+    pub fn replace_custom_model(&mut self, path: String, _use_gpu: bool) -> Result<(), String> {
         // let mut params = WhisperContextParameters::new();
         // params.use_gpu(use_gpu);
         // let new_model = Model::new_with_params(&path, params)?;
@@ -602,6 +602,7 @@ pub enum TranscriptionFormat {
 
 impl TranscriptionFormat {
     /// Convert a given transcript to its string form based on the current format type.
+    #[allow(dead_code)]
     pub fn convert_transcript(self, transcript: &crate::transcript::Transcript) -> String {
         match self {
             Self::Text => transcript.as_text(),

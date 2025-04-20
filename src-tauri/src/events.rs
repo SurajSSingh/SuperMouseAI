@@ -94,6 +94,7 @@ pub struct TranscriptionSegmentEvent {
 }
 
 impl TranscriptionSegmentEvent {
+    #[allow(dead_code)]
     pub fn with_payload(
         is_lossy: bool,
         segment: i32,
@@ -114,6 +115,7 @@ impl TranscriptionSegmentEvent {
 
 /// Create a new lossy [`TranscriptionSegmentEvent`] with payload defined from given [`SegmentCallbackData`]
 #[cfg(feature = "whisper-rs")]
+#[allow(dead_code)]
 pub fn new_lossy_transcript_segment_event(
     segment: SegmentCallbackData,
 ) -> TranscriptionSegmentEvent {
@@ -132,6 +134,7 @@ pub fn new_lossy_transcript_segment_event(
 
 /// Create a new [`TranscriptionSegmentEvent`] with payload defined from given [`SegmentCallbackData`]
 #[cfg(feature = "whisper-rs")]
+#[allow(dead_code)]
 pub fn new_transcript_segment_event(segment: SegmentCallbackData) -> TranscriptionSegmentEvent {
     #[allow(
         clippy::cast_precision_loss,

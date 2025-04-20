@@ -29,6 +29,7 @@ impl Model {
     /// - `path`: Path to the model.
     /// # Errors
     /// - [`WhisperError`]
+    #[allow(dead_code)]
     pub fn new(path: &str) -> Result<Self, WhisperError> {
         trace!("Loading model using default parameters");
         let params: WhisperContextParameters = WhisperContextParameters::default();

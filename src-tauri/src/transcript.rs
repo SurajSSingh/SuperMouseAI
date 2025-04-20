@@ -34,6 +34,7 @@ pub struct Utterance {
 impl Transcript {
     /// Returns the transcript as a string.
     #[must_use]
+    #[allow(dead_code)]
     pub fn as_text(&self) -> String {
         self.utterances
             .iter()
@@ -44,6 +45,7 @@ impl Transcript {
 
     /// Returns the transcript in VTT format.
     #[must_use]
+    #[allow(dead_code)]
     pub fn as_vtt(&self) -> String {
         let vtt = self
             .utterances
@@ -63,6 +65,7 @@ impl Transcript {
 
     /// Returns the transcript in SRT format.
     #[must_use]
+    #[allow(dead_code)]
     pub fn as_srt(&self) -> String {
         self.utterances
             .iter()
