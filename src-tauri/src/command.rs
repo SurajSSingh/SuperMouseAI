@@ -393,133 +393,6 @@ pub async fn get_system_info() -> SystemInfo {
     }
 }
 
-// #[tauri::command]
-// #[specta::specta]
-// pub async fn transcribe_with_ct2rs(
-//     app_state: State<'_, AppState>,
-//     // app_handle: AppHandle,
-//     audio_data: Vec<u8>,
-// ) -> Result<(String, f64), String> {
-//     use ct2rs::Whisper;
-//     use tauri::Manager;
-//     let app_state = app_state.lock().map_err(|err| err.to_string())?;
-//     let whisper = app_state.get_model_ctrs();
-//     let samples = crate::mutter::decode(audio_data).map_err(|err| err.to_string())?;
-//     let st = std::time::Instant::now();
-//     let res = whisper
-//         .generate(&samples, Some("en"), false, &Default::default())
-//         .map_err(|err| err.to_string())?;
-//     Ok((
-//         res.join(" |:==:| "),
-//         std::time::Instant::now().duration_since(st).as_secs_f64(),
-//     ))
-// }
-
-// #[tauri::command]
-// #[specta::specta]
-// pub async fn transcribe_with_sherpa(
-//     // app_state: State<'_, AppState>,
-//     app_handle: AppHandle,
-//     audio_data: Vec<u8>,
-// ) -> Result<(String, f64), String> {
-//     use sherpa_rs::whisper::{WhisperConfig, WhisperRecognizer};
-//     use tauri::Manager;
-//     let mut model_path_buf = app_handle
-//         .path()
-//         .app_local_data_dir()
-//         .map_err(|err| err.to_string())?;
-//     model_path_buf.push("sherpa-onnx-whisper-tiny");
-//     debug!("Found dir: {}", model_path_buf.exists());
-//     if !model_path_buf.exists() {
-//         return Err("Model not found at path".to_string().into());
-//     }
-//     let config = WhisperConfig {
-//         decoder: model_path_buf
-//             .clone()
-//             .join("tiny-decoder.onnx")
-//             .to_str()
-//             .ok_or("Decoder not found".to_string())?
-//             .to_string(),
-//         encoder: model_path_buf
-//             .clone()
-//             .join("tiny-encoder.onnx")
-//             .to_str()
-//             .ok_or("Encoder not found".to_string())?
-//             .to_string(),
-//         tokens: model_path_buf
-//             .join("tiny-tokens.txt")
-//             .to_str()
-//             .ok_or("Tokens not found".to_string())?
-//             .to_string(),
-//         language: "en".into(),
-//         bpe_vocab: None,
-//         num_threads: Some(1),
-//         tail_paddings: None,
-//         provider: None,
-//         debug: false,
-//     };
-//     let mut whisper = WhisperRecognizer::new(config).map_err(|err| err.to_string())?;
-//     let decoded = crate::mutter::decode(audio_data).map_err(|err| err.to_string())?;
-//     let samples = decoded[..].chunks(16000 * 10).collect::<Vec<_>>();
-//     let st = std::time::Instant::now();
-//     let mut full_text = String::new();
-//     for sample in samples {
-//         let res = whisper.transcribe(16000, &sample);
-//         debug!("{:?}", res.timestamps);
-//         debug!("{:?}", res.tokens);
-//         full_text.push_str(&res.text);
-//     }
-//     Ok((full_text, st.elapsed().as_secs_f64()))
-// }
-
-#[tauri::command]
-#[specta::specta]
-pub async fn transcribe_with_kalosm(
-    // app_state: State<'_, AppState>,
-    app_handle: AppHandle,
-    audio_data: Vec<u8>,
-) -> Result<(String, f64), String> {
-    use kalosm::sound::*;
-    use tauri::Manager;
-    let mut model_path_buf = app_handle
-        .path()
-        .app_local_data_dir()
-        .map_err(|err| err.to_string())?;
-    model_path_buf.push("kalosm");
-    debug!("Found dir: {}", model_path_buf.exists());
-    if !model_path_buf.exists() {
-        return Err("Model not found at path".to_string().into());
-    }
-    let whisper = Whisper::builder()
-        .with_cache(kalosm_common::Cache::new(model_path_buf))
-        .with_source(WhisperSource::QuantizedTinyEn)
-        .build()
-        .await
-        .map_err(|err| err.to_string())?;
-    let decoded = crate::mutter::decode(audio_data).map_err(|err| err.to_string())?;
-    let samples = kalosm::sound::rodio::buffer::SamplesBuffer::new(1, 16000, decoded);
-    let st = std::time::Instant::now();
-    let mut transcribe = whisper.transcribe(samples);
-    let mut full_text = String::new();
-    let mut elapsed = 0.0;
-    while let Some(segment) = transcribe.next().await {
-        elapsed += segment.elapsed_time().as_secs_f64();
-        full_text.push_str(segment.text());
-        debug!(
-            "Additional Segment Info: Confidence={}, Duration={:?}, NS_Prob={}, Progress={}, Remaining={:?}, Range={:?}, Start={}",
-            segment.confidence(),
-            segment.duration(),
-            segment.probability_of_no_speech(),
-            segment.progress(),
-            segment.remaining_time(),
-            segment.sample_range(),
-            segment.start()
-        )
-    }
-    debug!("Finished Kalosm with {}", st.elapsed().as_secs_f64());
-    Ok((full_text, elapsed))
-}
-
 #[tauri::command]
 #[specta::specta]
 pub async fn transcribe_whisper_run_each(
@@ -533,6 +406,9 @@ pub async fn transcribe_whisper_run_each(
         .map_err(|err| err.to_string())?;
     debug!("Top level model path dir: {model_dir_path_buf:?}");
     let mut app_state = app_state.lock().await;
+    debug!("Unload model to get baseline");
+    let _ = app_state.unload_model()
+        .map_err(|err| debug!("Error occur, but ignoring it because no model should be loaded now. This is the error for reference {err}"));
     debug!(
         "Main Whisper model path dir: {:?}",
         model_dir_path_buf.join("models")
@@ -618,16 +494,16 @@ pub async fn transcribe_whisper_run_each(
     //     });
     //     app_state.unload_model()?;
     // }
-    // Kalosm (Candle)
+    // RWhisper (Candle)
     {
-        debug!("Load kalosm model");
+        debug!("Load rwhisper model");
         let (model, loading) = app_state
             .get_and_load_model_from(
-                crate::types::ModelType::Candle,
-                model_dir_path_buf.join("kalosm"),
+                crate::types::ModelType::RWhisper,
+                model_dir_path_buf.join("rwhisper"),
             )
             .await?;
-        debug!("Loading Time for Kalosm: {loading}");
+        debug!("Loading Time for RWhisper: {loading}");
         let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
         sys.refresh_memory();
         result.push(ModelTranscribeData {
@@ -655,9 +531,6 @@ pub fn get_collected_commands() -> Commands<Wry> {
         write_text,
         update_model,
         get_system_info,
-        // transcribe_with_ct2rs,
-        // transcribe_with_sherpa,
-        transcribe_with_kalosm,
         transcribe_whisper_run_each
     ]
 }

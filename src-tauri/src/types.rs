@@ -2,9 +2,11 @@
 
 use crate::mutter::{decode, Model};
 use ct2rs::Whisper as CT2RSWhisper;
-use kalosm::sound::Whisper as KalosmWhisper;
+use futures_util::StreamExt;
 use log::{debug, warn};
 use mouce::common::MouseButton;
+use rodio::buffer::SamplesBuffer;
+use rwhisper::{Whisper as RWhisper, WhisperSource};
 use serde::{Deserialize, Serialize};
 // use sherpa_rs::whisper::{WhisperConfig, WhisperRecognizer};
 use specta::Type;
@@ -22,7 +24,7 @@ pub enum ModelType {
     WhisperCPP,
     CT2RS,
     // SherpaONNX,
-    Candle,
+    RWhisper,
     Unknown,
 }
 
@@ -36,7 +38,7 @@ pub enum WhisperModel {
     WhisperCPP(Model, Box<Path>),
     CT2RS(Box<CT2RSWhisper>, Box<Path>),
     // SherpaONNX(WhisperRecognizer, Box<Path>),
-    Candle(KalosmWhisper, Box<Path>),
+    RWhisper(RWhisper, Box<Path>),
 }
 
 impl WhisperModel {
@@ -48,7 +50,7 @@ impl WhisperModel {
             | WhisperModel::WhisperCPP(_, path)
             | WhisperModel::CT2RS(_, path)
             // | WhisperModel::SherpaONNX(_, path)
-            | WhisperModel::Candle(_, path) => path.as_ref(),
+            | WhisperModel::RWhisper(_, path) => path.as_ref(),
         }
     }
 
@@ -67,7 +69,7 @@ impl WhisperModel {
             WhisperModel::WhisperCPP(model, _) => WhisperModel::WhisperCPP(model, new_path),
             WhisperModel::CT2RS(model, _) => WhisperModel::CT2RS(model, new_path),
             // WhisperModel::SherpaONNX(model, _) => WhisperModel::SherpaONNX(model, new_path),
-            WhisperModel::Candle(model, _) => WhisperModel::Candle(model, new_path),
+            WhisperModel::RWhisper(model, _) => WhisperModel::RWhisper(model, new_path),
             other => other,
         })
     }
@@ -91,7 +93,7 @@ impl WhisperModel {
             WhisperModel::WhisperCPP(_, _) => ModelType::WhisperCPP,
             WhisperModel::CT2RS(_, _) => ModelType::CT2RS,
             // WhisperModel::SherpaONNX(_, _) => ModelType::SherpaONNX,
-            WhisperModel::Candle(_, _) => ModelType::Candle,
+            WhisperModel::RWhisper(_, _) => ModelType::RWhisper,
             _ => ModelType::Unknown,
         }
     }
@@ -155,11 +157,11 @@ impl WhisperModel {
                     //     ),
                     //     start_time.elapsed().as_secs_f64(),
                     // ),
-                    ModelType::Candle => (
-                        Self::Candle(
-                            KalosmWhisper::builder()
+                    ModelType::RWhisper => (
+                        Self::RWhisper(
+                            RWhisper::builder()
                                 .with_cache(kalosm_common::Cache::new(path.clone().into_path_buf()))
-                                .with_source(kalosm::sound::WhisperSource::QuantizedTinyEn)
+                                .with_source(WhisperSource::QuantizedTinyEn)
                                 .build()
                                 .await
                                 .map_err(|err| err.to_string())?,
@@ -182,7 +184,7 @@ impl WhisperModel {
             | WhisperModel::WhisperCPP(_, path)
             | WhisperModel::CT2RS(_, path)
             // | WhisperModel::SherpaONNX(_, path)
-            | WhisperModel::Candle(_, path) => path,
+            | WhisperModel::RWhisper(_, path) => path,
         }
     }
 
@@ -191,7 +193,7 @@ impl WhisperModel {
             model @ WhisperModel::WhisperCPP(_, _)
             | model @ WhisperModel::CT2RS(_, _)
             // | model @ WhisperModel::SherpaONNX(_, _)
-            | model @ WhisperModel::Candle(_, _) => Ok(Self::Unloaded(
+            | model @ WhisperModel::RWhisper(_, _) => Ok(Self::Unloaded(
                 model.get_model_type(),
                 model.unload_and_get_path(),
             )),
@@ -272,14 +274,13 @@ impl WhisperModel {
             //         });
             //     Ok((full_text, start_time.elapsed().as_secs_f64()))
             // }
-            WhisperModel::Candle(whisper, _) => {
+            WhisperModel::RWhisper(whisper, _) => {
                 let decoded = decode(audio_data).map_err(|err| err.to_string())?;
-                let samples = kalosm::sound::rodio::buffer::SamplesBuffer::new(1, 16000, decoded);
+                let samples = SamplesBuffer::new(1, 16000, decoded);
                 let start_time = std::time::Instant::now();
                 let mut transcribe = whisper.transcribe(samples);
                 let mut full_text = String::new();
                 let mut elapsed = 0.0;
-                use kalosm::*; // To get StreamExt for .next()
                 while let Some(segment) = transcribe.next().await {
                     elapsed += segment.elapsed_time().as_secs_f64();
                     full_text.push_str(segment.text());
@@ -296,7 +297,7 @@ impl WhisperModel {
                     )
                 }
                 debug!(
-                    "Finished Kalosm with {}",
+                    "Finished RWhisper with {}",
                     start_time.elapsed().as_secs_f64()
                 );
                 Ok((full_text, elapsed))
@@ -323,7 +324,7 @@ impl std::fmt::Display for WhisperModel {
             // WhisperModel::SherpaONNX(_, path) => {
             //     f.write_fmt(format_args!("Sherpa-Onnx model at `{}`", path.display()))
             // }
-            WhisperModel::Candle(_, path) => {
+            WhisperModel::RWhisper(_, path) => {
                 f.write_fmt(format_args!("Candle model at `{}`", path.display()))
             }
         }
