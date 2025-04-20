@@ -447,70 +447,71 @@ pub async fn transcribe_whisper_run_each(
         app_state.unload_model()?;
     }
     // CTranslate2
-    // {
-    //     debug!("Load CT2-rs model");
-    //     let (model, loading) = app_state
-    //         .get_and_load_model_from(
-    //             crate::types::ModelType::CT2RS,
-    //             model_dir_path_buf.join("ct2rs"),
-    //         )
-    //         .await?;
-    //     debug!("Loading Time for CT2RS: {loading}");
-    //     let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
-    //     sys.refresh_memory();
-    //     result.push(ModelTranscribeData {
-    //         model_name: model.to_string(),
-    //         memory_usage: sys.used_memory() as f64 / 1_000_000_000_f64,
-    //         text,
-    //         loading_sec: loading,
-    //         processing_sec: processing,
-    //     });
-    //     app_state.unload_model()?;
-    // }
+    #[cfg(feature = "ct2rs")]
+    {
+        debug!("Load CT2-rs model");
+        let (model, loading) = app_state
+            .get_and_load_model_from(
+                crate::types::ModelType::CT2RS,
+                model_dir_path_buf.join("ct2rs"),
+            )
+            .await?;
+        debug!("Loading Time for CT2RS: {loading}");
+        let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
+        sys.refresh_memory();
+        result.push(ModelTranscribeData {
+            model_name: model.to_string(),
+            memory_usage: sys.used_memory() as f64 / 1_000_000_000_f64,
+            text,
+            loading_sec: loading,
+            processing_sec: processing,
+        });
+        app_state.unload_model()?;
+    }
     // Sherpa-ONNX
-    // {
-    //     debug!("Load sherpa-onnx-rs model");
-    //     let (model, loading) = app_state
-    //         .get_and_load_model_from(
-    //             crate::types::ModelType::SherpaONNX,
-    //             model_dir_path_buf.join("sherpa-onnx"),
-    //         )
-    //         .await?;
-    //     debug!("Loading Time for Sherpa-ONNX: {loading}");
-    //     let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
-    //     sys.refresh_memory();
-    //     result.push(ModelTranscribeData {
-    //         model_name: model.to_string(),
-    //         memory_usage: sys.used_memory() as f64 / 1_000_000_000_f64,
-    //         vram_usage: (&gpu).as_ref()
-    //             .map(|gpu| gpu.info().used_vram() as f64 / 1_000_000_000_f64)
-    //             .unwrap_or(f64::NAN),
-    //         loading_sec: loading,
-    //         processing_sec: processing,
-    //     });
-    //     app_state.unload_model()?;
-    // }
+    #[cfg(feature = "sherpa-rs")]
+    {
+        debug!("Load sherpa-onnx-rs model");
+        let (model, loading) = app_state
+            .get_and_load_model_from(
+                crate::types::ModelType::SherpaONNX,
+                model_dir_path_buf.join("sherpa-onnx"),
+            )
+            .await?;
+        debug!("Loading Time for Sherpa-ONNX: {loading}");
+        let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
+        sys.refresh_memory();
+        result.push(ModelTranscribeData {
+            model_name: model.to_string(),
+            memory_usage: sys.used_memory() as f64 / 1_000_000_000_f64,
+            text,
+            loading_sec: loading,
+            processing_sec: processing,
+        });
+        app_state.unload_model()?;
+    }
     // RWhisper (Candle)
-    // {
-    //     debug!("Load rwhisper model");
-    //     let (model, loading) = app_state
-    //         .get_and_load_model_from(
-    //             crate::types::ModelType::RWhisper,
-    //             model_dir_path_buf.join("rwhisper"),
-    //         )
-    //         .await?;
-    //     debug!("Loading Time for RWhisper: {loading}");
-    //     let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
-    //     sys.refresh_memory();
-    //     result.push(ModelTranscribeData {
-    //         model_name: model.to_string(),
-    //         memory_usage: sys.used_memory() as f64 / 1_000_000_000_f64,
-    //         text,
-    //         loading_sec: loading,
-    //         processing_sec: processing,
-    //     });
-    //     app_state.unload_model()?;
-    // }
+    #[cfg(feature = "rwhisper")]
+    {
+        debug!("Load rwhisper model");
+        let (model, loading) = app_state
+            .get_and_load_model_from(
+                crate::types::ModelType::RWhisper,
+                model_dir_path_buf.join("rwhisper"),
+            )
+            .await?;
+        debug!("Loading Time for RWhisper: {loading}");
+        let (text, processing) = model.default_transcribe(audio_data.clone()).await?;
+        sys.refresh_memory();
+        result.push(ModelTranscribeData {
+            model_name: model.to_string(),
+            memory_usage: sys.used_memory() as f64 / 1_000_000_000_f64,
+            text,
+            loading_sec: loading,
+            processing_sec: processing,
+        });
+        app_state.unload_model()?;
+    }
     Ok(result)
 }
 

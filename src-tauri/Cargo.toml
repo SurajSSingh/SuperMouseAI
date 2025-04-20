@@ -53,46 +53,68 @@ tauri-plugin-http = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-upload = "2"
-# sherpa-rs = { version = "0.6.6", default-features = false, features = [
-#     "static",
-# ], optional = true }
 kalosm-common = "0.4.0"
 futures-util = "0.3.31"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 # NOTE: CUDA feature separate feature flag
 whisper-rs = { version = "0.14.2", features = ["vulkan"], optional = true }
-# ct2rs = { version = "0.9.7", features = ["whisper"] }
-# rwhisper = { version = "0.4.1" }
+ct2rs = { version = "0.9.7", features = ["whisper"], optional = true }
+rwhisper = { version = "0.4.1", optional = true }
+sherpa-rs = { version = "0.6.6", default-features = false, features = [
+    "static",
+], optional = true }
 
 [target.'cfg(all(target_os = "macos", target_arch="aarch64"))'.dependencies]
 whisper-rs = { version = "0.14.2", features = [
     "metal",
     "coreml",
 ], optional = true }
-# ct2rs = { version = "0.9.7", features = [
-#     "whisper",
-#     "accelerate",
-#     "flash-attention",
-#     "tensor-parallel",
-# ] }
-# rwhisper = { version = "0.4.1", features = ["metal", "accelerate"] }
+ct2rs = { version = "0.9.7", features = [
+    "whisper",
+    "accelerate",
+    "flash-attention",
+    "tensor-parallel",
+], optional = true }
+rwhisper = { version = "0.4.1", features = [
+    "metal",
+    "accelerate",
+], optional = true }
+sherpa-rs = { version = "0.6.6", default-features = false, features = [
+    "static",
+], optional = true }
 
 [target.'cfg(all(target_os = "macos", target_arch="x86_64"))'.dependencies]
 whisper-rs = { version = "0.14.2", features = ["metal"], optional = true }
-# ct2rs = { version = "0.9.7", features = ["whisper"] }
-# rwhisper = { version = "0.4.1", features = ["metal"] }
+ct2rs = { version = "0.9.7", features = ["whisper"], optional = true }
+rwhisper = { version = "0.4.1", features = ["metal"], optional = true }
+sherpa-rs = { version = "0.6.6", default-features = false, features = [
+    "static",
+], optional = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 whisper-rs = { version = "0.14.2", features = [], optional = true }
-# ct2rs = { version = "0.9.7", features = ["whisper"] }
-# rwhisper = { version = "0.4.1" }
+ct2rs = { version = "0.9.7", features = ["whisper"], optional = true }
+rwhisper = { version = "0.4.1", optional = true }
+sherpa-rs = { version = "0.6.6", default-features = false, features = [
+], optional = true }
 
 [features]
-default = ["symphonia-all", "minimp3", "whisper-rs", "overlay"]
+default = [
+    "symphonia-all",
+    "minimp3",
+    "whisper-rs",
+    "ct2rs",
+    "sherpa-rs",
+    "rwhisper",
+    "overlay",
+]
 
 # Whisper Model providers
 whisper-rs = ["dep:whisper-rs"]
+ct2rs = ["dep:ct2rs"]
+rwhisper = ["dep:rwhisper"]
+sherpa-rs = ["dep:sherpa-rs"]
 
 # Whisper-rs Options
 openblas = ["whisper-rs", "whisper-rs/openblas"]
