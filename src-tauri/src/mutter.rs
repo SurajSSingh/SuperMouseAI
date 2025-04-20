@@ -287,8 +287,10 @@ impl Model {
 pub enum ModelError {
     /// [`WhisperError`]. Error either loading model, or during transcription, in the
     /// actual whisper.cpp library
-    #[cfg(feature = "whisper-rs")]
-    WhisperError(WhisperError),
+    WhisperError(
+        #[cfg(feature = "whisper-rs")] WhisperError,
+        #[cfg(not(feature = "whisper-rs"))] String,
+    ),
     // /// [`ureq::Error`]. Error downloading model.
     // DownloadError(Box<ureq::Error>),
     // /// [`std::io::Error`]. Error reading model.
@@ -302,7 +304,6 @@ impl std::fmt::Display for ModelError {
         f.write_fmt(format_args!(
             "Model Error: {}",
             match self {
-                #[cfg(feature = "whisper-rs")]
                 ModelError::WhisperError(whisper_error) => whisper_error.to_string(),
                 ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
             }
@@ -315,7 +316,6 @@ impl std::error::Error for ModelError {}
 /// Decode a byte array of audio into a float array
 ///
 /// Adapted from <https://github.com/sigaloid/mutter/blob/main/src/transcode.rs>
-#[cfg(feature = "whisper-rs")]
 pub fn decode(bytes: Vec<u8>) -> Result<Vec<f32>, ModelError> {
     debug!("Start Decoding");
     let input = Cursor::new(bytes);
@@ -332,8 +332,32 @@ pub fn decode(bytes: Vec<u8>) -> Result<Vec<f32>, ModelError> {
     trace!("Finished Resampling");
     let samples: Vec<i16> = pass_filter.collect::<Vec<i16>>();
     let mut output: Vec<f32> = vec![0.0f32; samples.len()];
-    let result: Result<(), whisper_rs::WhisperError> =
-        whisper_rs::convert_integer_to_float_audio(&samples, &mut output);
+    let result = {
+        #[cfg(feature = "whisper-rs")]
+        {
+            whisper_rs::convert_integer_to_float_audio(&samples, &mut output)
+        }
+        #[cfg(not(feature = "whisper-rs"))]
+        {
+            if samples.len() != output.len() {
+                Err(format!(
+                    "InputOutputLengthMismatch: input={} while output={}",
+                    samples.len(),
+                    output.len()
+                ))
+            } else {
+                for (input, output) in samples.iter().zip(output.iter_mut()) {
+                    *output = *input as f32 / 32768.0;
+                }
+                Ok(())
+            }
+        }
+    };
     debug!("Decoding Finished");
-    result.map(|()| output).map_err(ModelError::WhisperError)
+    result.map(|()| output).map_err(
+        #[cfg(feature = "whisper-rs")]
+        ModelError::WhisperError,
+        #[cfg(not(feature = "whisper-rs"))]
+        |err| ModelError::WhisperError(err.to_string()),
+    )
 }
