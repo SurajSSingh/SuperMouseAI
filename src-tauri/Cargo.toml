@@ -53,18 +53,23 @@ tauri-plugin-http = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-upload = "2"
-# sherpa-rs = { version = "0.6.6", default-features = false, features = ["static"] }
+# sherpa-rs = { version = "0.6.6", default-features = false, features = [
+#     "static",
+# ], optional = true }
 kalosm-common = "0.4.0"
 futures-util = "0.3.31"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 # NOTE: CUDA feature separate feature flag
-whisper-rs = { version = "0.14.2", features = ["vulkan"] }
+whisper-rs = { version = "0.14.2", features = ["vulkan"], optional = true }
 # ct2rs = { version = "0.9.7", features = ["whisper"] }
 # rwhisper = { version = "0.4.1" }
 
 [target.'cfg(all(target_os = "macos", target_arch="aarch64"))'.dependencies]
-whisper-rs = { version = "0.14.2", features = ["metal", "coreml"] }
+whisper-rs = { version = "0.14.2", features = [
+    "metal",
+    "coreml",
+], optional = true }
 # ct2rs = { version = "0.9.7", features = [
 #     "whisper",
 #     "accelerate",
@@ -74,24 +79,28 @@ whisper-rs = { version = "0.14.2", features = ["metal", "coreml"] }
 # rwhisper = { version = "0.4.1", features = ["metal", "accelerate"] }
 
 [target.'cfg(all(target_os = "macos", target_arch="x86_64"))'.dependencies]
-whisper-rs = { version = "0.14.2", features = ["metal"] }
+whisper-rs = { version = "0.14.2", features = ["metal"], optional = true }
 # ct2rs = { version = "0.9.7", features = ["whisper"] }
 # rwhisper = { version = "0.4.1", features = ["metal"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-whisper-rs = { version = "0.14.2", features = [] }
+whisper-rs = { version = "0.14.2", features = [], optional = true }
 # ct2rs = { version = "0.9.7", features = ["whisper"] }
 # rwhisper = { version = "0.4.1" }
 
 [features]
-default = ["symphonia-all", "minimp3", "openmp", "overlay"]
+default = ["symphonia-all", "minimp3", "whisper-rs", "overlay"]
 
-openblas = ["whisper-rs/openblas"]
-openmp = ["whisper-rs/openmp"]
+# Whisper Model providers
+whisper-rs = ["dep:whisper-rs"]
+
+# Whisper-rs Options
+openblas = ["whisper-rs", "whisper-rs/openblas"]
+openmp = ["whisper-rs", "whisper-rs/openmp"]
 # For better CPU optimization
-cpu-opt = ["whisper-rs/openblas", "whisper-rs/openmp"]
+cpu-opt = ["whisper-rs", "whisper-rs/openblas", "whisper-rs/openmp"]
 # Used generally for GPU
-vulkan = ["whisper-rs/vulkan"]
+vulkan = ["whisper-rs", "whisper-rs/vulkan"]
 
 symphonia-aac = ["rodio/symphonia-aac"]
 symphonia-all = ["rodio/symphonia-all"]

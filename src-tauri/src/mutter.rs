@@ -8,6 +8,7 @@ use crate::transcript::{Transcript, Utterance};
 use log::{debug, error, trace};
 use rodio::{source::UniformSourceIterator, Decoder, Source};
 use std::io::Cursor;
+#[cfg(feature = "whisper-rs")]
 use whisper_rs::{
     FullParams, SamplingStrategy, SegmentCallbackData, WhisperContext, WhisperContextParameters,
     WhisperError,
@@ -15,10 +16,12 @@ use whisper_rs::{
 
 /// Model struct. Can be constructed with [`Model::new`] or [`Model::download`].
 /// Contains the Whisper model and its context.
+#[cfg(feature = "whisper-rs")]
 pub struct Model {
     context: WhisperContext,
 }
 
+#[cfg(feature = "whisper-rs")]
 impl Model {
     /// Creates a new model from a model path. Must be a path to a valid Whisper model,
     /// in GGML format, that is compatible with Whisper.cpp.
@@ -284,6 +287,7 @@ impl Model {
 pub enum ModelError {
     /// [`WhisperError`]. Error either loading model, or during transcription, in the
     /// actual whisper.cpp library
+    #[cfg(feature = "whisper-rs")]
     WhisperError(WhisperError),
     // /// [`ureq::Error`]. Error downloading model.
     // DownloadError(Box<ureq::Error>),
@@ -298,6 +302,7 @@ impl std::fmt::Display for ModelError {
         f.write_fmt(format_args!(
             "Model Error: {}",
             match self {
+                #[cfg(feature = "whisper-rs")]
                 ModelError::WhisperError(whisper_error) => whisper_error.to_string(),
                 ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
             }
@@ -310,6 +315,7 @@ impl std::error::Error for ModelError {}
 /// Decode a byte array of audio into a float array
 ///
 /// Adapted from <https://github.com/sigaloid/mutter/blob/main/src/transcode.rs>
+#[cfg(feature = "whisper-rs")]
 pub fn decode(bytes: Vec<u8>) -> Result<Vec<f32>, ModelError> {
     debug!("Start Decoding");
     let input = Cursor::new(bytes);

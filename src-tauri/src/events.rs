@@ -4,6 +4,7 @@ use log::{debug, trace};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use tauri_specta::{collect_events, Event, Events};
+#[cfg(feature = "whisper-rs")]
 use whisper_rs::SegmentCallbackData;
 
 use crate::types::{ModKeyPayload, MouseButtonType};
@@ -112,6 +113,7 @@ impl TranscriptionSegmentEvent {
 }
 
 /// Create a new lossy [`TranscriptionSegmentEvent`] with payload defined from given [`SegmentCallbackData`]
+#[cfg(feature = "whisper-rs")]
 pub fn new_lossy_transcript_segment_event(
     segment: SegmentCallbackData,
 ) -> TranscriptionSegmentEvent {
@@ -129,6 +131,7 @@ pub fn new_lossy_transcript_segment_event(
 }
 
 /// Create a new [`TranscriptionSegmentEvent`] with payload defined from given [`SegmentCallbackData`]
+#[cfg(feature = "whisper-rs")]
 pub fn new_transcript_segment_event(segment: SegmentCallbackData) -> TranscriptionSegmentEvent {
     #[allow(
         clippy::cast_precision_loss,

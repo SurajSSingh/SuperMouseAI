@@ -1,6 +1,5 @@
 //! Data types and associated functions for those types.
 
-use crate::mutter::{decode, Model};
 // use ct2rs::Whisper as CT2RSWhisper;
 use futures_util::StreamExt;
 use log::{debug, warn};
@@ -15,12 +14,17 @@ use std::{
     path::{Path, PathBuf},
     time::Instant,
 };
+
+#[cfg(feature = "whisper-rs")]
+use crate::mutter::{decode, Model};
+#[cfg(feature = "whisper-rs")]
 use whisper_rs::WhisperContextParameters;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 /// Which type of ASR model is used
 pub enum ModelType {
+    #[cfg(feature = "whisper-rs")]
     WhisperCPP,
     // CT2RS,
     // SherpaONNX,
@@ -35,6 +39,7 @@ pub enum WhisperModel {
     #[default]
     None,
     Unloaded(ModelType, Box<Path>),
+    #[cfg(feature = "whisper-rs")]
     WhisperCPP(Model, Box<Path>),
     // CT2RS(Box<CT2RSWhisper>, Box<Path>),
     // SherpaONNX(WhisperRecognizer, Box<Path>),
@@ -46,11 +51,12 @@ impl WhisperModel {
     pub fn path(&self) -> &Path {
         match self {
             WhisperModel::None => Path::new("").into(),
-            WhisperModel::Unloaded(_, path)
+            WhisperModel::Unloaded(_, path) => path.as_ref(),
             // | WhisperModel::CT2RS(_, path)
             // | WhisperModel::SherpaONNX(_, path)
-            // | WhisperModel::RWhisper(_, path) 
-            | WhisperModel::WhisperCPP(_, path) => path.as_ref(),
+            // | WhisperModel::RWhisper(_, path)
+            #[cfg(feature = "whisper-rs")]
+            WhisperModel::WhisperCPP(_, path) => path.as_ref(),
         }
     }
 
@@ -66,6 +72,7 @@ impl WhisperModel {
         debug!("Found model @ {new_path:?}");
         Ok(match self {
             WhisperModel::Unloaded(model, _) => WhisperModel::Unloaded(model, new_path),
+            #[cfg(feature = "whisper-rs")]
             WhisperModel::WhisperCPP(model, _) => WhisperModel::WhisperCPP(model, new_path),
             // WhisperModel::CT2RS(model, _) => WhisperModel::CT2RS(model, new_path),
             // WhisperModel::SherpaONNX(model, _) => WhisperModel::SherpaONNX(model, new_path),
@@ -90,6 +97,7 @@ impl WhisperModel {
 
     pub fn get_model_type(&self) -> ModelType {
         match self {
+            #[cfg(feature = "whisper-rs")]
             WhisperModel::WhisperCPP(_, _) => ModelType::WhisperCPP,
             // WhisperModel::CT2RS(_, _) => ModelType::CT2RS,
             // WhisperModel::SherpaONNX(_, _) => ModelType::SherpaONNX,
@@ -106,6 +114,7 @@ impl WhisperModel {
             WhisperModel::Unloaded(model_type, path) => {
                 let start_time = Instant::now();
                 Ok(match model_type {
+                    #[cfg(feature = "whisper-rs")]
                     ModelType::WhisperCPP => (
                         Self::WhisperCPP(
                             Model::new_with_params(
@@ -180,16 +189,18 @@ impl WhisperModel {
     fn unload_and_get_path(self) -> Box<Path> {
         match self {
             WhisperModel::None => Path::new("").into(),
-            WhisperModel::Unloaded(_, path)
+            WhisperModel::Unloaded(_, path) => path,
+            #[cfg(feature = "whisper-rs")]
+            WhisperModel::WhisperCPP(_, path) => path,
             // | WhisperModel::CT2RS(_, path)
             // | WhisperModel::SherpaONNX(_, path)
-            // | WhisperModel::RWhisper(_, path) 
-            | WhisperModel::WhisperCPP(_, path)=> path,
+            // | WhisperModel::RWhisper(_, path)
         }
     }
 
     pub fn unload_model(self) -> Result<Self, String> {
         match self {
+            #[cfg(feature = "whisper-rs")]
             model @ WhisperModel::WhisperCPP(_, _)
             // | model @ WhisperModel::CT2RS(_, _)
             // | model @ WhisperModel::SherpaONNX(_, _)
@@ -216,6 +227,7 @@ impl WhisperModel {
             WhisperModel::Unloaded(model_type, path) => {
                 Err(format!("Model {model_type:?} not yet loaded from {path:?}"))
             }
+            #[cfg(feature = "whisper-rs")]
             WhisperModel::WhisperCPP(model, _) => {
                 let transcript = model
                     .transcribe_audio(
@@ -315,6 +327,7 @@ impl std::fmt::Display for WhisperModel {
                 model_type,
                 path.display()
             )),
+            #[cfg(feature = "whisper-rs")]
             WhisperModel::WhisperCPP(_, path) => {
                 f.write_fmt(format_args!("WhisperCPP model at `{}`", path.display()))
             } // WhisperModel::CT2RS(_, path) => {
@@ -359,7 +372,10 @@ impl InnerAppState {
         // FIXME: Need to do this in another thread, otherwise UI freezes
         // let _ = model.transcribe_pcm_s16le(&[0.0; 20_000], false, false, None, None, None);
         let model = Some(WhisperModel::Unloaded(
+            #[cfg(feature = "whisper-rs")]
             ModelType::WhisperCPP,
+            #[cfg(not(feature = "whisper-rs"))]
+            ModelType::Unknown,
             default_path.clone().as_path().into(),
         ));
         Self {
@@ -370,7 +386,13 @@ impl InnerAppState {
     }
 
     pub fn give_default_model<P: AsRef<Path>>(default_path: P) -> WhisperModel {
-        WhisperModel::Unloaded(ModelType::WhisperCPP, default_path.as_ref().into())
+        WhisperModel::Unloaded(
+            #[cfg(feature = "whisper-rs")]
+            ModelType::WhisperCPP,
+            #[cfg(not(feature = "whisper-rs"))]
+            ModelType::Unknown,
+            default_path.as_ref().into(),
+        )
     }
 
     /// Get sound by the provided name or by prepending `default_` to the beginning.

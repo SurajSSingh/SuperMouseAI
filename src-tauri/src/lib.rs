@@ -24,6 +24,7 @@ mod types;
 
 use command::listen_for_mouse_click;
 use events::ModKeyEvent;
+#[cfg(feature = "whisper-rs")]
 use mutter::Model;
 use types::{is_modkey, InnerAppState, ModKeyPayload};
 

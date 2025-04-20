@@ -7,22 +7,17 @@
 
 // Crate level use (imports)
 use crate::{
-    events::{
-        new_lossy_transcript_segment_event, new_transcript_segment_event, MouseClickEvent,
-        MouseMoveEvent, TranscriptionProgressEvent,
-    },
-    mutter::ModelError,
+    events::{MouseClickEvent, MouseMoveEvent, TranscriptionProgressEvent},
     types::{
         AppState, ModelTranscribeData, MouseButtonType, SystemInfo, TextProcessOptions,
         TranscribeOptions,
     },
 };
 use enigo::{Enigo, Keyboard, Settings};
-use gfxinfo::Gpu;
-use log::{debug, error, info, trace, warn};
+use log::{debug, error, info, trace};
 use mouce::{common::MouseEvent, Mouse, MouseActions};
 use rodio::{Decoder, OutputStream, Sink};
-use std::{fs::File, io::BufReader, sync::Arc};
+use std::{fs::File, io::BufReader};
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 use tauri::{AppHandle, State, Wry};
 use tauri_specta::{collect_commands, Commands, Event};
@@ -77,30 +72,30 @@ pub async fn transcribe(
     } else {
         None
     };
-    let _ = if options.include_callback.is_some_and(|is_true| is_true) {
-        let handle = app_handle.clone();
-        Some(move |segment: whisper_rs::SegmentCallbackData| {
-            let _ = new_lossy_transcript_segment_event(segment)
-                .emit(&handle)
-                .map_err(|err| error!("Transcription Segment event error: {err}"));
-        })
-    } else {
-        None
-    };
-    let _ = if options.include_callback.is_some_and(|is_true| is_true) {
-        #[allow(
-            clippy::redundant_clone,
-            reason = "May want to use app handle later on"
-        )]
-        let handle = app_handle.clone();
-        Some(move |segment: whisper_rs::SegmentCallbackData| {
-            let _ = new_transcript_segment_event(segment)
-                .emit(&handle)
-                .map_err(|err| error!("Transcription Segment event error: {err}"));
-        })
-    } else {
-        None
-    };
+    // let _ = if options.include_callback.is_some_and(|is_true| is_true) {
+    //     let handle = app_handle.clone();
+    //     Some(move |segment: whisper_rs::SegmentCallbackData| {
+    //         let _ = new_lossy_transcript_segment_event(segment)
+    //             .emit(&handle)
+    //             .map_err(|err| error!("Transcription Segment event error: {err}"));
+    //     })
+    // } else {
+    //     None
+    // };
+    // let _ = if options.include_callback.is_some_and(|is_true| is_true) {
+    //     #[allow(
+    //         clippy::redundant_clone,
+    //         reason = "May want to use app handle later on"
+    //     )]
+    //     let handle = app_handle.clone();
+    //     Some(move |segment: whisper_rs::SegmentCallbackData| {
+    //         let _ = new_transcript_segment_event(segment)
+    //             .emit(&handle)
+    //             .map_err(|err| error!("Transcription Segment event error: {err}"));
+    //     })
+    // } else {
+    //     None
+    // };
     Ok(model.default_transcribe(audio_data).await?)
     // let transcription = model
     //     .transcribe_audio(
@@ -430,6 +425,7 @@ pub async fn transcribe_whisper_run_each(
         processing_sec: 0.0,
     });
     // Whisper.cpp
+    #[cfg(feature = "whisper-rs")]
     {
         debug!("Load Whisper-rs model");
         let (model, loading) = app_state
