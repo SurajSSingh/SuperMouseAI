@@ -63,14 +63,7 @@
                     );
                     console.log(d.text);
                 });
-                // @ts-ignore Uint8Array should be number[]-like
-                // const ress = await commands.transcribeWithKalosm(audio_bytes);
-                // if (ress.status === "ok") {
-                //     console.log("Processing time: ", ress.data[1]);
-                //     console.log(ress.data[0]);
-                // } else {
-                //     console.error(ress.error);
-                // }
+
                 // configStore.addTranscription(result.data[0], result.data[1]);
             }
             onFinishProcessing?.(configStore.currentTranscript);
