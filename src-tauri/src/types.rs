@@ -40,6 +40,8 @@ pub enum ModelType {
     RWhisper,
     #[cfg(feature = "sherpa-rs")]
     SherpaONNX,
+    #[cfg(feature = "burn")]
+    Burn,
     Unknown,
 }
 
@@ -58,6 +60,9 @@ pub enum WhisperModel {
     RWhisper(RWhisper, Box<Path>),
     #[cfg(feature = "sherpa-rs")]
     SherpaONNX(WhisperRecognizer, Box<Path>),
+    #[cfg(feature = "burn")]
+    // TODO: Actually implement Burn
+    Burn((), Box<Path>),
 }
 
 impl WhisperModel {
@@ -74,6 +79,8 @@ impl WhisperModel {
             WhisperModel::RWhisper(_, path) => path.as_ref(),
             #[cfg(feature = "sherpa-rs")]
             WhisperModel::SherpaONNX(_, path) => path.as_ref(),
+            #[cfg(feature = "burn")]
+            WhisperModel::Burn(_, path) => path.as_ref(),
         }
     }
 
@@ -97,6 +104,8 @@ impl WhisperModel {
             WhisperModel::RWhisper(model, _) => WhisperModel::RWhisper(model, new_path),
             #[cfg(feature = "sherpa-rs")]
             WhisperModel::SherpaONNX(model, _) => WhisperModel::SherpaONNX(model, new_path),
+            #[cfg(feature = "burn")]
+            WhisperModel::Burn(model, _) => WhisperModel::Burn(model, new_path),
             other => other,
         })
     }
@@ -119,6 +128,8 @@ impl WhisperModel {
             WhisperModel::RWhisper(_, _) => ModelType::RWhisper,
             #[cfg(feature = "sherpa-rs")]
             WhisperModel::SherpaONNX(_, _) => ModelType::SherpaONNX,
+            #[cfg(feature = "burn")]
+            WhisperModel::Burn(_, _) => ModelType::Burn,
             _ => ModelType::Unknown,
         }
     }
@@ -198,6 +209,8 @@ impl WhisperModel {
                         ),
                         start_time.elapsed().as_secs_f64(),
                     ),
+                    #[cfg(feature = "burn")]
+                    ModelType::Burn => (Self::Burn((), path), 0.0),
                     ModelType::Unknown => unreachable!("See above branch"),
                 })
             }
@@ -218,6 +231,8 @@ impl WhisperModel {
             WhisperModel::RWhisper(_, path) => path,
             #[cfg(feature = "sherpa-rs")]
             WhisperModel::SherpaONNX(_, path) => path,
+            #[cfg(feature = "burn")]
+            WhisperModel::Burn(_, path) => path,
         }
     }
 
@@ -240,6 +255,11 @@ impl WhisperModel {
             )),
             #[cfg(feature = "rwhisper")]
             model @ WhisperModel::RWhisper(_, _) => Ok(Self::Unloaded(
+                model.get_model_type(),
+                model.unload_and_get_path(),
+            )),
+            #[cfg(feature = "burn")]
+            model @ WhisperModel::Burn(_, _) => Ok(Self::Unloaded(
                 model.get_model_type(),
                 model.unload_and_get_path(),
             )),
@@ -352,6 +372,8 @@ impl WhisperModel {
                 );
                 Ok((full_text, elapsed))
             }
+            #[cfg(feature = "burn")]
+            WhisperModel::Burn(_, _) => Err("Burn model not implemented".to_string()),
         }
     }
 }
@@ -380,6 +402,10 @@ impl std::fmt::Display for WhisperModel {
             #[cfg(feature = "rwhisper")]
             WhisperModel::RWhisper(_, path) => {
                 f.write_fmt(format_args!("Candle model at `{}`", path.display()))
+            }
+            #[cfg(feature = "burn")]
+            WhisperModel::Burn(_, path) => {
+                f.write_fmt(format_args!("Burn model at `{}`", path.display()))
             }
         }
     }
