@@ -29,7 +29,7 @@ use tauri_specta::{collect_commands, Commands, Event};
 /// Check [crate::mutter::Model::transcribe_audio] for details on arguments
 pub async fn transcribe(
     app_state: State<'_, AppState>,
-    app_handle: AppHandle,
+    _app_handle: AppHandle,
     audio_data: Vec<u8>,
     options: Option<TranscribeOptions>,
 ) -> Result<(String, f64), String> {
@@ -47,89 +47,40 @@ pub async fn transcribe(
     let mut app_state = app_state.lock().await;
     info!("Transcribe using {}", app_state.get_model_info());
     let (model, _loading_time) = app_state.get_model().await?;
-    trace!("Creating abort transcription callback");
-    let _: Option<fn() -> bool> = if options.include_callback.is_some_and(|is_true| is_true) {
-        // TODO: Figure out how to send off via an event from JS side
-        Some(|| {
-            trace!("Evaluating abort transcription => false");
-            false
-        })
-    } else {
-        None
+    // Ok(model.default_transcribe(audio_data).await?)
+    let crate::types::WhisperModel::WhisperCPP(model, _) = model else {
+        return Err("Whisper Model not loaded".to_string());
     };
-    let _ = if options.include_callback.is_some_and(|is_true| is_true) {
-        trace!("Creating transcript progress callback");
-        let handle = app_handle.clone();
-        trace!("Cloned app handle");
-        Some(move |precentage| {
-            trace!("Creating transcription progress event");
-            let event = TranscriptionProgressEvent::with_payload(precentage);
-            trace!("Emitting transcription progress event");
-            let _ = event
-                .emit(&handle)
-                .map_err(|err| error!("Transcription Progress event error: {err}"));
-        })
-    } else {
-        None
-    };
-    // let _ = if options.include_callback.is_some_and(|is_true| is_true) {
-    //     let handle = app_handle.clone();
-    //     Some(move |segment: whisper_rs::SegmentCallbackData| {
-    //         let _ = new_lossy_transcript_segment_event(segment)
-    //             .emit(&handle)
-    //             .map_err(|err| error!("Transcription Segment event error: {err}"));
-    //     })
-    // } else {
-    //     None
-    // };
-    // let _ = if options.include_callback.is_some_and(|is_true| is_true) {
-    //     #[allow(
-    //         clippy::redundant_clone,
-    //         reason = "May want to use app handle later on"
-    //     )]
-    //     let handle = app_handle.clone();
-    //     Some(move |segment: whisper_rs::SegmentCallbackData| {
-    //         let _ = new_transcript_segment_event(segment)
-    //             .emit(&handle)
-    //             .map_err(|err| error!("Transcription Segment event error: {err}"));
-    //     })
-    // } else {
-    //     None
-    // };
-    Ok(model.default_transcribe(audio_data).await?)
-    // let transcription = model
-    //     .transcribe_audio(
-    //         &audio_data,
-    //         options.translate.unwrap_or(false),
-    //         options.individual_word_timestamps.unwrap_or(false),
-    //         options.initial_prompt.as_deref(),
-    //         options.language.as_deref(),
-    //         // Make sure not to pass 0 for CPU thread,
-    //         // otherwise model crashes
-    //         match options.threads {
-    //             Some(0) => None,
-    //             threads => threads,
-    //         },
-    //         options.patience,
-    //         abort_callback,
-    //         progress_callback,
-    //         lossy_segment_callback,
-    //         not_lossy_segment_callback,
-    //     )
-    //     .map_err(|err| {
-    //         log::error!("Transcription Error: {err:?}");
-    //         match err {
-    //             ModelError::WhisperError(whisper_error) => whisper_error.to_string(),
-    //             ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
-    //         }
-    //     })?;
-    // Ok((
-    //     options
-    //         .format
-    //         .unwrap_or_default()
-    //         .convert_transcript(&transcription),
-    //     transcription.processing_time.as_secs_f64(),
-    // ))
+    let transcription = model
+        .transcribe_audio(
+            &audio_data,
+            options.translate.unwrap_or(false),
+            options.individual_word_timestamps.unwrap_or(false),
+            options.initial_prompt.as_deref(),
+            options.language.as_deref(),
+            // Make sure not to pass 0 for CPU thread,
+            // otherwise model crashes
+            match options.threads {
+                Some(0) => None,
+                threads => threads,
+            },
+            options.patience,
+            None::<fn() -> bool>,
+            None::<fn(i32)>,
+            None::<fn(whisper_rs::SegmentCallbackData)>,
+            None::<fn(whisper_rs::SegmentCallbackData)>,
+        )
+        .map_err(|err| {
+            log::error!("Transcription Error: {err:?}");
+            err.to_string()
+        })?;
+    Ok((
+        options
+            .format
+            .unwrap_or_default()
+            .convert_transcript(&transcription),
+        transcription.processing_time.as_secs_f64(),
+    ))
 }
 
 #[tauri::command]

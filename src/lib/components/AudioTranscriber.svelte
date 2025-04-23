@@ -27,28 +27,24 @@
                     `Call command to transcribe audio and then process text.`,
                 );
                 const audio_bytes = await blobChunksToBytes(workingChunks);
-                let result = await commands.transcribeWhisperRunEach(
+                let result = await commands.transcribeWithPostProcess(
                     // @ts-ignore Uint8Array should be number[]-like
                     audio_bytes,
+                    {
+                        threads:
+                            configStore.threads.value > 0
+                                ? configStore.threads.value
+                                : null,
+                        initial_prompt: configStore.initialPrompt.value,
+                        patience: configStore.patience.value,
+                        include_callback: false,
+                    },
+                    {
+                        removed_words: configStore.ignoredWordsList,
+                        replace_inter_sentence_newlines:
+                            configStore.interNLRemove.value,
+                    },
                 );
-                // let result = await commands.transcribeWithPostProcess(
-                //     // @ts-ignore Uint8Array should be number[]-like
-                //     audio_bytes,
-                //     {
-                //         threads:
-                //             configStore.threads.value > 0
-                //                 ? configStore.threads.value
-                //                 : null,
-                //         initial_prompt: configStore.initialPrompt.value,
-                //         patience: configStore.patience.value,
-                //         include_callback: false,
-                //     },
-                //     {
-                //         removed_words: configStore.ignoredWordsList,
-                //         replace_inter_sentence_newlines:
-                //             configStore.interNLRemove.value,
-                //     },
-                // );
                 debug(`Finish `);
                 if (result.status === "error") {
                     onError?.(
@@ -56,15 +52,7 @@
                     );
                     return;
                 }
-                console.dir(result);
-                result.data.forEach((d, i) => {
-                    console.log(
-                        `${d.model_name}: l=${d.loading_sec.toFixed(3)} + p=${d.processing_sec.toFixed(3)} sec => t=${(d.loading_sec + d.processing_sec).toFixed(2)} / ${d.memory_usage} GB`,
-                    );
-                    console.log(d.text);
-                });
-
-                // configStore.addTranscription(result.data[0], result.data[1]);
+                configStore.addTranscription(result.data[0], result.data[1]);
             }
             onFinishProcessing?.(configStore.currentTranscript);
         } catch (err) {

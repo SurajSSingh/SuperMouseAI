@@ -111,9 +111,9 @@ default = [
     "symphonia-all",
     "minimp3",
     "whisper-rs",
-    "ct2rs",
-    "sherpa-rs",
-    "rwhisper",
+    # "ct2rs",
+    # "sherpa-rs",
+    # "rwhisper",
     # "burn",
     "overlay",
 ]
