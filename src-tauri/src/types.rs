@@ -226,3 +226,18 @@ pub struct SystemInfo {
     /// Total amount of graphic memory (VRAM) in the system in GB
     pub total_vram_gb: f64,
 }
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default, Serialize, Deserialize, Type)]
+/// Options for the processing audio for [`crate::mutter::decode_and_denoise`] function.
+///
+/// All items are optional.
+pub struct AudioProcessingOptions {
+    /// Wheter to normalize audio, defaults to `false`
+    pub normalize_result: Option<bool>,
+    /// Wheter to denoise audio, defaults to `true`
+    pub denoise_audio: Option<bool>,
+    /// Value for low pass filter, this represents maximum frequency allowed
+    pub low_pass_value: Option<u32>,
+    /// Value for high pass filter, this represents minimum frequency allowed
+    pub high_pass_value: Option<u32>,
+}

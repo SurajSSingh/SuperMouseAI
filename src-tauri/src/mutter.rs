@@ -4,8 +4,11 @@
 //! Used under [MIT OR Apache-2.0 License](https://github.com/sigaloid/mutter/blob/main/Cargo.toml#L5C1-L6C1)
 use std::time::Instant;
 
-use crate::transcript::{Transcript, Utterance};
-use log::{debug, error, trace};
+use crate::{
+    transcript::{Transcript, Utterance},
+    types::AudioProcessingOptions,
+};
+use log::{debug, error, trace, warn};
 use rodio::{source::UniformSourceIterator, Decoder, Source};
 use std::io::Cursor;
 use whisper_rs::{
@@ -92,7 +95,13 @@ impl Model {
         new_segment_callback: Option<impl FnMut(SegmentCallbackData) + 'static>,
     ) -> Result<Transcript, ModelError> {
         trace!("Decoding audio.");
-        let samples = decode(audio.as_ref().to_vec())?;
+        let samples = decode_and_denoise(
+            audio.as_ref().to_vec(),
+            Some(AudioProcessingOptions {
+                normalize_result: Some(true),
+                ..Default::default()
+            }),
+        )?;
         trace!("Transcribing audio.");
         self.transcribe_pcm_s16le(
             &samples,
@@ -316,4 +325,142 @@ pub fn decode(bytes: Vec<u8>) -> Result<Vec<f32>, ModelError> {
         whisper_rs::convert_integer_to_float_audio(&samples, &mut output);
     debug!("Decoding Finished");
     result.map(|()| output).map_err(ModelError::WhisperError)
+}
+
+/// Decode a byte array of audio into a float array
+///
+/// Adapted from <https://github.com/sigaloid/mutter/blob/main/src/transcode.rs>
+pub fn decode_and_denoise(
+    bytes: Vec<u8>,
+    options: Option<AudioProcessingOptions>,
+) -> Result<Vec<f32>, ModelError> {
+    let options = options.unwrap_or_default();
+    trace!("Options given for decode and denoise: {options:?}");
+    debug!("Start Decoding");
+    let input = Cursor::new(bytes);
+    trace!("Created cursor of bytes");
+    // We know it is m4a by Mime type in browser (and we set it to be that as well)
+    let source = Decoder::new_wav(input).map_err(ModelError::DecodingError)?;
+    trace!("Produced WAV source from bytes");
+    let output_sample_rate = 16_000;
+    let channels = 1;
+    let denoise_sample =
+        UniformSourceIterator::<rodio::Decoder<std::io::Cursor<Vec<u8>>>, f32>::new(
+            source, channels, 48_000,
+        )
+        .convert_samples()
+        .collect::<Vec<f32>>();
+
+    #[cfg(debug_assertions)]
+    write_wav("../input.wav", &denoise_sample);
+
+    let mut denoised_output = if options.denoise_audio.unwrap_or(true) {
+        const FRAME_SIZE: usize = nnnoiseless::DenoiseState::FRAME_SIZE;
+        let mut output = Vec::new();
+        let mut out_buf = [0.0; FRAME_SIZE];
+        let mut nn_denoiser = nnnoiseless::DenoiseState::new();
+        let mut first = true;
+        for chunk in denoise_sample.chunks_exact(FRAME_SIZE) {
+            nn_denoiser.process_frame(&mut out_buf[..], chunk);
+
+            // We skip the first output, as discussed in the documentation for
+            //`DenoiseState::process_frame`.
+            if !first {
+                output.extend_from_slice(&out_buf[..]);
+            } else {
+                // Alternatively, I add unprocessed chunk, to keep same size
+                output.extend_from_slice(chunk);
+            }
+            first = false;
+        }
+        trace!("Finished Denoising");
+        output
+    } else {
+        trace!("Skip denoising, using decoded ouput");
+        denoise_sample
+    };
+    #[cfg(debug_assertions)]
+    write_wav("../denoised.wav", &denoised_output);
+
+    debug!("WAV resample data: sample_rate={output_sample_rate}, channels={channels}");
+    // Resample to output sample rate and channels
+    let resample = UniformSourceIterator::new(
+        rodio::buffer::SamplesBuffer::new(channels, output_sample_rate * 3, denoised_output),
+        channels,
+        output_sample_rate,
+    );
+    let pass_filter = resample
+        .low_pass(options.low_pass_value.unwrap_or(3000))
+        .high_pass(options.high_pass_value.unwrap_or(200))
+        .convert_samples();
+    trace!("Finished Resampling");
+    let samples: Vec<i16> = pass_filter.collect::<Vec<i16>>();
+    let mut decoded_output: Vec<f32> = vec![0.0f32; samples.len()];
+    whisper_rs::convert_integer_to_float_audio(&samples, &mut decoded_output)
+        .map_err(ModelError::WhisperError)?;
+    debug!("Decoding Finished");
+    #[cfg(debug_assertions)]
+    write_wav("../decoded.wav", &decoded_output);
+    let final_ouput = if options.normalize_result.unwrap_or(false) {
+        let max_amp = decoded_output
+            .iter()
+            .fold(f32::MIN, |current, &sample| current.max(sample.abs()));
+        let norm_factor = if max_amp <= 0.0 {
+            trace!("Max amplitude (={max_amp}) does not make sense, use 1.0");
+            1.0
+        } else {
+            1.0 / max_amp
+        };
+        debug!("Normalizing value with factor={norm_factor}");
+        decoded_output.iter_mut().for_each(|s| *s *= norm_factor);
+        trace!("Finished Normalizing");
+        decoded_output
+    } else {
+        trace!("Skip normalizing, using same as denoised ouput");
+        decoded_output
+    };
+    #[cfg(debug_assertions)]
+    write_wav("../ouput.wav", &final_ouput);
+    Ok(final_ouput)
+}
+
+use audrey::hound::{SampleFormat, WavSpec, WavWriter};
+fn write_wav(path: &str, data: &Vec<f32>) {
+    debug!("Saving audio data to file.");
+    // let maybe_file = std::fs::OpenOptions::new()
+    //     .write(true)
+    //     .create(true)
+    //     .open(path);
+    // if let Ok(file) = maybe_file {
+    let maybe_writer = WavWriter::create(
+        path,
+        WavSpec {
+            channels: 1,
+            sample_rate: 16000,
+            bits_per_sample: 32,
+            sample_format: SampleFormat::Float,
+        },
+    );
+    match maybe_writer {
+        Ok(mut writer) => {
+            if let Err(err) = data
+                .iter()
+                .try_for_each(|sample| writer.write_sample(*sample))
+            {
+                warn!("Could not write samples to file (error: {err:?})")
+            } else {
+                if let Err(err) = writer.flush() {
+                    warn!("Could not flush samples to file (error: {err:?})")
+                } else if let Err(err) = writer.finalize() {
+                    warn!("Could not finalize samples to file (error: {err:?})")
+                } else {
+                    debug!("Finished writing to {path} file.")
+                }
+            }
+        }
+        Err(err) => warn!("Could not open writer (error: {err:?}). SKIPPED!"),
+    }
+    // } else {
+    //     warn!("Could not get file (error: {maybe_file:?}). SKIPPED!")
+    // };
 }
