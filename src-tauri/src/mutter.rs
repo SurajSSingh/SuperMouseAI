@@ -2,14 +2,14 @@
 //! <https://github.com/sigaloid/mutter>
 //!
 //! Used under [MIT OR Apache-2.0 License](https://github.com/sigaloid/mutter/blob/main/Cargo.toml#L5C1-L6C1)
-use std::time::Instant;
+use std::{i16, time::Instant};
 
 use crate::{
     transcript::{Transcript, Utterance},
     types::AudioProcessingOptions,
 };
 use log::{debug, error, trace, warn};
-use nnnoiseless::DenoiseState;
+use nnnoiseless::{DenoiseState, RnnModel};
 use rodio::{source::UniformSourceIterator, Decoder, Source};
 use std::io::Cursor;
 use whisper_rs::{
@@ -356,38 +356,50 @@ pub fn decode_and_denoise(
     let input_sample_rate = 48_000;
     let output_sample_rate = 16_000;
     let channels = 1;
-    let mut input_wav_sample =
+    let input_wav_sample =
         UniformSourceIterator::<rodio::Decoder<std::io::Cursor<Vec<u8>>>, f32>::new(
             source,
             channels,
             input_sample_rate,
         )
         .convert_samples()
-        .collect::<Vec<f32>>();
+        .collect::<Vec<i16>>();
     let denoise_sample = if options.normalize_result.unwrap_or(false) {
         trace!("Run first normalization");
+        // NOTE: This treat f32 like full range i16 rather than range between -1.0 and 1.0
         let max_amp = input_wav_sample
             .iter()
-            .fold(f32::MIN, |current, &sample| current.max(sample.abs()));
-        let norm_factor = if max_amp <= 0.0 {
+            .fold(i16::MIN, |current, &sample| current.max(sample.abs()));
+        let norm_factor = if max_amp <= 0 {
             trace!("Max amplitude (={max_amp}) does not make sense, use 1.0 to leave unchanged");
             1.0
         } else {
-            1.0 / max_amp
+            i16::MAX as f32 / max_amp as f32
         };
-        trace!("Normalizing value with factor={norm_factor}");
-        input_wav_sample.iter_mut().for_each(|s| *s *= norm_factor);
+        debug!("Normalizing value with factor={norm_factor}");
+        let res: Vec<f32> = input_wav_sample
+            .iter()
+            .map(|&x| (x as f32 * norm_factor).clamp(i16::MIN as f32, i16::MAX as f32))
+            .collect();
         trace!("Finished Normalizing");
-        input_wav_sample
+        res
     } else {
         trace!("Skip normalizing, using same as denoised ouput");
-        input_wav_sample
+        input_wav_sample.iter().map(|&x| x as f32).collect()
     };
 
     #[cfg(debug_assertions)]
-    write_wav("../input.wav", &denoise_sample, Some(input_sample_rate));
+    write_wav(
+        "../input.wav",
+        &denoise_sample
+            .iter()
+            .map(|&x| x / i16::MAX as f32)
+            .collect(),
+        (Some(input_sample_rate), Some(32), Some(SampleFormat::Float)),
+    );
 
     let denoised_output = if options.denoise_audio.unwrap_or(true) {
+        debug!("Denoising input");
         const FRAME_SIZE: usize = DenoiseState::FRAME_SIZE;
         let mut output = Vec::new();
         let mut out_buf = [0.0; FRAME_SIZE];
@@ -395,7 +407,8 @@ pub fn decode_and_denoise(
         // let bytes = include_bytes!("../rnn_models/sh.rnnn");
         // let model = RnnModel::from_static_bytes(bytes).expect("Corrupted model file");
         // let mut nn_denoiser = DenoiseState::from_model(model);
-        let mut nn_denoiser = DenoiseState::new();
+        let model = RnnModel::default();
+        let mut nn_denoiser = DenoiseState::from_model(model);
         let mut first = true;
         for chunk in denoise_sample.chunks_exact(FRAME_SIZE) {
             nn_denoiser.process_frame(&mut out_buf[..], chunk);
@@ -412,17 +425,30 @@ pub fn decode_and_denoise(
         }
         trace!("Finished Denoising");
         output
+            .into_iter()
+            .map(|x| x / (i16::MAX as f32 + 1.0))
+            .collect()
     } else {
         trace!("Skip denoising, using decoded ouput");
         denoise_sample
+            .into_iter()
+            .map(|x| x / (i16::MAX as f32 + 1.0))
+            .collect()
     };
     #[cfg(debug_assertions)]
-    write_wav("../denoised.wav", &denoised_output, Some(input_sample_rate));
+    write_wav(
+        "../denoised.wav",
+        &denoised_output,
+        // .iter()
+        // .map(|&x| x / i16::MAX as f32)
+        // .collect(),
+        (Some(input_sample_rate), Some(32), Some(SampleFormat::Float)),
+    );
 
     debug!("WAV resample data: sample_rate={output_sample_rate}, channels={channels}");
     // Resample to output sample rate and channels
     let resample = UniformSourceIterator::new(
-        rodio::buffer::SamplesBuffer::new(channels, output_sample_rate * 3, denoised_output),
+        rodio::buffer::SamplesBuffer::new(channels, input_sample_rate, denoised_output),
         channels,
         output_sample_rate,
     );
@@ -437,7 +463,7 @@ pub fn decode_and_denoise(
         .map_err(ModelError::WhisperError)?;
     debug!("Decoding Finished");
     #[cfg(debug_assertions)]
-    write_wav("../decoded.wav", &decoded_output, None);
+    write_wav("../decoded.wav", &decoded_output, (None, None, None));
     let final_ouput = if options.normalize_result.unwrap_or(false) {
         trace!("Run second normalization");
         let max_amp = decoded_output
@@ -458,12 +484,16 @@ pub fn decode_and_denoise(
         decoded_output
     };
     #[cfg(debug_assertions)]
-    write_wav("../ouput.wav", &final_ouput, None);
+    write_wav("../ouput.wav", &final_ouput, (None, None, None));
     Ok(final_ouput)
 }
 
 use audrey::hound::{SampleFormat, WavSpec, WavWriter};
-fn write_wav(path: &str, data: &Vec<f32>, rate: Option<u32>) {
+fn write_wav<T: audrey::hound::Sample + Copy>(
+    path: &str,
+    data: &Vec<T>,
+    info: (Option<u32>, Option<u16>, Option<SampleFormat>),
+) {
     debug!("Saving audio data to file.");
     // let maybe_file = std::fs::OpenOptions::new()
     //     .write(true)
@@ -474,9 +504,9 @@ fn write_wav(path: &str, data: &Vec<f32>, rate: Option<u32>) {
         path,
         WavSpec {
             channels: 1,
-            sample_rate: rate.unwrap_or(16000),
-            bits_per_sample: 32,
-            sample_format: SampleFormat::Float,
+            sample_rate: info.0.unwrap_or(16000),
+            bits_per_sample: info.1.unwrap_or(32),
+            sample_format: info.2.unwrap_or(SampleFormat::Float),
         },
     );
     match maybe_writer {
