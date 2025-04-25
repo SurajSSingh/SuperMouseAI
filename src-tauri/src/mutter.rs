@@ -2,7 +2,7 @@
 //! <https://github.com/sigaloid/mutter>
 //!
 //! Used under [MIT OR Apache-2.0 License](https://github.com/sigaloid/mutter/blob/main/Cargo.toml#L5C1-L6C1)
-use std::{i16, time::Instant};
+use std::time::Instant;
 
 use crate::{
     transcript::{Transcript, Utterance},
@@ -374,18 +374,18 @@ pub fn decode_and_denoise(
             trace!("Max amplitude (={max_amp}) does not make sense, use 1.0 to leave unchanged");
             1.0
         } else {
-            i16::MAX as f32 / max_amp as f32
+            f32::from(i16::MAX) / f32::from(max_amp)
         };
         debug!("Normalizing value with factor={norm_factor}");
         let res: Vec<f32> = input_wav_sample
             .iter()
-            .map(|&x| (x as f32 * norm_factor).clamp(i16::MIN as f32, i16::MAX as f32))
+            .map(|&x| (f32::from(x) * norm_factor).clamp(f32::from(i16::MIN), f32::from(i16::MAX)))
             .collect();
         trace!("Finished Normalizing");
         res
     } else {
         trace!("Skip normalizing, using same as denoised ouput");
-        input_wav_sample.iter().map(|&x| x as f32).collect()
+        input_wav_sample.iter().map(|&x| f32::from(x)).collect()
     };
 
     #[cfg(debug_assertions)]
@@ -393,46 +393,18 @@ pub fn decode_and_denoise(
         "../input.wav",
         &denoise_sample
             .iter()
-            .map(|&x| x / i16::MAX as f32)
-            .collect(),
+            .map(|&x| x / f32::from(i16::MAX))
+            .collect::<Vec<_>>(),
         (Some(input_sample_rate), Some(32), Some(SampleFormat::Float)),
     );
 
-    let denoised_output = if options.denoise_audio.unwrap_or(true) {
-        debug!("Denoising input");
-        const FRAME_SIZE: usize = DenoiseState::FRAME_SIZE;
-        let mut output = Vec::new();
-        let mut out_buf = [0.0; FRAME_SIZE];
-        // TODO: Be able to load from model
-        // let bytes = include_bytes!("../rnn_models/sh.rnnn");
-        // let model = RnnModel::from_static_bytes(bytes).expect("Corrupted model file");
-        // let mut nn_denoiser = DenoiseState::from_model(model);
-        let model = RnnModel::default();
-        let mut nn_denoiser = DenoiseState::from_model(model);
-        let mut first = true;
-        for chunk in denoise_sample.chunks_exact(FRAME_SIZE) {
-            nn_denoiser.process_frame(&mut out_buf[..], chunk);
-
-            // We skip the first output, as discussed in the documentation for
-            //`DenoiseState::process_frame`.
-            if !first {
-                output.extend_from_slice(&out_buf[..]);
-            } else {
-                // Alternatively, I add unprocessed chunk, to keep same size
-                output.extend_from_slice(chunk);
-            }
-            first = false;
-        }
-        trace!("Finished Denoising");
-        output
-            .into_iter()
-            .map(|x| x / (i16::MAX as f32 + 1.0))
-            .collect()
+    let denoised_output: Vec<f32> = if options.denoise_audio.unwrap_or(true) {
+        denoise_input(&denoise_sample)
     } else {
-        trace!("Skip denoising, using decoded ouput");
+        trace!("Skip denoising, just resize output");
         denoise_sample
             .into_iter()
-            .map(|x| x / (i16::MAX as f32 + 1.0))
+            .map(|x| x / (f32::from(i16::MAX) + 1.0))
             .collect()
     };
     #[cfg(debug_assertions)]
@@ -440,7 +412,7 @@ pub fn decode_and_denoise(
         "../denoised.wav",
         &denoised_output,
         // .iter()
-        // .map(|&x| x / i16::MAX as f32)
+        // .map(|&x| x / f32::from(i16::MAX))
         // .collect(),
         (Some(input_sample_rate), Some(32), Some(SampleFormat::Float)),
     );
@@ -464,34 +436,66 @@ pub fn decode_and_denoise(
     debug!("Decoding Finished");
     #[cfg(debug_assertions)]
     write_wav("../decoded.wav", &decoded_output, (None, None, None));
-    let final_ouput = if options.normalize_result.unwrap_or(false) {
-        trace!("Run second normalization");
-        let max_amp = decoded_output
-            .iter()
-            .fold(f32::MIN, |current, &sample| current.max(sample.abs()));
-        let norm_factor = if max_amp <= 0.0 {
-            trace!("Max amplitude (={max_amp}) does not make sense, use 1.0 to leave unchanged");
-            1.0
-        } else {
-            1.0 / max_amp
-        };
-        trace!("Normalizing value with factor={norm_factor}");
-        decoded_output.iter_mut().for_each(|s| *s *= norm_factor);
-        trace!("Finished Normalizing");
-        decoded_output
+    if options.normalize_result.unwrap_or(false) {
+        normalize(&mut decoded_output);
     } else {
         trace!("Skip normalizing, using same as denoised ouput");
-        decoded_output
     };
     #[cfg(debug_assertions)]
-    write_wav("../ouput.wav", &final_ouput, (None, None, None));
-    Ok(final_ouput)
+    write_wav("../ouput.wav", &decoded_output, (None, None, None));
+    Ok(decoded_output)
+}
+
+fn normalize(decoded_output: &mut [f32]) {
+    trace!("Run second normalization");
+    let max_amp = decoded_output
+        .iter()
+        .fold(f32::MIN, |current, &sample| current.max(sample.abs()));
+    let norm_factor = if max_amp <= 0.0 {
+        trace!("Max amplitude (={max_amp}) does not make sense, use 1.0 to leave unchanged");
+        1.0
+    } else {
+        1.0 / max_amp
+    };
+    trace!("Normalizing value with factor={norm_factor}");
+    decoded_output.iter_mut().for_each(|s| *s *= norm_factor);
+    trace!("Finished Normalizing");
+}
+
+fn denoise_input(denoise_sample: &[f32]) -> Vec<f32> {
+    const FRAME_SIZE: usize = DenoiseState::FRAME_SIZE;
+    debug!("Denoising input");
+    let mut output = Vec::new();
+    let mut out_buf = [0.0; FRAME_SIZE];
+    // TODO: Be able to load from model
+    // let bytes = include_bytes!("../rnn_models/sh.rnnn");
+    // let model = RnnModel::from_static_bytes(bytes).expect("Corrupted model file");
+    // let mut nn_denoiser = DenoiseState::from_model(model);
+    let model = RnnModel::default();
+    let mut nn_denoiser = DenoiseState::from_model(model);
+    let mut first = true;
+    for chunk in denoise_sample.chunks_exact(FRAME_SIZE) {
+        nn_denoiser.process_frame(&mut out_buf[..], chunk);
+
+        // For first, I add unprocessed chunk, to keep same size
+        if first {
+            output.extend_from_slice(chunk);
+        } else {
+            output.extend_from_slice(&out_buf[..]);
+        }
+        first = false;
+    }
+    trace!("Finished Denoising");
+    output
+        .into_iter()
+        .map(|x| x / (f32::from(i16::MAX) + 1.0))
+        .collect()
 }
 
 use audrey::hound::{SampleFormat, WavSpec, WavWriter};
 fn write_wav<T: audrey::hound::Sample + Copy>(
     path: &str,
-    data: &Vec<T>,
+    data: &[T],
     info: (Option<u32>, Option<u16>, Option<SampleFormat>),
 ) {
     debug!("Saving audio data to file.");
@@ -515,15 +519,13 @@ fn write_wav<T: audrey::hound::Sample + Copy>(
                 .iter()
                 .try_for_each(|sample| writer.write_sample(*sample))
             {
-                warn!("Could not write samples to file (error: {err:?})")
+                warn!("Could not write samples to file (error: {err:?})");
+            } else if let Err(err) = writer.flush() {
+                warn!("Could not flush samples to file (error: {err:?})");
+            } else if let Err(err) = writer.finalize() {
+                warn!("Could not finalize samples to file (error: {err:?})");
             } else {
-                if let Err(err) = writer.flush() {
-                    warn!("Could not flush samples to file (error: {err:?})")
-                } else if let Err(err) = writer.finalize() {
-                    warn!("Could not finalize samples to file (error: {err:?})")
-                } else {
-                    debug!("Finished writing to {path} file.")
-                }
+                debug!("Finished writing to {path} file.");
             }
         }
         Err(err) => warn!("Could not open writer (error: {err:?}). SKIPPED!"),
