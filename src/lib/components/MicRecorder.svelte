@@ -10,6 +10,7 @@
     import Button from "$lib/components/ui/button/button.svelte";
     import Loading from "$lib/components/ui/Loading.svelte";
     import { debug, info, trace, warn } from "@tauri-apps/plugin-log";
+    import { configStore } from "$lib/store.svelte";
 
     interface RecorderProps {
         id?: string;
@@ -81,9 +82,9 @@
             trace(`Getting audio media stream`);
             audioStream = await navigator.mediaDevices.getUserMedia({
                 audio: {
-                    autoGainControl: false,
-                    noiseSuppression: true,
-                    echoCancellation: true,
+                    autoGainControl: configStore.autoGainControl.value,
+                    noiseSuppression: configStore.noiseSuppression.value,
+                    echoCancellation: configStore.echoCancellation.value,
                 },
                 video: false,
             });

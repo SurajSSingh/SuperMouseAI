@@ -39,6 +39,12 @@ export const ConfigItem = {
   USE_GPU: "use_gpu",
   ENABLE_TELEMETRY: "telemetry_enabled",
   PATIENCE: "beam_search_patience",
+  AUDIO_STREAM_USE_AUTO_GAIN: "audio_auto_gain",
+  AUDIO_STREAM_NOISE_SUPRESS: "audio_noise_suppression",
+  AUDIO_STREAM_USE_ECHO_CANCEL: "audio_echo_cancellation",
+  AUDIO_PROCESS_DENOISE: "audio_denoise",
+  AUDIO_PROCESS_NORMALIZE: "audio_normalize",
+
   // THIS HAS BEEN DEPRECATED FROM FIELD
   TRANSCRIPTS: "transcripts",
 };
@@ -229,6 +235,26 @@ export class ConfigStore {
     2.0,
     ConfigItem.PATIENCE,
   );
+  autoGainControl = new StoreStateOption<boolean>(
+    false,
+    ConfigItem.AUDIO_STREAM_USE_AUTO_GAIN,
+  );
+  noiseSuppression = new StoreStateOption<boolean>(
+    true,
+    ConfigItem.AUDIO_STREAM_NOISE_SUPRESS,
+  );
+  echoCancellation = new StoreStateOption<boolean>(
+    true,
+    ConfigItem.AUDIO_STREAM_USE_ECHO_CANCEL,
+  );
+  denoise_audio = new StoreStateOption<boolean>(
+    true,
+    ConfigItem.AUDIO_PROCESS_DENOISE,
+  );
+  normalize_result = new StoreStateOption<boolean>(
+    true,
+    ConfigItem.AUDIO_PROCESS_NORMALIZE,
+  );
 
   // Private config data not backed by file
   includeEnglishOnlyModels = $state({ value: false });
@@ -257,6 +283,11 @@ export class ConfigStore {
     this.useGPU,
     this.enableTelemetry,
     this.patience,
+    this.autoGainControl,
+    this.noiseSuppression,
+    this.echoCancellation,
+    this.denoise_audio,
+    this.normalize_result,
   ] as const;
 
   // Derived values

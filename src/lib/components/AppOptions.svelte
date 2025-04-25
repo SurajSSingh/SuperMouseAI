@@ -73,6 +73,49 @@
     </div>
 </CollapseableFieldSet>
 <CollapseableFieldSet
+    title="Audio Configuration"
+    titleTag="h3"
+    subtitle="Configure how app records and processes audio"
+>
+    <div class="mb-4">
+        <ToggleSwitch
+            label="Echo Cancellation:"
+            bind:checked={configStore.echoCancellation.value}
+        />
+        <p class="fieldset-label">Cancel (most) echo coming from speaker.</p>
+    </div>
+    <div class="mb-4">
+        <ToggleSwitch
+            label="Noise Suppression:"
+            bind:checked={configStore.noiseSuppression.value}
+        />
+        <p class="fieldset-label">Runs basic noise suppression.</p>
+    </div>
+    <div class="mb-4">
+        <ToggleSwitch
+            label="Auto Gain Control:"
+            bind:checked={configStore.autoGainControl.value}
+        />
+        <p class="fieldset-label">Dynamically change microphone volume.</p>
+    </div>
+    <div class="mb-4">
+        <ToggleSwitch
+            label="Denoise Audio:"
+            bind:checked={configStore.denoise_audio.value}
+        />
+        <p class="fieldset-label">Run audio de-noising before transcribing.</p>
+    </div>
+    <div class="mb-4">
+        <ToggleSwitch
+            label="Normalize Audio:"
+            bind:checked={configStore.normalize_result.value}
+        />
+        <p class="fieldset-label">
+            Boost low volume audio during processing if needed.
+        </p>
+    </div>
+</CollapseableFieldSet>
+<CollapseableFieldSet
     title="Update Configuration"
     titleTag="h3"
     subtitle="Configure how app updates itself"

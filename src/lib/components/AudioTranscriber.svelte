@@ -3,12 +3,9 @@
     import Textarea from "$lib/components/ui/textarea/textarea.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import { configStore } from "$lib/store.svelte";
-    import {
-        notifier,
-        type NotificationSystem,
-    } from "$lib/notificationSystem.svelte";
+    import { notifier } from "$lib/notificationSystem.svelte";
     import { commands } from "$lib/bindings";
-    import { debug, error } from "@tauri-apps/plugin-log";
+    import { debug } from "@tauri-apps/plugin-log";
 
     interface TranscriberProps {
         onFinishProcessing?: (text: string) => void;
@@ -42,6 +39,12 @@
                         removed_words: configStore.ignoredWordsList,
                         replace_inter_sentence_newlines:
                             configStore.interNLRemove.value,
+                    },
+                    {
+                        denoise_audio: configStore.denoise_audio.value,
+                        normalize_result: configStore.normalize_result.value,
+                        low_pass_value: 3000,
+                        high_pass_value: 200,
                     },
                 );
                 debug(`Finish `);
