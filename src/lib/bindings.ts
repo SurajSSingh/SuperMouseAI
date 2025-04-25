@@ -10,9 +10,9 @@ export const commands = {
  * 
  * Check [crate::mutter::Model::transcribe_audio] for details on arguments
  */
-async transcribe(audioData: number[], options: TranscribeOptions | null) : Promise<Result<[string, number], string>> {
+async transcribe(audioData: number[], whisperOptions: TranscribeOptions | null, decodeOptions: AudioProcessingOptions | null) : Promise<Result<[string, number], string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("transcribe", { audioData, options }) };
+    return { status: "ok", data: await TAURI_INVOKE("transcribe", { audioData, whisperOptions, decodeOptions }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -54,9 +54,9 @@ async processText(text: string, options: TextProcessOptions | null) : Promise<Re
 /**
  * Run [transcribe] function then pass to [process_text] for post processing.
  */
-async transcribeWithPostProcess(audioData: number[], transcribeOptions: TranscribeOptions | null, processingOptions: TextProcessOptions | null) : Promise<Result<[string, number], string>> {
+async transcribeWithPostProcess(audioData: number[], transcribeOptions: TranscribeOptions | null, processingOptions: TextProcessOptions | null, decodeOptions: AudioProcessingOptions | null) : Promise<Result<[string, number], string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("transcribe_with_post_process", { audioData, transcribeOptions, processingOptions }) };
+    return { status: "ok", data: await TAURI_INVOKE("transcribe_with_post_process", { audioData, transcribeOptions, processingOptions, decodeOptions }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -126,6 +126,28 @@ transcriptionSegmentEvent: "transcription-segment-event"
 
 /** user-defined types **/
 
+/**
+ * Options for the processing audio for [`crate::mutter::decode_and_denoise`] function.
+ * 
+ * All items are optional.
+ */
+export type AudioProcessingOptions = { 
+/**
+ * Wheter to normalize audio, defaults to `false`
+ */
+normalize_result: boolean | null; 
+/**
+ * Wheter to denoise audio, defaults to `true`
+ */
+denoise_audio: boolean | null; 
+/**
+ * Value for low pass filter, this represents maximum frequency allowed, default is `3000`
+ */
+low_pass_value: number | null; 
+/**
+ * Value for high pass filter, this represents minimum frequency allowed, default is `200`
+ */
+high_pass_value: number | null }
 /**
  * Tauri event representing a modifier key press globally
  * 

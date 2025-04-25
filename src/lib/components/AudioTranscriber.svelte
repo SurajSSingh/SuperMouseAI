@@ -43,6 +43,12 @@
                         replace_inter_sentence_newlines:
                             configStore.interNLRemove.value,
                     },
+                    {
+                        denoise_audio: true,
+                        normalize_result: true,
+                        low_pass_value: 3000,
+                        high_pass_value: 200,
+                    },
                 );
                 debug(`Finish `);
                 if (result.status === "error") {
