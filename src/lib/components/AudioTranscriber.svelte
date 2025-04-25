@@ -3,12 +3,9 @@
     import Textarea from "$lib/components/ui/textarea/textarea.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import { configStore } from "$lib/store.svelte";
-    import {
-        notifier,
-        type NotificationSystem,
-    } from "$lib/notificationSystem.svelte";
+    import { notifier } from "$lib/notificationSystem.svelte";
     import { commands } from "$lib/bindings";
-    import { debug, error } from "@tauri-apps/plugin-log";
+    import { debug } from "@tauri-apps/plugin-log";
 
     interface TranscriberProps {
         onFinishProcessing?: (text: string) => void;
