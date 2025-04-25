@@ -9,6 +9,7 @@ use crate::{
     types::AudioProcessingOptions,
 };
 use log::{debug, error, trace, warn};
+use nnnoiseless::DenoiseState;
 use rodio::{source::UniformSourceIterator, Decoder, Source};
 use std::io::Cursor;
 use whisper_rs::{
@@ -89,19 +90,18 @@ impl Model {
         language: Option<&str>,
         threads: Option<u16>,
         patience: Option<f32>,
+        decode_options: AudioProcessingOptions,
         abort_callback: Option<impl FnMut() -> bool + 'static>,
         progress_callback: Option<impl FnMut(i32) + 'static>,
         new_segment_lossy_callback: Option<impl FnMut(SegmentCallbackData) + 'static>,
         new_segment_callback: Option<impl FnMut(SegmentCallbackData) + 'static>,
     ) -> Result<Transcript, ModelError> {
         trace!("Decoding audio.");
-        let samples = decode_and_denoise(
-            audio.as_ref().to_vec(),
-            Some(AudioProcessingOptions {
-                normalize_result: Some(true),
-                ..Default::default()
-            }),
-        )?;
+        let samples = if decode_options.denoise_audio.is_none_or(|is_true| is_true) {
+            decode_and_denoise(audio.as_ref().to_vec(), decode_options)?
+        } else {
+            decode(audio.as_ref().to_vec())?
+        };
         trace!("Transcribing audio.");
         self.transcribe_pcm_s16le(
             &samples,
@@ -323,6 +323,18 @@ pub fn decode(bytes: Vec<u8>) -> Result<Vec<f32>, ModelError> {
     let mut output: Vec<f32> = vec![0.0f32; samples.len()];
     let result: Result<(), whisper_rs::WhisperError> =
         whisper_rs::convert_integer_to_float_audio(&samples, &mut output);
+    debug!("Normalizing output");
+    let max_amp = output
+        .iter()
+        .fold(f32::MIN, |current, &sample| current.max(sample.abs()));
+    let norm_factor = if max_amp <= 0.0 {
+        trace!("Max amplitude (={max_amp}) does not make sense, use 1.0 to leave unchanged");
+        1.0
+    } else {
+        1.0 / max_amp
+    };
+    trace!("Normalizing value with factor={norm_factor}");
+    output.iter_mut().for_each(|x| *x *= norm_factor);
     debug!("Decoding Finished");
     result.map(|()| output).map_err(ModelError::WhisperError)
 }
@@ -332,9 +344,8 @@ pub fn decode(bytes: Vec<u8>) -> Result<Vec<f32>, ModelError> {
 /// Adapted from <https://github.com/sigaloid/mutter/blob/main/src/transcode.rs>
 pub fn decode_and_denoise(
     bytes: Vec<u8>,
-    options: Option<AudioProcessingOptions>,
+    options: AudioProcessingOptions,
 ) -> Result<Vec<f32>, ModelError> {
-    let options = options.unwrap_or_default();
     trace!("Options given for decode and denoise: {options:?}");
     debug!("Start Decoding");
     let input = Cursor::new(bytes);
@@ -342,23 +353,49 @@ pub fn decode_and_denoise(
     // We know it is m4a by Mime type in browser (and we set it to be that as well)
     let source = Decoder::new_wav(input).map_err(ModelError::DecodingError)?;
     trace!("Produced WAV source from bytes");
+    let input_sample_rate = 48_000;
     let output_sample_rate = 16_000;
     let channels = 1;
-    let denoise_sample =
+    let mut input_wav_sample =
         UniformSourceIterator::<rodio::Decoder<std::io::Cursor<Vec<u8>>>, f32>::new(
-            source, channels, 48_000,
+            source,
+            channels,
+            input_sample_rate,
         )
         .convert_samples()
         .collect::<Vec<f32>>();
+    let denoise_sample = if options.normalize_result.unwrap_or(false) {
+        trace!("Run first normalization");
+        let max_amp = input_wav_sample
+            .iter()
+            .fold(f32::MIN, |current, &sample| current.max(sample.abs()));
+        let norm_factor = if max_amp <= 0.0 {
+            trace!("Max amplitude (={max_amp}) does not make sense, use 1.0 to leave unchanged");
+            1.0
+        } else {
+            1.0 / max_amp
+        };
+        trace!("Normalizing value with factor={norm_factor}");
+        input_wav_sample.iter_mut().for_each(|s| *s *= norm_factor);
+        trace!("Finished Normalizing");
+        input_wav_sample
+    } else {
+        trace!("Skip normalizing, using same as denoised ouput");
+        input_wav_sample
+    };
 
     #[cfg(debug_assertions)]
-    write_wav("../input.wav", &denoise_sample);
+    write_wav("../input.wav", &denoise_sample, Some(input_sample_rate));
 
-    let mut denoised_output = if options.denoise_audio.unwrap_or(true) {
-        const FRAME_SIZE: usize = nnnoiseless::DenoiseState::FRAME_SIZE;
+    let denoised_output = if options.denoise_audio.unwrap_or(true) {
+        const FRAME_SIZE: usize = DenoiseState::FRAME_SIZE;
         let mut output = Vec::new();
         let mut out_buf = [0.0; FRAME_SIZE];
-        let mut nn_denoiser = nnnoiseless::DenoiseState::new();
+        // TODO: Be able to load from model
+        // let bytes = include_bytes!("../rnn_models/sh.rnnn");
+        // let model = RnnModel::from_static_bytes(bytes).expect("Corrupted model file");
+        // let mut nn_denoiser = DenoiseState::from_model(model);
+        let mut nn_denoiser = DenoiseState::new();
         let mut first = true;
         for chunk in denoise_sample.chunks_exact(FRAME_SIZE) {
             nn_denoiser.process_frame(&mut out_buf[..], chunk);
@@ -380,7 +417,7 @@ pub fn decode_and_denoise(
         denoise_sample
     };
     #[cfg(debug_assertions)]
-    write_wav("../denoised.wav", &denoised_output);
+    write_wav("../denoised.wav", &denoised_output, Some(input_sample_rate));
 
     debug!("WAV resample data: sample_rate={output_sample_rate}, channels={channels}");
     // Resample to output sample rate and channels
@@ -400,18 +437,19 @@ pub fn decode_and_denoise(
         .map_err(ModelError::WhisperError)?;
     debug!("Decoding Finished");
     #[cfg(debug_assertions)]
-    write_wav("../decoded.wav", &decoded_output);
+    write_wav("../decoded.wav", &decoded_output, None);
     let final_ouput = if options.normalize_result.unwrap_or(false) {
+        trace!("Run second normalization");
         let max_amp = decoded_output
             .iter()
             .fold(f32::MIN, |current, &sample| current.max(sample.abs()));
         let norm_factor = if max_amp <= 0.0 {
-            trace!("Max amplitude (={max_amp}) does not make sense, use 1.0");
+            trace!("Max amplitude (={max_amp}) does not make sense, use 1.0 to leave unchanged");
             1.0
         } else {
             1.0 / max_amp
         };
-        debug!("Normalizing value with factor={norm_factor}");
+        trace!("Normalizing value with factor={norm_factor}");
         decoded_output.iter_mut().for_each(|s| *s *= norm_factor);
         trace!("Finished Normalizing");
         decoded_output
@@ -420,12 +458,12 @@ pub fn decode_and_denoise(
         decoded_output
     };
     #[cfg(debug_assertions)]
-    write_wav("../ouput.wav", &final_ouput);
+    write_wav("../ouput.wav", &final_ouput, None);
     Ok(final_ouput)
 }
 
 use audrey::hound::{SampleFormat, WavSpec, WavWriter};
-fn write_wav(path: &str, data: &Vec<f32>) {
+fn write_wav(path: &str, data: &Vec<f32>, rate: Option<u32>) {
     debug!("Saving audio data to file.");
     // let maybe_file = std::fs::OpenOptions::new()
     //     .write(true)
@@ -436,7 +474,7 @@ fn write_wav(path: &str, data: &Vec<f32>) {
         path,
         WavSpec {
             channels: 1,
-            sample_rate: 16000,
+            sample_rate: rate.unwrap_or(16000),
             bits_per_sample: 32,
             sample_format: SampleFormat::Float,
         },

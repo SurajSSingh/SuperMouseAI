@@ -12,7 +12,10 @@ use crate::{
         MouseMoveEvent, TranscriptionProgressEvent,
     },
     mutter::ModelError,
-    types::{AppState, MouseButtonType, SystemInfo, TextProcessOptions, TranscribeOptions},
+    types::{
+        AppState, AudioProcessingOptions, MouseButtonType, SystemInfo, TextProcessOptions,
+        TranscribeOptions,
+    },
 };
 use enigo::{Enigo, Keyboard, Settings};
 use log::{debug, error, info, trace};
@@ -32,9 +35,10 @@ pub async fn transcribe(
     app_state: State<'_, AppState>,
     app_handle: AppHandle,
     audio_data: Vec<u8>,
-    options: Option<TranscribeOptions>,
+    whisper_options: Option<TranscribeOptions>,
+    decode_options: Option<AudioProcessingOptions>,
 ) -> Result<(String, f64), String> {
-    let options = options.unwrap_or_default();
+    let options = whisper_options.unwrap_or_default();
     log::info!("Transcribing with parameters: translate={:?}, use_timestamp={:?}, threads={:?}, prompt={:?}, lang={:?}, fmt={:?}, patience={:?}",
         options.translate,
         options.individual_word_timestamps,
@@ -112,6 +116,7 @@ pub async fn transcribe(
                 threads => threads,
             },
             options.patience,
+            decode_options.unwrap_or_default(),
             abort_callback,
             progress_callback,
             lossy_segment_callback,
@@ -175,10 +180,17 @@ pub async fn transcribe_with_post_process(
     audio_data: Vec<u8>,
     transcribe_options: Option<TranscribeOptions>,
     processing_options: Option<TextProcessOptions>,
+    decode_options: Option<AudioProcessingOptions>,
 ) -> Result<(String, f64), String> {
     info!("Running transcription & processing command");
-    let (text, transcription_time) =
-        transcribe(app_state, app_handle, audio_data, transcribe_options).await?;
+    let (text, transcription_time) = transcribe(
+        app_state,
+        app_handle,
+        audio_data,
+        transcribe_options,
+        decode_options,
+    )
+    .await?;
     let (new_text, processing_time) = process_text(text, processing_options).await?;
     Ok((new_text, transcription_time + processing_time))
 }

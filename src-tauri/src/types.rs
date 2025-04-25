@@ -236,8 +236,8 @@ pub struct AudioProcessingOptions {
     pub normalize_result: Option<bool>,
     /// Wheter to denoise audio, defaults to `true`
     pub denoise_audio: Option<bool>,
-    /// Value for low pass filter, this represents maximum frequency allowed
+    /// Value for low pass filter, this represents maximum frequency allowed, default is `3000`
     pub low_pass_value: Option<u32>,
-    /// Value for high pass filter, this represents minimum frequency allowed
+    /// Value for high pass filter, this represents minimum frequency allowed, default is `200`
     pub high_pass_value: Option<u32>,
 }
