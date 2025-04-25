@@ -6,6 +6,32 @@ All notable changes to this project will be documented in this file.
 
 ### 🚀 Features
 
+- *(backend)* :sparkles: Add new decode and denoise function
+- *(backend)* :sparkles: Add command setup and pre-normalize step
+- *(frontend)* :sparkles: Add decode option to transcription function
+- *(frontend)* :sparkles: Add new audio option toggles
+
+### 🐛 Bug Fixes
+
+- *(backend)* :bug: Fix denoising not being applying
+
+### 🚜 Refactor
+
+- *(backend)* :rotating_light: Fix clippy lint issues with new function
+
+### 🎨 Styling
+
+- *(frontend)* :coffin: Remove unneeded imports from AudioTranscriber
+
+### ⚙️ Miscellaneous Tasks
+
+- V0.8.4 update files
+- *(backend)* :heavy_plus_sign: Add NNNoiseless crate
+
+## [0.8.4] - 2025-04-17
+
+### 🚀 Features
+
 - *(frontend)* :label: Add recommendations for (V)RAM
 - *(backend)* :sparkles: Add option to use custom patience value
 - *(frontend)* :sparkles: Add input to change patience value
@@ -13,10 +39,14 @@ All notable changes to this project will be documented in this file.
 - *(backend)* :label: Add typed events for transcription callback
 - *(frontend)* :construction: Add frontend side for callback feature
 - :sparkles: Add transcription details
+- *(installer)* :sparkles: Add auto download and install Vulkan
 
 ### 🐛 Bug Fixes
 
 - *(frontend)* :bug: Fix missing clear all transcript function
+- *(frontend)* :speech_balloon: Add missing patience field information
+- *(installer)* :bug: Use inect plugin instead of NSISdl
+- *(installer)* :bug: Update flags for silent install
 
 ### 🚜 Refactor
 
@@ -32,6 +62,7 @@ All notable changes to this project will be documented in this file.
 - *(frontend)* :recycle: Improve Transcription Info Type
 - *(frontend)* Change default patience to 2
 - *(backend)* :recycle: Model transcribe function changes
+- *(frontend)* :recycle: Require recommended VRAM
 
 ### 📚 Documentation
 
@@ -48,6 +79,13 @@ All notable changes to this project will be documented in this file.
 - :rotating_light: Fix lint error for vite config
 - *(backend)* :rotating_light: Fix lint issue in mutter
 - :wrench: Add full check Deno task
+- :bookmark: Bump to v0.8.4
+- :green_heart: Install dependencies before running check
+- *(backend)* :rotating_light: Fix Rust clippy lint issues
+
+### ◀️ Revert
+
+- :rewind: Bring back NSISdl download temporarily
 
 ## [0.8.3] - 2025-04-10
 
