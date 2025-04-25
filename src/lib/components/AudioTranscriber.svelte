@@ -41,8 +41,8 @@
                             configStore.interNLRemove.value,
                     },
                     {
-                        denoise_audio: true,
-                        normalize_result: true,
+                        denoise_audio: configStore.denoise_audio.value,
+                        normalize_result: configStore.normalize_result.value,
                         low_pass_value: 3000,
                         high_pass_value: 200,
                     },
