@@ -440,7 +440,7 @@ pub fn decode_and_denoise(
         normalize(&mut decoded_output);
     } else {
         trace!("Skip normalizing, using same as denoised ouput");
-    };
+    }
     #[cfg(debug_assertions)]
     write_wav("../ouput.wav", &decoded_output, (None, None, None));
     Ok(decoded_output)
