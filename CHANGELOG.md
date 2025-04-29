@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [current]
 
+### ⚙️ Miscellaneous Tasks
+
+- Update pre-release updater file to v0.8.5
+- *(backend)* :arrow_up: Update Rust dependencies for Apr. 29
+- *(frontend)* :arrow_up: Update JS dependencies for Apr. 29
+
+## [0.8.5] - 2025-04-25
+
 ### 🚀 Features
 
 - *(backend)* :sparkles: Add new decode and denoise function
@@ -22,11 +30,13 @@ All notable changes to this project will be documented in this file.
 ### 🎨 Styling
 
 - *(frontend)* :coffin: Remove unneeded imports from AudioTranscriber
+- *(backend)* :rotating_light: Fix unnecessary semicolon lint issue
 
 ### ⚙️ Miscellaneous Tasks
 
 - V0.8.4 update files
 - *(backend)* :heavy_plus_sign: Add NNNoiseless crate
+- :bookmark: Bump to v0.8.5
 
 ## [0.8.4] - 2025-04-17
 
