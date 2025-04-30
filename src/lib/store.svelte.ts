@@ -104,10 +104,10 @@ export class TranscriptStore {
   }
 
   async load(): Promise<void> {
-    debug(`Loading transcriptions from ${this.#fileName}.json`);
+    trace(`Loading transcriptions from ${this.#fileName}.json`);
     let file;
     try {
-      debug(`START`);
+      trace(`START transcript load`);
       file = await open(`${this.#fileName}.json`, {
         ...BASE_LOCAL_APP_DIR,
         read: true,
@@ -125,7 +125,7 @@ export class TranscriptStore {
       trace(`LOAD TRANSCRIPTS: Got to DECODE`);
       this.value = text.trim() ? JSON.parse(text) : [];
       trace(`LOAD TRANSCRIPTS: Got to PARSE`);
-      debug(JSON.stringify(this.value));
+      trace(`TRANSCRIPT VALUE: ${JSON.stringify(this.value)}`);
     } catch (err) {
       error(`Error on loading transcripts: ${err}`);
     } finally {
@@ -374,7 +374,11 @@ export class ConfigStore {
     });
     if (await this.fileStore.has(ConfigItem.TRANSCRIPTS)) {
       info(`Move transcriptions from regular config to dedicated config`);
-      debug(JSON.stringify(await this.fileStore.get(ConfigItem.TRANSCRIPTS)));
+      trace(
+        `OLD TRANSCRIPT: ${
+          JSON.stringify(await this.fileStore.get(ConfigItem.TRANSCRIPTS))
+        }`,
+      );
       this.transcriptions.value =
         (await this.fileStore.get(ConfigItem.TRANSCRIPTS) as string[]).map(
           (text) => {

@@ -215,6 +215,7 @@ export class NotificationSystem {
     } else {
       this.#enabledSound = value;
     }
+    configStore.enabledSound.value = this.#enabledSound;
   }
 }
 
