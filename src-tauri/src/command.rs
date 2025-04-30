@@ -236,10 +236,11 @@ pub fn listen_for_mouse_click(app_handle: AppHandle) -> Result<u8, String> {
                 })
                 .unwrap_or_default(),
             MouseEvent::Release(_button) => { /* Do Nothing Yet */ }
-            MouseEvent::AbsoluteMove(x, y) =>  MouseMoveEvent::with_payload(*x, *y).emit(&app_handle).map_err(|e| {
-                error!("App Handle expected to emit mouse move event but could not: {e}");
-            })
-            .unwrap_or_default(),
+            // TODO: Remove
+            // MouseEvent::AbsoluteMove(x, y) =>  MouseMoveEvent::with_payload(*x, *y).emit(&app_handle).map_err(|e| {
+            //     error!("App Handle expected to emit mouse move event but could not: {e}");
+            // })
+            // .unwrap_or_default(),
             _ => (),
         }))
         .map_err(|err| err.to_string())

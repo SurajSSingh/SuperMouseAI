@@ -10,27 +10,30 @@
     let xOffset = $state(-20);
     let yOffset = $state(-20);
     let progress = $state(0);
+    let updateTime = $state(10);
 
     let currentState: RecordingStates | undefined = $state();
     let scale = 1;
 
     $effect(() => {
+        let interval: number | undefined;
         let unlistenMoveEvent: UnlistenFn | undefined;
         let unlistenStateEvent: UnlistenFn | undefined;
         let unlistenProgressEvent: UnlistenFn | undefined;
-        // currentMonitor().then((monitor) => {
-        //     if (monitor) {
-        //         debug(
-        //             `Got Monitor: ${monitor.name}(${JSON.stringify(monitor.size)}@${monitor.scaleFactor}x)`,
-        //         );
-        //         scale = monitor.scaleFactor;
-        //     }
-        // });
+        currentMonitor().then((monitor) => {
+            if (monitor) {
+                debug(
+                    `Got Monitor: ${monitor.name}(${JSON.stringify(monitor.size)}@${monitor.scaleFactor}x)`,
+                );
+                scale = monitor.scaleFactor;
+            }
+        });
         const run = async () => {
-            unlistenMoveEvent = await events.mouseMoveEvent.listen((e) => {
-                follower.style.left = `${e.payload.x + xOffset}px`;
-                follower.style.top = `${e.payload.y + yOffset}px`;
-            });
+            interval = setInterval(async () => {
+                const position = await cursorPosition();
+                follower.style.left = `${Math.ceil(position.x / scale) + xOffset}px`;
+                follower.style.top = `${Math.ceil(position.y / scale) + yOffset}px`;
+            }, updateTime);
             unlistenStateEvent = await listen("stateUpdate", (e) => {
                 debug(`State of recording updated: ${JSON.stringify(e)}`);
                 currentState = (e.payload as { state: RecordingStates }).state;
@@ -47,18 +50,9 @@
             unlistenMoveEvent?.();
             unlistenStateEvent?.();
             unlistenProgressEvent?.();
+            clearInterval(interval);
         };
     });
-
-    // $effect(() => {
-    //     let interval;
-
-    //     setInterval(async () => {
-    //         const position = await cursorPosition();
-    //         follower.style.left = `${Math.ceil(position.x / scale) + xOffset}px`;
-    //         follower.style.top = `${Math.ceil(position.y / scale) + yOffset}px`;
-    //     }, 30);
-    // });
 </script>
 
 <div id="follower" bind:this={follower} class={currentState}>
