@@ -154,4 +154,20 @@
             ? `: ${((currentUpdateCount / totalUpdateCount) * 100).toFixed(2)}%`
             : "..."}
     </div>
+{:else}
+    <Button
+        onclick={() =>
+            notifier.showPromiseToast(
+                check().then(afterCheck, onCheckError),
+                "Checking",
+                "App up to date",
+                "Could not find any updates",
+            )}
+        size="xs"
+        class={className}
+        variant="ghost"
+        color="info"
+        ><span class="text-xs">App up to date: Click here to check</span
+        ></Button
+    >
 {/if}
