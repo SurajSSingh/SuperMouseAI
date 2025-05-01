@@ -4,11 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [current]
 
+### 🚀 Features
+
+- *(frontend)* :children_crossing: Add a update check button when up to date
+- *(frontend)* :sparkles: Improve permission toggle
+
+### 🚜 Refactor
+
+- *(overlay)* :recycle: Use Tauri's cursor position
+- *(backend)* :recycle: Enforce single segment transcription
+- *(frontend)* :recycle: Enable individual word timestamp
+
 ### ⚙️ Miscellaneous Tasks
 
 - Update pre-release updater file to v0.8.5
 - *(backend)* :arrow_up: Update Rust dependencies for Apr. 29
 - *(frontend)* :arrow_up: Update JS dependencies for Apr. 29
+- :bookmark: Bump to v0.8.6
+- :construction_worker: Comment out windows simple build workflow
+- *(frontend)* :heavy_plus_sign: Add Tipex editor library
+- :bento: Add new app icon
 
 ## [0.8.5] - 2025-04-25
 
