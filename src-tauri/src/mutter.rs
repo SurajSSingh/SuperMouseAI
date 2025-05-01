@@ -191,6 +191,7 @@ impl Model {
         params.set_print_timestamps(false);
         params.set_token_timestamps(word_timestamps);
         params.set_split_on_word(true);
+        params.set_single_segment(true);
 
         // TODO: Uncomment when I can figure out how to fix crashing bug
         // trace!("Adding Callbacks");
