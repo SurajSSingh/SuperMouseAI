@@ -9,7 +9,7 @@
 use crate::{
     events::{
         new_lossy_transcript_segment_event, new_transcript_segment_event, MouseClickEvent,
-        MouseMoveEvent, TranscriptionProgressEvent,
+        TranscriptionProgressEvent,
     },
     mutter::ModelError,
     types::{
