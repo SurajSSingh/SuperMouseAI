@@ -10,25 +10,46 @@ if not exist "%DOWNLOADS_FOLDER%" (
     exit /b 1
 )
 
-REM Get JSON data, validate structure, extract and validate URL
-powershell.exe -Command ^
-    "$json = Invoke-WebRequest 'https://raw.githubusercontent.com/Example/App/refs/heads/main/release-update-latest.json' -UseBasicParsing | ConvertFrom-Json; ^
-     if (-not $json) { Write-Error 'Invalid JSON format'; exit 1 }; ^
-     if (-not $json.'platforms') { Write-Error 'Missing platforms section'; exit 1 }; ^
-     if (-not $json.'platforms.windows-x86_64') { Write-Error 'Missing windows-x86_64 section'; exit 1 }; ^
-     $url = $json.'platforms.windows-x86_64.url'; ^
-     if ([string]::IsNullOrEmpty($url)) { Write-Error 'Empty URL found'; exit 1 }; ^
-     if ($url -notmatch '^https://github\.com/[a-zA-Z0-9-]+/[a-zA-Z0-9-]+/releases/download/[a-zA-Z0-9.-]+/[a-zA-Z0-9-_.]+_[a-zA-Z0-9.-]+_x64-setup\.exe$') { ^
-         Write-Error ('Invalid URL format. Expected GitHub release URL pattern'); exit 1; ^
-     }; ^
-     Write-Output $url" | ^
-curl -L -o "%DOWNLOADS_FOLDER%\downloaded.exe"
+REM Get JSON data and extract URL
+curl -s -f "https://raw.githubusercontent.com/Example/App/refs/heads/main/release-update-latest.json" > temp.json
+if !errorlevel! neq 0 (
+    echo Error: Failed to fetch JSON data
+    exit /b 1
+)
+
+REM Read and parse JSON
+set "url="
+for /f "tokens=2 delims=:," %%a in ('findstr /m /c:"\"platforms\.windows-x86_64\.url\":" temp.json') do (
+    set "url=%%a"
+    goto :found
+)
+:found
+if "%url%"=="" (
+    echo Error: Missing or invalid URL in JSON
+    del /q temp.json
+    exit /b 1
+)
+
+REM Validate URL format
+echo "%url%" | findstr /r /c:"^https://github\.com/[a-zA-Z0-9-]\+/[a-zA-Z0-9-]\+/releases/download/[a-zA-Z0-9.-]\+/[a-zA-Z0-9-_.]\+[a-zA-Z0-9.-]_x64-setup\.exe$" >nul 2>&1
+if !errorlevel! neq 0 (
+    echo Error: Invalid URL format
+    del /q temp.json
+    exit /b 1
+)
+
+REM Download the executable
+curl -L "%url%" -o "%DOWNLOADS_FOLDER%\downloaded.exe"
 
 REM Check if download was successful
 if not exist "%DOWNLOADS_FOLDER%\downloaded.exe" (
     echo Error: Failed to download executable
+    del /q temp.json
     exit /b 1
 )
 
 REM Execute the downloaded file
 "%DOWNLOADS_FOLDER%\downloaded.exe"
+
+REM Clean up temporary file
+del /q temp.json
