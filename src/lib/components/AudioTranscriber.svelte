@@ -34,6 +34,7 @@
                         initial_prompt: configStore.initialPrompt.value,
                         patience: configStore.patience.value,
                         include_callback: false,
+                        individual_word_timestamps: true,
                     },
                     {
                         removed_words: configStore.ignoredWordsList,

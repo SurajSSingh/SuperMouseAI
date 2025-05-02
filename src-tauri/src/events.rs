@@ -38,24 +38,25 @@ impl ModKeyEvent {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+// TODO: Remove once tauri move is stabalized
+// #[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
 /// Tauri event representing mouse movement
 ///
 /// ### Payload
 ///
 /// x [i32] : Absolute X value of mosue (from 0 to `SCREEN_WIDTH`)
 /// y [i32] : Absolute Y value of mouse (from 0 to `SCREEN_HEIGHT`)
-pub struct MouseMoveEvent {
-    x: i32,
-    y: i32,
-}
+// pub struct MouseMoveEvent {
+//     x: i32,
+//     y: i32,
+// }
 
-impl MouseMoveEvent {
-    pub fn with_payload(x: i32, y: i32) -> Self {
-        trace!("Mouse move EVENT with following payload: ({x}, {y})");
-        Self { x, y }
-    }
-}
+// impl MouseMoveEvent {
+//     pub fn with_payload(x: i32, y: i32) -> Self {
+//         trace!("Mouse move EVENT with following payload: ({x}, {y})");
+//         Self { x, y }
+//     }
+// }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
 /// Event representing the progress for the current transcription
@@ -148,7 +149,7 @@ pub fn get_collected_events() -> Events {
     collect_events![
         MouseClickEvent,
         ModKeyEvent,
-        MouseMoveEvent,
+        // MouseMoveEvent,
         TranscriptionProgressEvent,
         TranscriptionSegmentEvent,
     ]

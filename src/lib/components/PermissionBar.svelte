@@ -25,7 +25,6 @@
     let explicitMicrophonePermission: PermissionState = $state(
         "denied" as PermissionState,
     );
-    let notificationPermission: boolean = $state(false);
 
     const microphonePermission: boolean | null = $derived(
         explicitMicrophonePermission === "prompt"
@@ -35,13 +34,13 @@
 
     $effect(() => {
         const queryPermissions = async () => {
-            notificationPermission = await notifier.checkPermissionGranted();
             await updateMicrophonePermissions();
         };
         debug(`Update permissions for Permission Bar component`);
         queryPermissions();
         trace(`Permissions allowed
-        - Notifications = ${notificationPermission}
+        - Notifications = ${configStore.useSystemNotification.value}
+        - Sound = ${configStore.enabledSound.value}
         - Mircophone = ${explicitMicrophonePermission}
         `);
     });
@@ -68,28 +67,55 @@
 <div>
     <!-- <h2 class="text-center text-xl">Permissions</h2> -->
     <div
-        class="grid grid-cols-1 gap-1 md:gap-2 xl:gap-4 sm:grid-cols-2 lg:grid-cols-3 justify-items-center place-items-center"
+        class="grid grid-cols-1 gap-1 md:gap-2 lg:gap-4 xl:gap-4 sm:grid-cols-3 justify-items-center place-items-center items-stretch"
     >
         <PermissionButton
             name="Microphone"
-            icon={showIcons ? "🎤" : ""}
+            icon={showIcons ? (microphonePermission ? "🎤" : "🚫") : ""}
             status={microphonePermission}
             onclick={resetPermission}
             showName={showNames}
         />
         <PermissionButton
-            name="Notification"
-            icon={showIcons ? "🔔" : ""}
-            status={notificationPermission}
+            name="Sound"
+            icon={showIcons
+                ? configStore.enabledSound.value
+                    ? "🔊"
+                    : "🔇"
+                : ""}
+            status={configStore.enabledSound.value}
             onclick={() => {
-                debug(`Activate notification permission`);
-                notifier.getPermissionToNotify(configStore.testNotify.value);
-                trace(`Sent notification permission request`);
-                notifier
-                    .checkPermissionGranted()
-                    .then(
-                        (permission) => (notificationPermission = permission),
+                notifier.setEnabledSound("toggle");
+                notifier.playSound();
+            }}
+            showName={showNames}
+        />
+        <PermissionButton
+            name="Notification"
+            icon={showIcons
+                ? configStore.useSystemNotification.value
+                    ? "🔔"
+                    : "🔕"
+                : ""}
+            status={configStore.useSystemNotification.value}
+            onclick={() => {
+                if (configStore.useSystemNotification.value) {
+                    debug("Turning off system notifications");
+                    configStore.useSystemNotification.value = false;
+                } else {
+                    debug(`Activate notification permission`);
+                    notifier.getPermissionToNotify(
+                        configStore.testNotify.value,
                     );
+                    trace(`Sent notification permission request`);
+                    notifier
+                        .checkPermissionGranted()
+                        .then(
+                            (permission) =>
+                                (configStore.useSystemNotification.value =
+                                    permission),
+                        );
+                }
                 trace(`Updated notification permission`);
             }}
             showName={showNames}

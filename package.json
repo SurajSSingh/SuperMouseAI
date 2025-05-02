@@ -17,6 +17,7 @@
   },
   "license": "FSL-1.1-MIT OR FSL-1.1-ALv2",
   "dependencies": {
+    "@friendofsvelte/tipex": "^0.0.8-dev.0",
     "@tailwindcss/vite": "^4.1.4",
     "@tauri-apps/api": "^2.5.0",
     "@tauri-apps/plugin-clipboard-manager": "^2.2.2",
