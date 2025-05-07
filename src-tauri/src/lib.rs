@@ -22,7 +22,7 @@ mod types;
 use command::listen_for_mouse_click;
 use events::ModKeyEvent;
 use mutter::Model;
-use types::{is_modkey, InnerAppState, ModKeyPayload};
+use types::{is_modkey, InnerAppState, InnerSentryPluginInfoState, ModKeyPayload};
 
 pub use crate::command::get_collected_commands;
 pub use crate::events::get_collected_events;
@@ -165,6 +165,7 @@ fn setup_app(app: &App, bindings_builder: &Builder) -> Result<(), Box<dyn std::e
     let sound_map = create_sound_map(app)?;
     debug!("Finished creating sound map");
     app.manage(std::sync::Mutex::new(InnerAppState::new(model, sound_map)));
+    app.manage(std::sync::Mutex::new(InnerSentryPluginInfoState(None)));
     trace!("Created initial app state");
     debug!("Setup mouse click listener");
     let _mouse_click_listener_handler = listen_for_mouse_click(app.handle().clone())?;
