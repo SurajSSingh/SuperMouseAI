@@ -37,16 +37,17 @@ export const ConfigItem = {
   CURRENT_MODEL: "current_model",
   DOWNLOADED_MODELS: "downloaded_models",
   USE_GPU: "use_gpu",
-  ENABLE_TELEMETRY: "telemetry_enabled",
   PATIENCE: "beam_search_patience",
   AUDIO_STREAM_USE_AUTO_GAIN: "audio_auto_gain",
   AUDIO_STREAM_NOISE_SUPRESS: "audio_noise_suppression",
   AUDIO_STREAM_USE_ECHO_CANCEL: "audio_echo_cancellation",
   AUDIO_PROCESS_DENOISE: "audio_denoise",
   AUDIO_PROCESS_NORMALIZE: "audio_normalize",
+  SEND_CRASH_REPORT: "send_crash_report",
 
   // THIS HAS BEEN DEPRECATED FROM FIELD
   TRANSCRIPTS: "transcripts",
+  ENABLE_TELEMETRY: "telemetry_enabled",
 };
 
 class StoreStateOption<T> {
@@ -171,7 +172,7 @@ export class ConfigStore {
   fileStore: Store | null = null;
   cleanup: () => void;
   keyChangeUnlistener: UnlistenFn | undefined;
-  #version = 1;
+  #version = 3;
 
   // Private Config data
   theme = new StoreStateOption<ThemeKind>("system", ConfigItem.THEME);
@@ -227,9 +228,9 @@ export class ConfigStore {
     true,
     ConfigItem.USE_GPU,
   );
-  enableTelemetry = new StoreStateOption<boolean>(
-    false,
-    ConfigItem.ENABLE_TELEMETRY,
+  enableCrashReport = new StoreStateOption<boolean | null>(
+    null,
+    ConfigItem.SEND_CRASH_REPORT,
   );
   patience = new StoreStateOption<number>(
     2.0,
@@ -281,7 +282,7 @@ export class ConfigStore {
     this.currentModel,
     this.downloadedModels,
     this.useGPU,
-    this.enableTelemetry,
+    this.enableCrashReport,
     this.patience,
     this.autoGainControl,
     this.noiseSuppression,
@@ -353,16 +354,20 @@ export class ConfigStore {
       error(`No store provided`);
       return;
     }
-    if (!this.fileStore.has(ConfigItem.VERSION)) {
-      warn(
-        `Store is unversioned, this may not be valid, setting to current version`,
-      );
-      await this.fileStore.set(ConfigItem.VERSION, this.#version);
-    } else {
-      this.#version = await this.fileStore.get(ConfigItem.VERSION) ??
-        this.#version;
-      info(`Loading store with version = ${this.#version}`);
+    let oldVersion = -1;
+    const fileVersion = await this.fileStore.get<number>(ConfigItem.VERSION);
+    if (!fileVersion || fileVersion < this.#version) {
+      if (!fileVersion) {
+        warn(
+          `Store is unversioned, this may not be valid, setting to current version, and running migration`,
+        );
+        oldVersion = 0;
+      } else {
+        info("Will run migration on old config file");
+        oldVersion = fileVersion;
+      }
     }
+    info(`Loading store with version = ${this.#version}`);
     const store = this.fileStore;
 
     debug(`Load values in config into each field in store`);
@@ -372,6 +377,25 @@ export class ConfigStore {
     ).catch((err) => {
       error("Failed to load from store with given error: ", err);
     });
+    if (oldVersion >= 0) await this.transitionDeprecatedOptions(oldVersion);
+    this.keyChangeUnlistener = await this.fileStore.onChange((k, v) =>
+      trace(`STORE CHANGE: ${k} => ${v}`)
+    );
+    trace(
+      `Current store data: ${
+        JSON.stringify(await this.fileStore.entries(), null, 2)
+      }`,
+    );
+  }
+
+  private async transitionDeprecatedOptions(
+    previousVersion: number,
+  ): Promise<void> {
+    if (!this.fileStore) {
+      error(`No store provided`);
+      return;
+    }
+    // Old Transcript list ---move to--> New Transcript file
     if (await this.fileStore.has(ConfigItem.TRANSCRIPTS)) {
       info(`Move transcriptions from regular config to dedicated config`);
       trace(
@@ -394,14 +418,21 @@ export class ConfigStore {
       }
     }
     await this.transcriptions.load();
-    this.keyChangeUnlistener = await this.fileStore.onChange((k, v) =>
-      trace(`STORE CHANGE: ${k} => ${v}`)
-    );
-    trace(
-      `Current store data: ${
-        JSON.stringify(await this.fileStore.entries(), null, 2)
-      }`,
-    );
+
+    // Old Telemetry -> delete to allow app to ask again
+    if (await this.fileStore.has(ConfigItem.ENABLE_TELEMETRY)) {
+      this.fileStore.delete(ConfigItem.ENABLE_TELEMETRY);
+    }
+
+    // Successfully updated
+    if (previousVersion === 0) {
+      info(`Successfully checked to v${this.#version}`);
+    } else {
+      info(
+        `Successfully transistioned versions: v${previousVersion} -> v${this.#version}`,
+      );
+    }
+    await this.fileStore.set(ConfigItem.VERSION, this.#version);
   }
 
   saveAll(): Promise<PromiseSettledResult<void>[]> {
