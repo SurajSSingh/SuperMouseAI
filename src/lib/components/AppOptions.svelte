@@ -4,6 +4,8 @@
     import { emit } from "@tauri-apps/api/event";
     import CollapseableFieldSet from "./ui/CollapseableFieldSet.svelte";
     import ToggleSwitch from "./ui/ToggleSwitch.svelte";
+    import { notifier } from "$lib/notificationSystem.svelte";
+    import { error } from "@tauri-apps/plugin-log";
 
     interface AppOptionProps {}
 
@@ -63,7 +65,9 @@
             label="Crash Report:"
             bind:checked={
                 () => configStore.enableCrashReport.value === true,
-                (v) => (configStore.enableCrashReport.value = v)
+                (v) => {
+                    configStore.updateCrashReporter(v);
+                }
             }
             indeterminate={configStore.enableCrashReport.value === null}
             disabled={true}

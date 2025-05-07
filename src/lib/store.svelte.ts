@@ -8,6 +8,8 @@ import type { UnlistenFn } from "@tauri-apps/api/event";
 import { debug, error, info, trace, warn } from "@tauri-apps/plugin-log";
 import { open } from "@tauri-apps/plugin-fs";
 import { BASE_LOCAL_APP_DIR } from "./constants.ts";
+import { commands } from "./bindings.ts";
+import { notifier } from "./notificationSystem.svelte.ts";
 
 /** Auto-save every given millisecond, or never if set to `false` */
 const AUTO_SAVE_FREQUENCY: false | number = 2000;
@@ -537,6 +539,24 @@ export class ConfigStore {
     this.downloadedModels.value = this.downloadedModels.value.filter(
       (downloaded) => downloaded !== model.relativePath,
     );
+  }
+
+  async updateCrashReporter(value: boolean): Promise<void> {
+    this.enableCrashReport.value = value;
+    try {
+      const res = await commands.sentryCrashReporterUpdate(value);
+      if (res.status === "error") {
+        throw res.error;
+      }
+    } catch (err) {
+      error(
+        `Error in changing Sentry option: ${JSON.stringify(err)}`,
+      );
+      notifier.showToast(
+        `Error in changing Sentry option: ${JSON.stringify(err)}`,
+        "error",
+      );
+    }
   }
 }
 

@@ -146,7 +146,7 @@
         if (configStore.enableCrashReport.value === null) {
             info("Show crashing notice as not yet assigned");
             // Ask user
-            configStore.enableCrashReport.value = await notifier.showDialog(
+            const isEnabled = await notifier.showDialog(
                 "ask",
                 "We collect basic error and crash reports by default using Sentry. We DO NOT collect your private data (such as audio data or transcripts), only anonymous data related to OS (like version) and actions that lead to the app showing an error or crashing. You are free to opt-out of this collection.",
                 {
@@ -156,6 +156,7 @@
                     cancelLabel: "Opt-out",
                 },
             );
+            await configStore.updateCrashReporter(isEnabled);
             info("User has accepted to use the app.");
         }
         if (configStore.enableCrashReport.value) {
