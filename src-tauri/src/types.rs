@@ -3,9 +3,13 @@
 use crate::mutter::Model;
 use log::{debug, warn};
 use mouce::common::MouseButton;
+use rodio::{
+    cpal::{default_host, traits::HostTrait, Host},
+    Device,
+};
 use serde::{Deserialize, Serialize};
 use specta::Type;
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf, sync::Mutex};
 use whisper_rs::{WhisperContextParameters, WhisperError};
 
 /// A struct to hold both the default and custom model together, enabling for easy switching
@@ -75,7 +79,7 @@ impl InnerAppState {
     }
 }
 
-pub type AppState = std::sync::Mutex<InnerAppState>;
+pub type AppState = Mutex<InnerAppState>;
 
 #[derive(Debug, Clone, Default)]
 /// A struct representing a sound bank
@@ -96,7 +100,41 @@ impl InnerSoundMapState {
     }
 }
 
-pub type SoundMapState = std::sync::Mutex<InnerSoundMapState>;
+pub type SoundMapState = Mutex<InnerSoundMapState>;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
+/// Current state of the microphone
+#[non_exhaustive]
+pub enum RecordingState {
+    Stopped,
+    Recording,
+}
+
+/// State of the microphone
+pub struct InnerMicrophoneState {
+    state: RecordingState,
+    host: Host,
+    device: Option<Device>,
+    data: Vec<f32>,
+}
+
+impl InnerMicrophoneState {
+    pub fn new() -> Self {
+        Self::with_host(default_host())
+    }
+
+    pub fn with_host(host: Host) -> Self {
+        let device = host.default_input_device();
+        Self {
+            state: RecordingState::Stopped,
+            host,
+            device,
+            data: Vec::new(),
+        }
+    }
+}
+
+pub type MicrophoneState = Mutex<InnerMicrophoneState>;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Type)]
 /// Enum representing mouse button type
@@ -250,4 +288,31 @@ pub struct AudioProcessingOptions {
     pub low_pass_value: Option<u32>,
     /// Value for high pass filter, this represents minimum frequency allowed, default is `200`
     pub high_pass_value: Option<u32>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize, Type)]
+///
+///
+///
+pub enum TextPostProcessing {
+    Skip,
+    #[default]
+    Default,
+    Custom(TextProcessOptions),
+}
+
+impl TextPostProcessing {
+    /// Create a custom post-processing text with given [`TextProcessOptions`]
+    pub fn with_options(options: TextProcessOptions) -> Self {
+        Self::Custom(options)
+    }
+
+    /// Transform into options, None if skipped, using [`TextProcessOptions::default()`] for [`Self::Default`] and provided options for [`Self::Custom`]
+    pub fn into_options(self) -> Option<TextProcessOptions> {
+        match self {
+            TextPostProcessing::Skip => None,
+            TextPostProcessing::Default => Some(TextProcessOptions::default()),
+            TextPostProcessing::Custom(text_process_options) => Some(text_process_options),
+        }
+    }
 }
