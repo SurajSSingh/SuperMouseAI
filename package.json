@@ -18,7 +18,7 @@
   "license": "FSL-1.1-MIT OR FSL-1.1-ALv2",
   "dependencies": {
     "@friendofsvelte/tipex": "^0.0.8-dev.0",
-    "@tailwindcss/vite": "^4.1.4",
+    "@tailwindcss/vite": "^4.1.5",
     "@tauri-apps/api": "^2.5.0",
     "@tauri-apps/plugin-clipboard-manager": "^2.2.2",
     "@tauri-apps/plugin-dialog": "~2.2.1",
@@ -32,25 +32,25 @@
     "@tauri-apps/plugin-store": "~2.2.0",
     "@tauri-apps/plugin-updater": "^2.7.1",
     "@tauri-apps/plugin-upload": "~2.2.1",
-    "extendable-media-recorder": "^9.2.23",
+    "extendable-media-recorder": "^9.2.24",
     "extendable-media-recorder-wav-encoder": "^7.0.127",
     "tailwind-variants": "^1.0.0",
-    "tailwindcss": "^4.1.4"
+    "tailwindcss": "^4.1.5"
   },
   "devDependencies": {
-    "bits-ui": "^1.4.1",
+    "bits-ui": "^1.4.6",
     "clsx": "^2.1.1",
-    "daisyui": "^5.0.29",
+    "daisyui": "^5.0.35",
     "@sveltejs/adapter-static": "^3.0.6",
-    "@sveltejs/kit": "^2.20.7",
+    "@sveltejs/kit": "^2.20.8",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
     "@tauri-apps/cli": "^2.5.0",
     "svelte": "^5.28.2",
-    "svelte-check": "^4.1.6",
+    "svelte-check": "^4.1.7",
     "svelte-persisted-store": "^0.12.0",
     "svelte-sonner": "^0.3.28",
     "tailwind-merge": "^3.2.0",
     "typescript": "^5.8.3",
-    "vite": "^6.3.3"
+    "vite": "^6.3.5"
   }
 }
