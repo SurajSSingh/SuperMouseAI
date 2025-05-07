@@ -38,7 +38,11 @@
     let menuOpen = $state(false);
     let appVersion = $state("unknown");
     let isDownloadingModel: boolean = $state(false);
-    let setupPromise: Promise<void> | undefined = $state();
+    let setupPromise: Promise<void> = $state(
+        new Promise((resolve) => {
+            resolve();
+        }),
+    );
 
     // Helper Functions
     function copyToClipboard() {
@@ -156,7 +160,13 @@
                     cancelLabel: "Opt-out",
                 },
             );
-            await configStore.updateCrashReporter(isEnabled);
+            let err = await configStore.updateCrashReporter(isEnabled);
+            if (err) {
+                notifier.showToast(
+                    `Error in changing Sentry option: ${err}`,
+                    "error",
+                );
+            }
             info("User has accepted to use the app.");
         }
         if (configStore.enableCrashReport.value) {

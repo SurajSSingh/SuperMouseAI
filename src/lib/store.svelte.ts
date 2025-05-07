@@ -9,7 +9,6 @@ import { debug, error, info, trace, warn } from "@tauri-apps/plugin-log";
 import { open } from "@tauri-apps/plugin-fs";
 import { BASE_LOCAL_APP_DIR } from "./constants.ts";
 import { commands } from "./bindings.ts";
-import { notifier } from "./notificationSystem.svelte.ts";
 
 /** Auto-save every given millisecond, or never if set to `false` */
 const AUTO_SAVE_FREQUENCY: false | number = 2000;
@@ -541,22 +540,23 @@ export class ConfigStore {
     );
   }
 
-  async updateCrashReporter(value: boolean): Promise<void> {
+  async updateCrashReporter(value: boolean): Promise<string> {
     this.enableCrashReport.value = value;
+    let e = "";
     try {
       const res = await commands.sentryCrashReporterUpdate(value);
       if (res.status === "error") {
-        throw res.error;
+        e = JSON.stringify(res.error);
       }
     } catch (err) {
+      e = JSON.stringify(err);
+    }
+    if (e) {
       error(
-        `Error in changing Sentry option: ${JSON.stringify(err)}`,
-      );
-      notifier.showToast(
-        `Error in changing Sentry option: ${JSON.stringify(err)}`,
-        "error",
+        `Error in changing Sentry option: ${e}`,
       );
     }
+    return e;
   }
 }
 

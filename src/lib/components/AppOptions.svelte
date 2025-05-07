@@ -66,11 +66,17 @@
             bind:checked={
                 () => configStore.enableCrashReport.value === true,
                 (v) => {
-                    configStore.updateCrashReporter(v);
+                    configStore.updateCrashReporter(v).then((err) => {
+                        if (err) {
+                            notifier.showToast(
+                                `Error in changing Sentry option: ${err}`,
+                                "error",
+                            );
+                        }
+                    });
                 }
             }
             indeterminate={configStore.enableCrashReport.value === null}
-            disabled={true}
         />
         <p class="fieldset-label">
             Allow running telemetry for app issues and crash reports.
