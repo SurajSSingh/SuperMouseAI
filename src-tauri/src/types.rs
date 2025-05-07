@@ -241,3 +241,9 @@ pub struct AudioProcessingOptions {
     /// Value for high pass filter, this represents minimum frequency allowed, default is `200`
     pub high_pass_value: Option<u32>,
 }
+
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize, Type)]
+/// Data to hold information about sentry plugin
+pub struct InnerSentryPluginInfoState(pub Option<&'static str>);
+
+pub type SentryPluginInfoState = std::sync::Mutex<InnerSentryPluginInfoState>;

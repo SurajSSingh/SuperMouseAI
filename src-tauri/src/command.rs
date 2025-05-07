@@ -13,17 +13,17 @@ use crate::{
     },
     mutter::ModelError,
     types::{
-        AppState, AudioProcessingOptions, MouseButtonType, SystemInfo, TextProcessOptions,
-        TranscribeOptions,
+        AppState, AudioProcessingOptions, MouseButtonType, SentryPluginInfoState, SystemInfo, TextProcessOptions, TranscribeOptions
     },
 };
 use enigo::{Enigo, Keyboard, Settings};
 use log::{debug, error, info, trace};
 use mouce::{common::MouseEvent, Mouse, MouseActions};
 use rodio::{Decoder, OutputStream, Sink};
-use std::{fs::File, io::BufReader};
+use tauri_plugin_sentry::{minidump, sentry};
+use std::{fs::File, io::BufReader, sync::Arc};
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
-use tauri::{AppHandle, State, Wry};
+use tauri::{plugin::Plugin, AppHandle, State, Wry};
 use tauri_specta::{collect_commands, Commands, Event};
 
 #[tauri::command]
@@ -402,6 +402,46 @@ pub async fn get_system_info() -> SystemInfo {
     }
 }
 
+#[tauri::command]
+#[specta::specta]
+/// Initialize/De-initialize the sentry plugin depending on the toggled value
+pub fn sentry_crash_reporter_update(app_handle: AppHandle, plugin_state: State<'_, SentryPluginInfoState>, enable: bool) -> Result<(), String>{
+    let mut state = plugin_state.lock().map_err(|err| err.to_string())?;
+    if enable && state.0.is_none()  {
+        debug!("Start Sentry Setup");
+        let client = 
+        sentry::init((
+            "https://e48c5c52c4ca1341de4618624cc0f511@o4509002112958464.ingest.us.sentry.io/4509007972007936",
+            sentry::ClientOptions {
+                release: sentry::release_name!(),
+                auto_session_tracking: true,
+                send_default_pii: false,
+                before_send: Some(Arc::new(|mut event| {
+                    // Remove IP Address and Email if it is still provided
+                    event.user.as_mut().map(|user| {
+                        user.ip_address = None;
+                        user.email = None;
+                    });
+                    Some(event)
+                })),
+                ..Default::default()
+            },
+        ));
+        // Caution! Everything before here runs in both app and crash reporter processes
+        #[cfg(not(target_os = "ios"))]
+        let _guard = minidump::init(&client);
+        debug!("Finish Sentry Setup");
+        let sentry_plugin = tauri_plugin_sentry::init(&client);
+        state.0.replace(sentry_plugin.name());
+        app_handle.plugin(sentry_plugin).map_err(|err| err.to_string())?;
+    } else if !enable {
+        if let Some(plugin) = state.0 {
+            app_handle.remove_plugin(plugin);
+        }
+    }
+    Ok(())
+}
+
 /// Gets all collected commands for Super Mouse AI application to be used by builder
 #[must_use]
 pub fn get_collected_commands() -> Commands<Wry> {
@@ -414,6 +454,7 @@ pub fn get_collected_commands() -> Commands<Wry> {
         set_window_top,
         write_text,
         update_model,
-        get_system_info
+        get_system_info,
+        sentry_crash_reporter_update,
     ]
 }
