@@ -7,6 +7,7 @@
 
 // External Crates
 use log::{debug, error, info, trace, warn, LevelFilter};
+use std::sync::Arc;
 use std::{collections::HashMap, path::PathBuf};
 use tauri::{path::BaseDirectory, Manager};
 use tauri::{App, AppHandle};
@@ -160,7 +161,15 @@ fn create_sentry_client() -> ClientInitGuard {
         sentry::ClientOptions {
             release: sentry::release_name!(),
             auto_session_tracking: true,
-            // before_send: Some(Arc::new(event_callback)),
+            send_default_pii: false,
+            before_send: Some(Arc::new(|mut event| {
+                // Remove IP Address and Email if it is still provided
+                event.user.as_mut().map(|user| {
+                    user.ip_address = None;
+                    user.email = None;
+                });
+                Some(event)
+            })),
             ..Default::default()
         },
     ))
