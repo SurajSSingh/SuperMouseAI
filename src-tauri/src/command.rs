@@ -13,8 +13,8 @@ use crate::{
     },
     mutter::ModelError,
     types::{
-        AppState, AudioProcessingOptions, MouseButtonType, SoundMapState, SystemInfo,
-        TextProcessOptions, TranscribeOptions,
+        AppState, AudioProcessingOptions, MicrophoneState, MouseButtonType, SoundMapState,
+        SystemInfo, TextPostProcessing, TextProcessOptions, TranscribeOptions,
     },
     utils::change_send_to_sentry,
 };
@@ -414,6 +414,94 @@ pub async fn sentry_crash_reporter_update(enable: bool) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+#[specta::specta]
+///
+pub async fn start_microphone_recording(
+    mic_state: State<'_, MicrophoneState>,
+) -> Result<(), String> {
+    // let host = default_host();
+    // let default = host
+    //     .default_input_device()
+    //     .ok_or(String::from("No default device"))?;
+    // println!("Default Input: {}", default.name()?);
+    // let config = default.default_input_config()?;
+    // println!("Default Config: {config:?}");
+    // let audio_data: Arc<Mutex<Vec<f32>>> = Arc::new(Mutex::new(Vec::with_capacity(512 * 10)));
+    // let audio_data_clone = audio_data.clone();
+    // println!("Start in 3 sec.");
+    // thread::sleep(Duration::from_secs(3));
+    // let stream = default.build_input_stream(
+    //     &config.config(),
+    //     move |data: &[f32], _info| {
+    //         println!("Got data of len: {}", data.len());
+    //         // println!("Info Provided: {info:?}\n");
+    //         let mut audio_data = audio_data_clone.lock().unwrap();
+    //         audio_data.extend(data);
+    //     },
+    //     |err| println!("Got error: {err:?}"),
+    //     None,
+    // )?;
+    // stream.play()?;
+    todo!()
+}
+
+#[tauri::command]
+#[specta::specta]
+///
+pub async fn stop_microphone_recording(
+    mic_state: State<'_, MicrophoneState>,
+) -> Result<(), String> {
+    // stream.pause()?;
+    // println!("Stopped");
+    // if let Ok(data) = audio_data.lock() {
+    //     println!("Audio data size: {}", data.len());
+    // }
+    // thread::sleep(Duration::from_secs(4));
+    // let spec = hound::WavSpec {
+    //     channels: config.channels(),
+    //     sample_rate: config.sample_rate().0,
+    //     bits_per_sample: 32,
+    //     sample_format: hound::SampleFormat::Float,
+    // };
+    // let mut writer = hound::WavWriter::create("test.wav", spec).unwrap();
+    // if let Ok(data) = audio_data.lock() {
+    //     data.iter()
+    //         .for_each(|sample| writer.write_sample(*sample).unwrap());
+    // }
+    // writer.finalize().unwrap();
+    todo!()
+}
+
+#[tauri::command]
+#[specta::specta]
+///
+pub async fn transcribe_current_data(
+    mic_state: State<'_, MicrophoneState>,
+    // app_handle: AppHandle,
+    transcribe_options: Option<TranscribeOptions>,
+    decode_options: Option<AudioProcessingOptions>,
+) -> Result<(), String> {
+    todo!()
+}
+
+#[tauri::command]
+#[specta::specta]
+///
+pub async fn transcribe_and_process_data(
+    mic_state: State<'_, MicrophoneState>,
+    // app_handle: AppHandle,
+    transcribe_options: Option<TranscribeOptions>,
+    processing_options: TextPostProcessing,
+    decode_options: Option<AudioProcessingOptions>,
+) -> Result<String, String> {
+    let transcript = transcribe_current_data(mic_state, transcribe_options, decode_options).await?;
+    if let Some(options) = processing_options.into_options() {
+        let x = process_text("TODO".to_string(), Some(options)).await?;
+    };
+    todo!()
+}
+
 /// Gets all collected commands for Super Mouse AI application to be used by builder
 #[must_use]
 pub fn get_collected_commands() -> Commands<Wry> {
@@ -428,5 +516,9 @@ pub fn get_collected_commands() -> Commands<Wry> {
         update_model,
         get_system_info,
         sentry_crash_reporter_update,
+        start_microphone_recording,
+        stop_microphone_recording,
+        transcribe_current_data,
+        transcribe_and_process_data
     ]
 }
