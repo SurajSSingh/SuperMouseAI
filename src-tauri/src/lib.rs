@@ -7,6 +7,7 @@
 
 // External Crates
 use log::{debug, error, info, trace, warn, LevelFilter};
+use std::sync::Mutex;
 use std::{collections::HashMap, path::PathBuf};
 use tauri::{path::BaseDirectory, Manager};
 use tauri::{App, AppHandle};
@@ -25,7 +26,7 @@ mod types;
 use command::listen_for_mouse_click;
 use events::ModKeyEvent;
 use mutter::Model;
-use types::{is_modkey, InnerAppState, ModKeyPayload};
+use types::{is_modkey, InnerAppState, InnerSoundMapState, ModKeyPayload};
 
 pub use crate::command::get_collected_commands;
 pub use crate::events::get_collected_events;
@@ -186,7 +187,8 @@ fn setup_app(app: &App, bindings_builder: &Builder) -> Result<(), Box<dyn std::e
     debug!("Start loading sound paths");
     let sound_map = create_sound_map(app)?;
     debug!("Finished creating sound map");
-    app.manage(std::sync::Mutex::new(InnerAppState::new(model, sound_map)));
+    app.manage(Mutex::new(InnerAppState::new(model)));
+    app.manage(Mutex::new(InnerSoundMapState::with_map(sound_map)));
     trace!("Created initial app state");
     debug!("Setup mouse click listener");
     let _mouse_click_listener_handler = listen_for_mouse_click(app.handle().clone())?;
