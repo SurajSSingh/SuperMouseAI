@@ -20,11 +20,10 @@ pub struct ModelHolder {
 /// persist throughout the app's runtime.
 pub struct InnerAppState {
     pub(crate) model: ModelHolder,
-    pub(crate) sound_map: HashMap<String, PathBuf>,
 }
 
 impl InnerAppState {
-    pub const fn new(model: Model, sound_map: HashMap<String, PathBuf>) -> Self {
+    pub const fn new(model: Model) -> Self {
         // Load model into memory by evaluating short silence
         // FIXME: Need to do this in another thread, otherwise UI freezes
         // let _ = model.transcribe_pcm_s16le(&[0.0; 20_000], false, false, None, None, None);
@@ -33,17 +32,7 @@ impl InnerAppState {
                 default: model,
                 custom: None,
             },
-            sound_map,
         }
-    }
-
-    /// Get sound by the provided name or by prepending `default_` to the beginning.
-    pub fn get_sound_path(&self, sound_name: &str) -> Option<&PathBuf> {
-        debug!("Getting sound: {sound_name}");
-        self.sound_map.get(sound_name).or_else(|| {
-            warn!("No sound with name '{sound_name}', falling back to 'default_{sound_name}'");
-            self.sound_map.get(&format!("default_{}", &sound_name))
-        })
     }
 
     /// Replace the custom model being used
@@ -87,6 +76,27 @@ impl InnerAppState {
 }
 
 pub type AppState = std::sync::Mutex<InnerAppState>;
+
+#[derive(Debug, Clone, Default)]
+/// A struct representing a sound bank
+pub struct InnerSoundMapState(HashMap<String, PathBuf>);
+
+impl InnerSoundMapState {
+    pub const fn with_map(map: HashMap<String, PathBuf>) -> Self {
+        Self(map)
+    }
+
+    /// Get sound by the provided name or by prepending `default_` to the beginning.
+    pub fn get_sound_path(&self, sound_name: &str) -> Option<&PathBuf> {
+        debug!("Getting sound: {sound_name}");
+        self.0.get(sound_name).or_else(|| {
+            warn!("No sound with name '{sound_name}', falling back to 'default_{sound_name}'");
+            self.0.get(&format!("default_{}", &sound_name))
+        })
+    }
+}
+
+pub type SoundMapState = std::sync::Mutex<InnerSoundMapState>;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Type)]
 /// Enum representing mouse button type

@@ -13,8 +13,8 @@ use crate::{
     },
     mutter::ModelError,
     types::{
-        AppState, AudioProcessingOptions, MouseButtonType, SystemInfo, TextProcessOptions,
-        TranscribeOptions,
+        AppState, AudioProcessingOptions, MouseButtonType, SoundMapState, SystemInfo,
+        TextProcessOptions, TranscribeOptions,
     },
     utils::change_send_to_sentry,
 };
@@ -199,7 +199,10 @@ pub async fn transcribe_with_post_process(
 #[tauri::command]
 #[specta::specta]
 /// Play the provided sound given its name that is stored in the app_state
-pub async fn play_sound(app_state: State<'_, AppState>, sound_name: String) -> Result<(), String> {
+pub async fn play_sound(
+    app_state: State<'_, SoundMapState>,
+    sound_name: String,
+) -> Result<(), String> {
     info!("Running play sound command");
     // Get sound source
     let source = app_state
