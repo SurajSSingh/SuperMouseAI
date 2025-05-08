@@ -62,7 +62,7 @@
     </div>
     <div class="mb-4">
         <ToggleSwitch
-            label="Crash Report:"
+            label="Send Crash Report:"
             bind:checked={
                 () => configStore.enableCrashReport.value === true,
                 (v) => {
@@ -79,7 +79,11 @@
             indeterminate={configStore.enableCrashReport.value === null}
         />
         <p class="fieldset-label">
-            Allow running telemetry for app issues and crash reports.
+            Allow sending telemetry data for app issues and crash reports to
+            help development.
+            <span class="text-warning"
+                >No personal data like audio or transcripts are collected.</span
+            >
         </p>
     </div>
 </CollapseableFieldSet>
