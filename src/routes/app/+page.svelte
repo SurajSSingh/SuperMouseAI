@@ -169,11 +169,15 @@
             }
             info("User has accepted to use the app.");
         }
-        if (configStore.enableCrashReport.value) {
-            // TODO: Command
-            notifier.showToast("Telemetry enabled", "info", {
-                duration: 5_000,
-            });
+        if (configStore.enableCrashReport.value !== null) {
+            commands.sentryCrashReporterUpdate(
+                configStore.enableCrashReport.value,
+            );
+            if (configStore.enableCrashReport.value) {
+                notifier.showToast("Telemetry enabled", "info", {
+                    duration: 5_000,
+                });
+            }
         }
         debug("Get Version info");
         const version = await getVersion();
