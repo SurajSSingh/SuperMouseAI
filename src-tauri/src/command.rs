@@ -440,6 +440,7 @@ pub fn sentry_crash_reporter_update(app_handle: AppHandle, plugin_state: State<'
         
         let sentry_plugin = tauri_plugin_sentry::init(&client);
         state.0.replace(sentry_plugin.name());
+        debug!("State of plugin name: {:?}", state.0);
         app_handle.plugin(sentry_plugin).map_err(|err| err.to_string())?;
         debug!("Finish Sentry Setup");
     } else {
