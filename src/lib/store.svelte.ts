@@ -379,6 +379,7 @@ export class ConfigStore {
       error("Failed to load from store with given error: ", err);
     });
     if (oldVersion >= 0) await this.transitionDeprecatedOptions(oldVersion);
+    await this.transcriptions.load();
     this.keyChangeUnlistener = await this.fileStore.onChange((k, v) =>
       trace(`STORE CHANGE: ${k} => ${v}`)
     );
@@ -418,7 +419,6 @@ export class ConfigStore {
         await this.fileStore.delete(ConfigItem.TRANSCRIPTS);
       }
     }
-    await this.transcriptions.load();
 
     // Old Telemetry -> delete to allow app to ask again
     if (await this.fileStore.has(ConfigItem.ENABLE_TELEMETRY)) {
@@ -541,7 +541,6 @@ export class ConfigStore {
   }
 
   async updateCrashReporter(value: boolean): Promise<string> {
-    this.enableCrashReport.value = value;
     let e = "";
     try {
       const res = await commands.sentryCrashReporterUpdate(value);
@@ -555,6 +554,9 @@ export class ConfigStore {
       error(
         `Error in changing Sentry option: ${e}`,
       );
+    } else {
+      debug("Successfully changed value");
+      this.enableCrashReport.value = value;
     }
     return e;
   }
