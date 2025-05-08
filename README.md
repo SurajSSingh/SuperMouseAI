@@ -13,6 +13,7 @@ A way to trascribe your voice using Whisper from the click of your mouse.
   - [mutter](https://github.com/sigaloid/mutter): Project that wraps
     `whisper-rs`, directly imported into the project and used under the
     `MIT OR Apache-2.0` license.
+  - [nnnoiseless](https://github.com/jneem/nnnoiseless): Local Audio Denoise
 - [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript)/[TypeScript](https://www.typescriptlang.org):
   Frontend language
   - [Deno](https://deno.com): Runtime
@@ -24,6 +25,9 @@ A way to trascribe your voice using Whisper from the click of your mouse.
   - [extendable-media-recorder](https://github.com/chrisguttandin/extendable-media-recorder):
     An extendable drop-in replacement for the native MediaRecorder, used to help
     record user voice to WAV for transcription.
+- Misc.
+  - [Sentry](https://sentry.io/welcome/): Error/Crash Tracking
+  - [Git-Cliff](https://git-cliff.org): Changelog Generator
 
 ## License
 
@@ -38,8 +42,8 @@ This project is licensed under either of
 
 at your option.
 
-After 2 years from first commit in this repository, the project will be made
-available under `MIT OR Apache-2.0` licenses. Prior to the 2 years, you may not
-sell the software without explicit grant from the author. For any
-non-commerical/private uses, you may treat the repository as if it were made
-available under the `MIT OR Apache-2.0` licenses.
+For each version of the software, after 2 years from that release, project
+commits up to that point will be made available under `MIT OR Apache-2.0`
+licenses. Prior to the 2 years, you may not sell the software without explicit
+grant from the author. For any non-commerical/private uses, you may treat the
+repository as if it were made available under the `MIT OR Apache-2.0` licenses.

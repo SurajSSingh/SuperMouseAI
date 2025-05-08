@@ -31,6 +31,7 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Updater now goes to v0.8.6
+- :bookmark: Bump to v0.8.7
 
 ## [0.8.6] - 2025-05-02
 
