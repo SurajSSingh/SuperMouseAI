@@ -11,8 +11,8 @@ use std::sync::Arc;
 use std::{collections::HashMap, path::PathBuf};
 use tauri::{path::BaseDirectory, Manager};
 use tauri::{App, AppHandle};
+use tauri_plugin_sentry::sentry;
 use tauri_plugin_sentry::sentry::ClientInitGuard;
-use tauri_plugin_sentry::{minidump, sentry};
 use tauri_specta::{Builder, Event};
 
 // Internal Modules
@@ -69,8 +69,8 @@ pub fn run() {
     info!("Start app building");
     let client = create_sentry_client();
     // Caution! Everything before here runs in both app and crash reporter processes
-    #[cfg(not(target_os = "ios"))]
-    let _guard = minidump::init(&client);
+    #[cfg(all(not(target_os = "ios"), debug_assertions))]
+    let _guard = tauri_plugin_sentry::minidump::init(&client);
     debug!("Finish Sentry Setup");
     // Everything after here runs in only the app process
     let app_builder = create_app_builder(&client);
