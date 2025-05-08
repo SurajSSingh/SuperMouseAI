@@ -164,7 +164,7 @@ fn create_sentry_client() -> ClientInitGuard {
             auto_session_tracking: true,
             send_default_pii: false,
             before_breadcrumb: Some(Arc::new(|breadcrumb| {
-                will_send_to_sentry().then(|| breadcrumb)
+                will_send_to_sentry().then_some(breadcrumb)
             })),
             before_send: Some(Arc::new(|mut event| {
                 will_send_to_sentry().then(|| {
@@ -172,7 +172,7 @@ fn create_sentry_client() -> ClientInitGuard {
                     if let Some(user) = event.user.as_mut() {
                         user.ip_address = None;
                         user.email = None;
-                    };
+                    }
                     event
                 })
             })),
