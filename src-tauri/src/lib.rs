@@ -333,22 +333,25 @@ fn configure_overlay(app: &App) -> Result<(), Box<dyn std::error::Error>> {
 /// Returns an error if the event listener setup fails.
 fn setup_main_window_close_event(app: &App) {
     let windows = app.webview_windows();
-    app.get_webview_window("main")
-        .expect("Main window should exist")
-        .on_window_event(move |event| {
-            if let tauri::WindowEvent::CloseRequested { api: _, .. } = event {
-                debug!("Main window requested to be closed!");
-                for (label, window) in &windows {
-                    // NOTE: Only do non-main window, otherwise will get stuck in loop
-                    if !label.eq_ignore_ascii_case("main") {
-                        debug!("Window {label} will also be closed.");
-                        if let Err(err) = window.close() {
-                            error!("Failed to close window {label}: {err}");
-                        }
+    let main = app
+        .get_webview_window("main")
+        .expect("Main window should exist");
+    #[cfg(debug_assertions)]
+    main.open_devtools();
+    main.on_window_event(move |event| {
+        if let tauri::WindowEvent::CloseRequested { api: _, .. } = event {
+            debug!("Main window requested to be closed!");
+            for (label, window) in &windows {
+                // NOTE: Only do non-main window, otherwise will get stuck in loop
+                if !label.eq_ignore_ascii_case("main") {
+                    debug!("Window {label} will also be closed.");
+                    if let Err(err) = window.close() {
+                        error!("Failed to close window {label}: {err}");
                     }
                 }
-            } else {
-                /* Do nothing */
             }
-        });
+        } else {
+            /* Do nothing */
+        }
+    });
 }
