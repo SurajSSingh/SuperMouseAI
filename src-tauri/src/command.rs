@@ -417,7 +417,8 @@ pub fn sentry_crash_reporter_update(app_handle: AppHandle, plugin_state: State<'
                 auto_session_tracking: true,
                 send_default_pii: false,
                 before_send: Some(Arc::new(|mut event| {
-                    // Remove IP Address and Email if it is still provided
+                    // Remove IP Address, Server name, and Email if it is still provided
+                    event.server_name = None;
                     event.user.as_mut().map(|user| {
                         user.ip_address = None;
                         user.email = None;
@@ -427,16 +428,26 @@ pub fn sentry_crash_reporter_update(app_handle: AppHandle, plugin_state: State<'
                 ..Default::default()
             },
         ));
+        debug!("Sentry Configured");
         // Caution! Everything before here runs in both app and crash reporter processes
         #[cfg(not(target_os = "ios"))]
         let _guard = minidump::init(&client);
-        debug!("Finish Sentry Setup");
+        // let _ = tauri::async_runtime::spawn_blocking(move || {
+        //     let _g = guard;
+        //     loop {}
+        // });
+        debug!("Minidump Configured");
+        
         let sentry_plugin = tauri_plugin_sentry::init(&client);
         state.0.replace(sentry_plugin.name());
         app_handle.plugin(sentry_plugin).map_err(|err| err.to_string())?;
-    } else if !enable {
+        debug!("Finish Sentry Setup");
+    } else {
         if let Some(plugin) = state.0 {
+            debug!("Start removing Sentry");
             app_handle.remove_plugin(plugin);
+            state.0.take();
+            debug!("Finish removing Sentry");
         }
     }
     Ok(())
