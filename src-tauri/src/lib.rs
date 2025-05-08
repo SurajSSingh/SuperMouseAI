@@ -7,9 +7,12 @@
 
 // External Crates
 use log::{debug, error, info, trace, warn, LevelFilter};
+use std::sync::Arc;
 use std::{collections::HashMap, path::PathBuf};
 use tauri::{path::BaseDirectory, Manager};
 use tauri::{App, AppHandle};
+use tauri_plugin_sentry::sentry::ClientInitGuard;
+use tauri_plugin_sentry::{minidump, sentry};
 use tauri_specta::{Builder, Event};
 
 // Internal Modules
@@ -18,11 +21,13 @@ mod events;
 mod mutter;
 mod transcript;
 mod types;
+mod utils;
 
 use command::listen_for_mouse_click;
 use events::ModKeyEvent;
 use mutter::Model;
-use types::{is_modkey, InnerAppState, InnerSentryPluginInfoState, ModKeyPayload};
+use types::{is_modkey, InnerAppState, ModKeyPayload};
+use utils::will_send_to_sentry;
 
 pub use crate::command::get_collected_commands;
 pub use crate::events::get_collected_events;
@@ -62,8 +67,13 @@ pub fn run() {
     info!("Start running Super Mouse AI");
     let bindings_builder = export_bindings();
     info!("Start app building");
+    let client = create_sentry_client();
+    // Caution! Everything before here runs in both app and crash reporter processes
+    #[cfg(not(target_os = "ios"))]
+    let _guard = minidump::init(&client);
+    debug!("Finish Sentry Setup");
     // Everything after here runs in only the app process
-    let app_builder = create_app_builder();
+    let app_builder = create_app_builder(&client);
     debug!("Finish App plugin initialization");
     #[allow(
         clippy::large_stack_frames,
@@ -97,7 +107,7 @@ pub fn export_bindings() -> Builder {
     builder
 }
 
-fn create_app_builder() -> tauri::Builder<tauri::Wry> {
+fn create_app_builder(client: &ClientInitGuard) -> tauri::Builder<tauri::Wry> {
     debug!("Creating Tauri app builder and adding initializing plugin");
     tauri::Builder::default()
         .plugin(tauri_plugin_upload::init())
@@ -105,6 +115,7 @@ fn create_app_builder() -> tauri::Builder<tauri::Wry> {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_sentry::init(client))
         .plugin(tauri_plugin_process::init())
         .plugin(
             tauri_plugin_log::Builder::new()
@@ -144,10 +155,31 @@ fn single_instance_handler(app: &AppHandle, _args: Vec<String>, _cwd: String) {
         .set_focus();
 }
 
-// /// Arc<dyn Fn(Event<'static>) -> Option<Event<'static>> + Send + Sync, Global>
-// fn event_callback(event: SentryEvent) -> Option<SentryEvent> {
-//     todo!()
-// }
+fn create_sentry_client() -> ClientInitGuard {
+    debug!("Start Sentry Setup");
+    sentry::init((
+        "https://e48c5c52c4ca1341de4618624cc0f511@o4509002112958464.ingest.us.sentry.io/4509007972007936",
+        sentry::ClientOptions {
+            release: sentry::release_name!(),
+            auto_session_tracking: true,
+            send_default_pii: false,
+            before_breadcrumb: Some(Arc::new(|breadcrumb| {
+                will_send_to_sentry().then(|| breadcrumb)
+            })),
+            before_send: Some(Arc::new(|mut event| {
+                will_send_to_sentry().then(|| {
+                    event.server_name = None;
+                    if let Some(user) = event.user.as_mut() {
+                        user.ip_address = None;
+                        user.email = None;
+                    };
+                    event
+                })
+            })),
+            ..Default::default()
+        },
+    ))
+}
 
 fn setup_app(app: &App, bindings_builder: &Builder) -> Result<(), Box<dyn std::error::Error>> {
     info!("Setting up application");
@@ -165,7 +197,6 @@ fn setup_app(app: &App, bindings_builder: &Builder) -> Result<(), Box<dyn std::e
     let sound_map = create_sound_map(app)?;
     debug!("Finished creating sound map");
     app.manage(std::sync::Mutex::new(InnerAppState::new(model, sound_map)));
-    app.manage(std::sync::Mutex::new(InnerSentryPluginInfoState(None)));
     trace!("Created initial app state");
     debug!("Setup mouse click listener");
     let _mouse_click_listener_handler = listen_for_mouse_click(app.handle().clone())?;
