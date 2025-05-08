@@ -6,14 +6,47 @@ All notable changes to this project will be documented in this file.
 
 ### 🚀 Features
 
+- *(backend)* :chart_with_upwards_trend: Make sure PII is disabled
+- *(frontend)* :building_construction: Optional telemetry crash report
+- *(frontend)* :sparkles: Connect crash report updater function
+- *(backend)* :technologist: Auto-open devtools for debug builds
+
+### 🐛 Bug Fixes
+
+- *(frontend)* :bug: Fix circular dependency
+- *(backend)* :bug: Add manage code for sentry plugin
+- *(backend)* :bug: Fix Sentry plugin not loading
+- *(frontend)* :bug: Fix transciption and crash report loading
+- *(frontend)* :bug: Fix crash report not being set on app load
+
+### 🚜 Refactor
+
+- *(backend)* :building_construction: Move sentry plugin into command
+- *(backend)* :technologist: Show name of plugin in log
+- *(frontend)* :mute: Remove old console.log for suitable model sorting
+- *(backend)* :recycle: Different way to disable crash report
+- *(backend)* :recycle: Run minidump only in debug mode
+- *(frontend)* :speech_balloon: Update crash report toggle's label and text
+
+### ⚙️ Miscellaneous Tasks
+
+- Updater now goes to v0.8.6
+- :bookmark: Bump to v0.8.7
+
+## [0.8.6] - 2025-05-02
+
+### 🚀 Features
+
 - *(frontend)* :children_crossing: Add a update check button when up to date
 - *(frontend)* :sparkles: Improve permission toggle
+- *(installer)* :sparkles: Create Windows Installer helper
 
 ### 🚜 Refactor
 
 - *(overlay)* :recycle: Use Tauri's cursor position
 - *(backend)* :recycle: Enforce single segment transcription
 - *(frontend)* :recycle: Enable individual word timestamp
+- *(installer)* :recycle: Remove the need for powershell
 
 ### ⚙️ Miscellaneous Tasks
 
@@ -24,6 +57,8 @@ All notable changes to this project will be documented in this file.
 - :construction_worker: Comment out windows simple build workflow
 - *(frontend)* :heavy_plus_sign: Add Tipex editor library
 - :bento: Add new app icon
+- :memo: Update CHANGELOG for v0.8.6
+- *(backend)* :rotating_light: Fix clippy lint issues
 
 ## [0.8.5] - 2025-04-25
 

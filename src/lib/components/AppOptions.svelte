@@ -4,6 +4,8 @@
     import { emit } from "@tauri-apps/api/event";
     import CollapseableFieldSet from "./ui/CollapseableFieldSet.svelte";
     import ToggleSwitch from "./ui/ToggleSwitch.svelte";
+    import { notifier } from "$lib/notificationSystem.svelte";
+    import { error } from "@tauri-apps/plugin-log";
 
     interface AppOptionProps {}
 
@@ -60,14 +62,27 @@
     </div>
     <div class="mb-4">
         <ToggleSwitch
-            label="Telemetry:"
-            bind:checked={configStore.enableTelemetry.value}
-            disabled={true}
+            label="Send Crash Report:"
+            bind:checked={
+                () => configStore.enableCrashReport.value === true,
+                (v) => {
+                    configStore.updateCrashReporter(v).then((err) => {
+                        if (err) {
+                            notifier.showToast(
+                                `Error in changing Sentry option: ${err}`,
+                                "error",
+                            );
+                        }
+                    });
+                }
+            }
+            indeterminate={configStore.enableCrashReport.value === null}
         />
         <p class="fieldset-label">
-            To allow running telemetry for app issues and crash reports. <span
-                class="text-warning"
-                >This is cannot be disabled for pre-release builds.</span
+            Allow sending telemetry data for app issues and crash reports to
+            help development.
+            <span class="text-warning"
+                >No personal data like audio or transcripts are collected.</span
             >
         </p>
     </div>

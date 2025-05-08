@@ -100,6 +100,17 @@ async updateModel(path: string | null, useGpu: boolean | null) : Promise<Result<
  */
 async getSystemInfo() : Promise<SystemInfo> {
     return await TAURI_INVOKE("get_system_info");
+},
+/**
+ * Initialize/De-initialize the sentry plugin depending on the toggled value
+ */
+async sentryCrashReporterUpdate(enable: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("sentry_crash_reporter_update", { enable }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -109,13 +120,11 @@ async getSystemInfo() : Promise<SystemInfo> {
 export const events = __makeEvents__<{
 modKeyEvent: ModKeyEvent,
 mouseClickEvent: MouseClickEvent,
-mouseMoveEvent: MouseMoveEvent,
 transcriptionProgressEvent: TranscriptionProgressEvent,
 transcriptionSegmentEvent: TranscriptionSegmentEvent
 }>({
 modKeyEvent: "mod-key-event",
 mouseClickEvent: "mouse-click-event",
-mouseMoveEvent: "mouse-move-event",
 transcriptionProgressEvent: "transcription-progress-event",
 transcriptionSegmentEvent: "transcription-segment-event"
 })
@@ -175,15 +184,6 @@ export type MouseButtonType = "Left" | "Middle" | "Right"
  */
 export type MouseClickEvent = MouseButtonType
 /**
- * Tauri event representing mouse movement
- * 
- * ### Payload
- * 
- * x [i32] : Absolute X value of mosue (from 0 to `SCREEN_WIDTH`)
- * y [i32] : Absolute Y value of mouse (from 0 to `SCREEN_HEIGHT`)
- */
-export type MouseMoveEvent = { x: number; y: number }
-/**
  * Basic information about the current system
  */
 export type SystemInfo = { 
@@ -229,6 +229,12 @@ export type TranscribeOptions = { translate: boolean | null; individual_word_tim
  */
 export type TranscriptionFormat = "Text" | "SRT" | "VTT"
 /**
+ * Tauri event representing mouse movement
+ * 
+ * ### Payload
+ * 
+ * x [i32] : Absolute X value of mosue (from 0 to `SCREEN_WIDTH`)
+ * y [i32] : Absolute Y value of mouse (from 0 to `SCREEN_HEIGHT`)
  * Event representing the progress for the current transcription
  * 
  * ### Payload

@@ -27,6 +27,7 @@
         MODELS_DIR,
     } from "$lib/constants";
     import { appLocalDataDir } from "@tauri-apps/api/path";
+    import Loading from "$lib/components/ui/Loading.svelte";
 
     // Component Bindings
     let micRecorder: MicRecorder = $state() as MicRecorder;
@@ -37,6 +38,11 @@
     let menuOpen = $state(false);
     let appVersion = $state("unknown");
     let isDownloadingModel: boolean = $state(false);
+    let setupPromise: Promise<void> = $state(
+        new Promise((resolve) => {
+            resolve();
+        }),
+    );
 
     // Helper Functions
     function copyToClipboard() {
@@ -141,27 +147,38 @@
     async function preStartUp() {
         debug("Wait until store is loaded");
         await configStore.waitForStoreLoaded();
-        info("Show telemetry notice if not yet accepted");
-        configStore.enableTelemetry.value =
-            configStore.enableTelemetry.value ||
-            (await notifier.showDialog(
+        if (configStore.enableCrashReport.value === null) {
+            info("Show crashing notice as not yet assigned");
+            // Ask user
+            const isEnabled = await notifier.showDialog(
                 "ask",
-                "We collect basic error and crash reports by default using Sentry. We DO NOT collect your private data (such as audio data or transcripts), only information related to OS (like which GPU you use) and actions that lead to the app showing an error or crashing. This cannot be turned off for pre-release builds of this app. By continuing, you agree to the terms.",
+                "We collect basic error and crash reports by default using Sentry. We DO NOT collect your private data (such as audio data or transcripts), only anonymous data related to OS (like version) and actions that lead to the app showing an error or crashing. You are free to opt-out of this collection.",
                 {
-                    kind: "warning",
-                    title: "Telemetry Notice",
-                    okLabel: "I Agree",
-                    cancelLabel: "Quit App",
+                    kind: "info",
+                    title: "Crash Report Notice",
+                    okLabel: "Opt-in",
+                    cancelLabel: "Opt-out",
                 },
-            ));
-        // TODO(before 1.0 release): Allow user to disable telemetry but still use the app
-        if (!configStore.enableTelemetry.value) {
-            // Exit immediately
-            await exit(0);
-            return;
+            );
+            let err = await configStore.updateCrashReporter(isEnabled);
+            if (err) {
+                notifier.showToast(
+                    `Error in changing Sentry option: ${err}`,
+                    "error",
+                );
+            }
+            info("User has accepted to use the app.");
         }
-        info("User has accepted to use the app.");
-        notifier.showToast("Telemetry enabled", "info", { duration: 5_000 });
+        if (configStore.enableCrashReport.value !== null) {
+            commands.sentryCrashReporterUpdate(
+                configStore.enableCrashReport.value,
+            );
+            if (configStore.enableCrashReport.value) {
+                notifier.showToast("Telemetry enabled", "info", {
+                    duration: 5_000,
+                });
+            }
+        }
         debug("Get Version info");
         const version = await getVersion();
         appVersion = version.startsWith("v") ? version : `v${version}`;
@@ -222,7 +239,7 @@
 
     // Top-level clean-up ONLY (for store)
     $effect(() => {
-        preStartUp();
+        setupPromise = preStartUp();
         return () => {
             configStore.cleanup();
         };
@@ -246,7 +263,9 @@
         <h1 class="text-3xl text-center pt-12 sm:pt-0">
             SuperMouse AI ({appVersion})
         </h1>
-        {#if configStore.enableTelemetry.value}
+        {#await setupPromise}
+            <Loading color="primary" variant="infinity" size="xl" />
+        {:then _}
             <div class="flex flex-col place-content-center p-1">
                 <UpdateChecker class="mx-8" />
             </div>
@@ -311,6 +330,9 @@
                     {onError}
                 />
             </div>
-        {/if}
+        {:catch error}
+            <h2 class="text-6xl text-error">Recieved Error</h2>
+            <p>Recieved: {JSON.stringify(error)}</p>
+        {/await}
     </div>
 </main>

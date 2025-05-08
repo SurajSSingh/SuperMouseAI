@@ -7,12 +7,12 @@
 
 // External Crates
 use log::{debug, error, info, trace, warn, LevelFilter};
+use std::sync::Arc;
 use std::{collections::HashMap, path::PathBuf};
 use tauri::{path::BaseDirectory, Manager};
 use tauri::{App, AppHandle};
-// use tauri_plugin_sentry::sentry::protocol::Event as SentryEvent;
+use tauri_plugin_sentry::sentry;
 use tauri_plugin_sentry::sentry::ClientInitGuard;
-use tauri_plugin_sentry::{minidump, sentry};
 use tauri_specta::{Builder, Event};
 
 // Internal Modules
@@ -21,11 +21,13 @@ mod events;
 mod mutter;
 mod transcript;
 mod types;
+mod utils;
 
 use command::listen_for_mouse_click;
 use events::ModKeyEvent;
 use mutter::Model;
 use types::{is_modkey, InnerAppState, ModKeyPayload};
+use utils::will_send_to_sentry;
 
 pub use crate::command::get_collected_commands;
 pub use crate::events::get_collected_events;
@@ -67,8 +69,8 @@ pub fn run() {
     info!("Start app building");
     let client = create_sentry_client();
     // Caution! Everything before here runs in both app and crash reporter processes
-    #[cfg(not(target_os = "ios"))]
-    let _guard = minidump::init(&client);
+    #[cfg(all(not(target_os = "ios"), debug_assertions))]
+    let _guard = tauri_plugin_sentry::minidump::init(&client);
     debug!("Finish Sentry Setup");
     // Everything after here runs in only the app process
     let app_builder = create_app_builder(&client);
@@ -160,16 +162,24 @@ fn create_sentry_client() -> ClientInitGuard {
         sentry::ClientOptions {
             release: sentry::release_name!(),
             auto_session_tracking: true,
-            // before_send: Some(Arc::new(event_callback)),
+            send_default_pii: false,
+            before_breadcrumb: Some(Arc::new(|breadcrumb| {
+                will_send_to_sentry().then_some(breadcrumb)
+            })),
+            before_send: Some(Arc::new(|mut event| {
+                will_send_to_sentry().then(|| {
+                    event.server_name = None;
+                    if let Some(user) = event.user.as_mut() {
+                        user.ip_address = None;
+                        user.email = None;
+                    }
+                    event
+                })
+            })),
             ..Default::default()
         },
     ))
 }
-
-// /// Arc<dyn Fn(Event<'static>) -> Option<Event<'static>> + Send + Sync, Global>
-// fn event_callback(event: SentryEvent) -> Option<SentryEvent> {
-//     todo!()
-// }
 
 fn setup_app(app: &App, bindings_builder: &Builder) -> Result<(), Box<dyn std::error::Error>> {
     info!("Setting up application");
@@ -354,22 +364,25 @@ fn configure_overlay(app: &App) -> Result<(), Box<dyn std::error::Error>> {
 /// Returns an error if the event listener setup fails.
 fn setup_main_window_close_event(app: &App) {
     let windows = app.webview_windows();
-    app.get_webview_window("main")
-        .expect("Main window should exist")
-        .on_window_event(move |event| {
-            if let tauri::WindowEvent::CloseRequested { api: _, .. } = event {
-                debug!("Main window requested to be closed!");
-                for (label, window) in &windows {
-                    // NOTE: Only do non-main window, otherwise will get stuck in loop
-                    if !label.eq_ignore_ascii_case("main") {
-                        debug!("Window {label} will also be closed.");
-                        if let Err(err) = window.close() {
-                            error!("Failed to close window {label}: {err}");
-                        }
+    let main = app
+        .get_webview_window("main")
+        .expect("Main window should exist");
+    #[cfg(debug_assertions)]
+    main.open_devtools();
+    main.on_window_event(move |event| {
+        if let tauri::WindowEvent::CloseRequested { api: _, .. } = event {
+            debug!("Main window requested to be closed!");
+            for (label, window) in &windows {
+                // NOTE: Only do non-main window, otherwise will get stuck in loop
+                if !label.eq_ignore_ascii_case("main") {
+                    debug!("Window {label} will also be closed.");
+                    if let Err(err) = window.close() {
+                        error!("Failed to close window {label}: {err}");
                     }
                 }
-            } else {
-                /* Do nothing */
             }
-        });
+        } else {
+            /* Do nothing */
+        }
+    });
 }

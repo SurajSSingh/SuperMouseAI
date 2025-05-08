@@ -16,6 +16,7 @@ use crate::{
         AppState, AudioProcessingOptions, MouseButtonType, SystemInfo, TextProcessOptions,
         TranscribeOptions,
     },
+    utils::change_send_to_sentry,
 };
 use enigo::{Enigo, Keyboard, Settings};
 use log::{debug, error, info, trace};
@@ -402,6 +403,14 @@ pub async fn get_system_info() -> SystemInfo {
     }
 }
 
+#[tauri::command]
+#[specta::specta]
+/// Initialize/De-initialize the sentry plugin depending on the toggled value
+pub async fn sentry_crash_reporter_update(enable: bool) -> Result<(), String> {
+    change_send_to_sentry(enable);
+    Ok(())
+}
+
 /// Gets all collected commands for Super Mouse AI application to be used by builder
 #[must_use]
 pub fn get_collected_commands() -> Commands<Wry> {
@@ -414,6 +423,7 @@ pub fn get_collected_commands() -> Commands<Wry> {
         set_window_top,
         write_text,
         update_model,
-        get_system_info
+        get_system_info,
+        sentry_crash_reporter_update,
     ]
 }
