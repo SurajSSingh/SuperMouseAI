@@ -196,12 +196,8 @@ export function findLargestUseableModel(
     return null;
   }
   // Get the smallest model that works
-  console.log(suitableModels.sort((a, b) => a.approxSize - b.approxSize));
-  console.log(
-    suitableModels.sort((a, b) => getQuantPriority(b) - getQuantPriority(a)),
-  );
-  console.log(
-    suitableModels.sort((a, b) => getModelPriority(b) - getModelPriority(a)),
-  );
+  suitableModels.sort((a, b) => a.approxSize - b.approxSize);
+  suitableModels.sort((a, b) => getQuantPriority(b) - getQuantPriority(a));
+  suitableModels.sort((a, b) => getModelPriority(b) - getModelPriority(a));
   return suitableModels.at(0) || null;
 }
