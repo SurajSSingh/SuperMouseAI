@@ -15,6 +15,7 @@ use tauri::{App, AppHandle};
 use tauri_plugin_sentry::sentry;
 use tauri_plugin_sentry::sentry::ClientInitGuard;
 use tauri_specta::{Builder, Event};
+use types::InnerMicrophoneData;
 
 // Internal Modules
 mod command;
@@ -200,6 +201,7 @@ fn setup_app(app: &App, bindings_builder: &Builder) -> Result<(), Box<dyn std::e
     app.manage(Mutex::new(InnerAppState::new(model)));
     app.manage(Mutex::new(InnerSoundMapState::with_map(sound_map)));
     app.manage(Mutex::new(InnerMicrophoneState::new()));
+    app.manage(Mutex::new(InnerMicrophoneData::new()));
     trace!("Created initial app state");
     debug!("Setup mouse click listener");
     let _mouse_click_listener_handler = listen_for_mouse_click(app.handle().clone())?;

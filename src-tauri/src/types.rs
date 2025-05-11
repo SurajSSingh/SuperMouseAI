@@ -4,12 +4,13 @@ use crate::mutter::Model;
 use log::{debug, warn};
 use mouce::common::MouseButton;
 use rodio::{
-    cpal::{default_host, traits::HostTrait, Host},
+    cpal::{default_host, traits::HostTrait, Host, Stream},
     Device,
 };
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::{collections::HashMap, path::PathBuf, sync::Mutex};
+use tauri::async_runtime::Sender;
 use whisper_rs::{WhisperContextParameters, WhisperError};
 
 /// A struct to hold both the default and custom model together, enabling for easy switching
@@ -112,10 +113,9 @@ pub enum RecordingState {
 
 /// State of the microphone
 pub struct InnerMicrophoneState {
-    state: RecordingState,
-    host: Host,
-    device: Option<Device>,
-    data: Vec<f32>,
+    pub host: Host,
+    pub device: Option<Device>,
+    pub stream_sender: Option<Sender<()>>,
 }
 
 impl InnerMicrophoneState {
@@ -126,15 +126,34 @@ impl InnerMicrophoneState {
     pub fn with_host(host: Host) -> Self {
         let device = host.default_input_device();
         Self {
-            state: RecordingState::Stopped,
             host,
             device,
-            data: Vec::new(),
+            stream_sender: None,
         }
     }
+
+    /// Check if currently being recorded
+    pub fn is_recording(&self) -> bool {
+        self.stream_sender.is_some()
+    }
+
+    // TODO: Add switching devices
+
+    // TODO: Encapsulate data to allow independent access
 }
 
 pub type MicrophoneState = Mutex<InnerMicrophoneState>;
+
+#[derive(Debug, Clone, Default)]
+/// Data recorded from user's microphone
+pub struct InnerMicrophoneData(pub Vec<f32>);
+
+impl InnerMicrophoneData {
+    pub fn new() -> Self {
+        Self(Vec::new())
+    }
+}
+pub type MicrophoneDataState = Mutex<InnerMicrophoneData>;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Type)]
 /// Enum representing mouse button type

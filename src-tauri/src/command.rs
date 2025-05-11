@@ -13,18 +13,22 @@ use crate::{
     },
     mutter::ModelError,
     types::{
-        AppState, AudioProcessingOptions, MicrophoneState, MouseButtonType, SoundMapState,
-        SystemInfo, TextPostProcessing, TextProcessOptions, TranscribeOptions,
+        AppState, AudioProcessingOptions, InnerMicrophoneData, MicrophoneDataState,
+        MicrophoneState, MouseButtonType, SoundMapState, SystemInfo, TextPostProcessing,
+        TextProcessOptions, TranscribeOptions,
     },
     utils::change_send_to_sentry,
 };
 use enigo::{Enigo, Keyboard, Settings};
-use log::{debug, error, info, trace};
+use log::{debug, error, info, trace, warn};
 use mouce::{common::MouseEvent, Mouse, MouseActions};
-use rodio::{Decoder, OutputStream, Sink};
-use std::{fs::File, io::BufReader};
+use rodio::{
+    cpal::{traits::StreamTrait, SampleFormat, SampleRate, Stream, SupportedBufferSize},
+    Decoder, DeviceTrait, OutputStream, Sink, SupportedStreamConfig,
+};
+use std::{fs::File, io::BufReader, sync::Mutex, time::Duration};
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
-use tauri::{AppHandle, State, Wry};
+use tauri::{AppHandle, Manager, State, Wry};
 use tauri_specta::{collect_commands, Commands, Event};
 
 #[tauri::command]
@@ -417,33 +421,96 @@ pub async fn sentry_crash_reporter_update(enable: bool) -> Result<(), String> {
 #[tauri::command]
 #[specta::specta]
 ///
-pub async fn start_microphone_recording(
-    mic_state: State<'_, MicrophoneState>,
-) -> Result<(), String> {
-    // let host = default_host();
-    // let default = host
-    //     .default_input_device()
-    //     .ok_or(String::from("No default device"))?;
-    // println!("Default Input: {}", default.name()?);
-    // let config = default.default_input_config()?;
-    // println!("Default Config: {config:?}");
-    // let audio_data: Arc<Mutex<Vec<f32>>> = Arc::new(Mutex::new(Vec::with_capacity(512 * 10)));
-    // let audio_data_clone = audio_data.clone();
-    // println!("Start in 3 sec.");
-    // thread::sleep(Duration::from_secs(3));
-    // let stream = default.build_input_stream(
-    //     &config.config(),
-    //     move |data: &[f32], _info| {
-    //         println!("Got data of len: {}", data.len());
-    //         // println!("Info Provided: {info:?}\n");
-    //         let mut audio_data = audio_data_clone.lock().unwrap();
-    //         audio_data.extend(data);
-    //     },
-    //     |err| println!("Got error: {err:?}"),
-    //     None,
-    // )?;
-    // stream.play()?;
-    todo!()
+pub async fn start_microphone_recording(app_handle: AppHandle) -> Result<(), String> {
+    let (tx, mut rx) = tauri::async_runtime::channel(1);
+    let handle_clone = app_handle.clone();
+    let mic_state = handle_clone.state::<MicrophoneState>();
+    mic_state
+        .lock()
+        .map_err(|err| err.to_string())
+        .and_then(|mut mic_state| {
+            debug!("Replacing stream sender");
+            let old_sender = mic_state.stream_sender.replace(tx);
+            if let Some(prev) = old_sender {
+                debug!("Stopping old sender");
+                prev.blocking_send(()).map_err(|err| err.to_string())
+            } else {
+                debug!("Created Sender {:?}", mic_state.stream_sender);
+                Ok(())
+            }
+        })?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let handle_clone = app_handle.clone();
+        let mic_state = handle_clone.state::<MicrophoneState>();
+        let mic_state = match mic_state.lock() {
+            Ok(inner) => inner,
+            Err(err) => {
+                error!("Error on getting mic state: {err}");
+                return;
+            }
+        };
+        let Some(ref microphone) = mic_state.device else {
+            error!("No device provide");
+            return;
+        };
+        // let buffer_size = microphone
+        //     .default_input_config()
+        //     .map(|config| config.buffer_size().clone())
+        //     .unwrap_or(SupportedBufferSize::Unknown);
+        let support = microphone
+            .default_input_config()
+            .map_err(|err| error!("Default config not given: {err}"))
+            .unwrap();
+        // SupportedStreamConfig::new(1, SampleRate(16_000), buffer_size, SampleFormat::F32);
+        let build = microphone.build_input_stream(
+            &support.config(),
+            move |data, _info| {
+                let state = app_handle.state::<MicrophoneDataState>();
+                let mut audio_data = match state.lock() {
+                    Ok(inner_data) => inner_data,
+                    Err(err) => {
+                        error!("Could not get Microphone Data State lock: {}", err);
+                        return;
+                    }
+                };
+                audio_data.0.extend_from_slice(data);
+            },
+            |err| error!("Error on microphone stream: {err}"),
+            None,
+        );
+        debug!("Unlock the mic state mutex from audio thread");
+        drop(mic_state);
+        let stream = match build {
+            Ok(stream) => stream,
+            Err(err) => {
+                error!("Could not build stream: {}", err.to_string());
+                return;
+            }
+        };
+        debug!("Stream created");
+
+        match stream.play() {
+            Ok(_) => {
+                debug!("Playing Microphone Stream");
+                if let Some(_) = rx.blocking_recv() {
+                    stream.pause().unwrap_or_else(|err| {
+                        warn!("Error when pausing stream, will still drop it: {err}")
+                    });
+                }
+                debug!("Dropping Microphone Stream");
+                rx.close();
+                drop(stream);
+            }
+            Err(err) => {
+                error!("Error attempting to play stream: {err}");
+            }
+        };
+        debug!("Dropping reciever");
+        drop(rx);
+    });
+    debug!("Unlock the mic state mutex from start command");
+    drop(mic_state);
+    Ok(())
 }
 
 #[tauri::command]
@@ -452,54 +519,64 @@ pub async fn start_microphone_recording(
 pub async fn stop_microphone_recording(
     mic_state: State<'_, MicrophoneState>,
 ) -> Result<(), String> {
-    // stream.pause()?;
-    // println!("Stopped");
-    // if let Ok(data) = audio_data.lock() {
-    //     println!("Audio data size: {}", data.len());
-    // }
-    // thread::sleep(Duration::from_secs(4));
-    // let spec = hound::WavSpec {
-    //     channels: config.channels(),
-    //     sample_rate: config.sample_rate().0,
-    //     bits_per_sample: 32,
-    //     sample_format: hound::SampleFormat::Float,
-    // };
-    // let mut writer = hound::WavWriter::create("test.wav", spec).unwrap();
-    // if let Ok(data) = audio_data.lock() {
-    //     data.iter()
-    //         .for_each(|sample| writer.write_sample(*sample).unwrap());
-    // }
-    // writer.finalize().unwrap();
-    todo!()
+    let sender = {
+        debug!("Getting mic state lock");
+        let mut mic_state = mic_state.lock().map_err(|err| {
+            error!("Getting lock issue: {err}");
+            err.to_string()
+        })?;
+        debug!("Calling Sender {:?}", mic_state.stream_sender);
+        mic_state.stream_sender.take()
+    };
+    debug!("Unlock mic state from stop command");
+    // drop(mic_state);
+    if let Some(stopper) = sender {
+        debug!("Sending stop to Microphone Stream");
+        let mut count = 0;
+        while let Err(e) = stopper.send_timeout((), Duration::from_secs(5)).await {
+            count += 1;
+            error!("Run #{count}: {e}");
+        }
+        // stopper.blocking_send(()).map_err(|err| err.to_string())?;
+        debug!("Stopper has sent successfully.");
+    }
+    Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 ///
 pub async fn transcribe_current_data(
-    mic_state: State<'_, MicrophoneState>,
-    // app_handle: AppHandle,
+    app_handle: AppHandle,
     transcribe_options: Option<TranscribeOptions>,
     decode_options: Option<AudioProcessingOptions>,
 ) -> Result<(), String> {
-    todo!()
+    debug!("Getting data");
+    let state = app_handle.state::<MicrophoneDataState>();
+    let data = state.lock().map_err(|err| err.to_string())?;
+    debug!("Data len: {}", data.0.len());
+    Ok(())
 }
 
 #[tauri::command]
 #[specta::specta]
 ///
-pub async fn transcribe_and_process_data(
+pub async fn stop_transcribe_and_process_data(
     mic_state: State<'_, MicrophoneState>,
-    // app_handle: AppHandle,
+    app_handle: AppHandle,
     transcribe_options: Option<TranscribeOptions>,
     processing_options: TextPostProcessing,
     decode_options: Option<AudioProcessingOptions>,
 ) -> Result<String, String> {
-    let transcript = transcribe_current_data(mic_state, transcribe_options, decode_options).await?;
+    debug!("Running stop first");
+    stop_microphone_recording(mic_state).await?;
+    debug!("Now processing");
+    let transcript =
+        transcribe_current_data(app_handle, transcribe_options, decode_options).await?;
     if let Some(options) = processing_options.into_options() {
         let x = process_text("TODO".to_string(), Some(options)).await?;
     };
-    todo!()
+    Ok("TODO".to_string())
 }
 
 /// Gets all collected commands for Super Mouse AI application to be used by builder
@@ -519,6 +596,6 @@ pub fn get_collected_commands() -> Commands<Wry> {
         start_microphone_recording,
         stop_microphone_recording,
         transcribe_current_data,
-        transcribe_and_process_data
+        stop_transcribe_and_process_data
     ]
 }

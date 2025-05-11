@@ -111,6 +111,38 @@ async sentryCrashReporterUpdate(enable: boolean) : Promise<Result<null, string>>
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async startMicrophoneRecording() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("start_microphone_recording") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async stopMicrophoneRecording() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("stop_microphone_recording") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async transcribeCurrentData(transcribeOptions: TranscribeOptions | null, decodeOptions: AudioProcessingOptions | null) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("transcribe_current_data", { transcribeOptions, decodeOptions }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async stopTranscribeAndProcessData(transcribeOptions: TranscribeOptions | null, processingOptions: TextPostProcessing, decodeOptions: AudioProcessingOptions | null) : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("stop_transcribe_and_process_data", { transcribeOptions, processingOptions, decodeOptions }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -203,6 +235,7 @@ total_vram_gb: number }
  * Ways a text can be decorated
  */
 export type TextDecoration = "Bold" | "Italics" | "Underline" | "Strikethrough" | "Mark"
+export type TextPostProcessing = "Skip" | "Default" | { Custom: TextProcessOptions }
 /**
  * Options for the text post-processing function.
  * 

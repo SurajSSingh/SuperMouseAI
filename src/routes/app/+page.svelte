@@ -28,6 +28,7 @@
     } from "$lib/constants";
     import { appLocalDataDir } from "@tauri-apps/api/path";
     import Loading from "$lib/components/ui/Loading.svelte";
+    import RecordingButton from "$lib/components/RecordingButton.svelte";
 
     // Component Bindings
     let micRecorder: MicRecorder = $state() as MicRecorder;
@@ -279,6 +280,7 @@
                         <ModelDropdown class="w-full" />
                     </div>
                 </div>
+                <RecordingButton />
                 <MicRecorder
                     bind:this={micRecorder}
                     {recordingState}
