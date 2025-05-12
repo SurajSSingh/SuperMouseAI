@@ -25,7 +25,7 @@ use rodio::{
     cpal::traits::{HostTrait, StreamTrait},
     Decoder, DeviceTrait, OutputStream, Sink,
 };
-use std::{fs::File, io::BufReader, time::Duration};
+use std::{fs::File, io::BufReader, ops::Deref, time::Duration};
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 use tauri::{AppHandle, Manager, State, Wry};
 use tauri_specta::{collect_commands, Commands, Event};
@@ -753,6 +753,28 @@ pub async fn set_input_device(
     Ok(is_custom)
 }
 
+#[tauri::command]
+#[specta::specta]
+///
+pub async fn get_input_devices(
+    mic_state: State<'_, MicrophoneState>,
+) -> Result<Vec<String>, String> {
+    let mic_state = mic_state.lock().map_err(|err| err.to_string())?;
+    debug!("Find input device");
+    Ok(mic_state
+        .host
+        .input_devices()
+        .map_err(|err| err.to_string())?
+        .enumerate()
+        .map(|(i, d)| {
+            d.name().unwrap_or_else(|err| {
+                warn!("Could not get device name, use placeholder: {err}");
+                format!("Unknown Input Device #{}", i + 1)
+            })
+        })
+        .collect::<Vec<_>>())
+}
+
 /// Gets all collected commands for Super Mouse AI application to be used by builder
 #[must_use]
 pub fn get_collected_commands() -> Commands<Wry> {
@@ -771,6 +793,7 @@ pub fn get_collected_commands() -> Commands<Wry> {
         stop_microphone_recording,
         transcribe_current_data,
         stop_transcribe_and_process_data,
-        set_input_device
+        set_input_device,
+        get_input_devices
     ]
 }
