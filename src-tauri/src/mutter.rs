@@ -10,7 +10,11 @@ use crate::{
 };
 use log::{debug, error, trace, warn};
 use nnnoiseless::{DenoiseState, RnnModel};
-use rodio::{source::UniformSourceIterator, Decoder, Source};
+use rodio::{
+    buffer::SamplesBuffer,
+    source::{from_iter, UniformSourceIterator},
+    Decoder, Source,
+};
 use std::io::Cursor;
 use whisper_rs::{
     FullParams, SamplingStrategy, SegmentCallbackData, WhisperContext, WhisperContextParameters,
@@ -365,6 +369,111 @@ pub fn decode_and_denoise(
         )
         .convert_samples()
         .collect::<Vec<i16>>();
+    let denoise_sample = if options.normalize_result.unwrap_or(false) {
+        trace!("Run first normalization");
+        // NOTE: This treat f32 like full range i16 rather than range between -1.0 and 1.0
+        let max_amp = input_wav_sample
+            .iter()
+            .fold(i16::MIN, |current, &sample| current.max(sample.abs()));
+        let norm_factor = if max_amp <= 0 {
+            trace!("Max amplitude (={max_amp}) does not make sense, use 1.0 to leave unchanged");
+            1.0
+        } else {
+            f32::from(i16::MAX) / f32::from(max_amp)
+        };
+        debug!("Normalizing value with factor={norm_factor}");
+        let res: Vec<f32> = input_wav_sample
+            .iter()
+            .map(|&x| (f32::from(x) * norm_factor).clamp(f32::from(i16::MIN), f32::from(i16::MAX)))
+            .collect();
+        trace!("Finished Normalizing");
+        res
+    } else {
+        trace!("Skip normalizing, using same as denoised ouput");
+        input_wav_sample.iter().map(|&x| f32::from(x)).collect()
+    };
+
+    #[cfg(debug_assertions)]
+    write_wav(
+        "../input.wav",
+        &denoise_sample
+            .iter()
+            .map(|&x| x / f32::from(i16::MAX))
+            .collect::<Vec<_>>(),
+        (Some(input_sample_rate), Some(32), Some(SampleFormat::Float)),
+    );
+
+    let denoised_output: Vec<f32> = if options.denoise_audio.unwrap_or(true) {
+        denoise_input(&denoise_sample)
+    } else {
+        trace!("Skip denoising, just resize output");
+        denoise_sample
+            .into_iter()
+            .map(|x| x / (f32::from(i16::MAX) + 1.0))
+            .collect()
+    };
+    #[cfg(debug_assertions)]
+    write_wav(
+        "../denoised.wav",
+        &denoised_output,
+        // .iter()
+        // .map(|&x| x / f32::from(i16::MAX))
+        // .collect(),
+        (Some(input_sample_rate), Some(32), Some(SampleFormat::Float)),
+    );
+
+    debug!("WAV resample data: sample_rate={output_sample_rate}, channels={channels}");
+    // Resample to output sample rate and channels
+    let resample = UniformSourceIterator::new(
+        rodio::buffer::SamplesBuffer::new(channels, input_sample_rate, denoised_output),
+        channels,
+        output_sample_rate,
+    );
+    let pass_filter = resample
+        .low_pass(options.low_pass_value.unwrap_or(3000))
+        .high_pass(options.high_pass_value.unwrap_or(200))
+        .convert_samples();
+    trace!("Finished Resampling");
+    let samples: Vec<i16> = pass_filter.collect::<Vec<i16>>();
+    let mut decoded_output: Vec<f32> = vec![0.0f32; samples.len()];
+    whisper_rs::convert_integer_to_float_audio(&samples, &mut decoded_output)
+        .map_err(ModelError::WhisperError)?;
+    debug!("Decoding Finished");
+    #[cfg(debug_assertions)]
+    write_wav("../decoded.wav", &decoded_output, (None, None, None));
+    if options.normalize_result.unwrap_or(false) {
+        normalize(&mut decoded_output);
+    } else {
+        trace!("Skip normalizing, using same as denoised ouput");
+    }
+    #[cfg(debug_assertions)]
+    write_wav("../ouput.wav", &decoded_output, (None, None, None));
+    Ok(decoded_output)
+}
+
+/// Denoise a float array (without decoding)
+///
+/// Adapted from <https://github.com/sigaloid/mutter/blob/main/src/transcode.rs>
+pub fn directly_denoise(
+    source: Vec<f32>,
+    input_channels: u16,
+    input_sample_rate: u32,
+    options: AudioProcessingOptions,
+) -> Result<Vec<f32>, ModelError> {
+    trace!("Options given for denoise: {options:?}");
+    debug!(
+        "Input info: len={}, channels={input_channels}, rate={input_sample_rate}",
+        source.len()
+    );
+    let output_sample_rate = 16_000;
+    let channels = 1;
+    let input_wav_sample = UniformSourceIterator::<_, f32>::new(
+        SamplesBuffer::new(input_channels, input_sample_rate, source),
+        channels,
+        input_sample_rate,
+    )
+    .convert_samples()
+    .collect::<Vec<i16>>();
     let denoise_sample = if options.normalize_result.unwrap_or(false) {
         trace!("Run first normalization");
         // NOTE: This treat f32 like full range i16 rather than range between -1.0 and 1.0

@@ -54,6 +54,7 @@ tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-upload = "2"
 nnnoiseless = { version = "0.5.1", default-features = false, features = [] }
+tokio = { version = "1.45.0", features = ["full"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 # NOTE: CUDA feature separate feature flag

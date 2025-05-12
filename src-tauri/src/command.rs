@@ -13,20 +13,16 @@ use crate::{
     },
     mutter::ModelError,
     types::{
-        AppState, AudioProcessingOptions, InnerMicrophoneData, MicrophoneDataState,
-        MicrophoneState, MouseButtonType, SoundMapState, SystemInfo, TextPostProcessing,
-        TextProcessOptions, TranscribeOptions,
+        AppState, AudioProcessingOptions, MicrophoneDataState, MicrophoneState, MouseButtonType,
+        SoundMapState, SystemInfo, TextPostProcessing, TextProcessOptions, TranscribeOptions,
     },
     utils::change_send_to_sentry,
 };
 use enigo::{Enigo, Keyboard, Settings};
 use log::{debug, error, info, trace, warn};
 use mouce::{common::MouseEvent, Mouse, MouseActions};
-use rodio::{
-    cpal::{traits::StreamTrait, SampleFormat, SampleRate, Stream, SupportedBufferSize},
-    Decoder, DeviceTrait, OutputStream, Sink, SupportedStreamConfig,
-};
-use std::{fs::File, io::BufReader, sync::Mutex, time::Duration};
+use rodio::{cpal::traits::StreamTrait, Decoder, DeviceTrait, OutputStream, Sink};
+use std::{fs::File, io::BufReader, time::Duration};
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 use tauri::{AppHandle, Manager, State, Wry};
 use tauri_specta::{collect_commands, Commands, Event};
@@ -460,10 +456,16 @@ pub async fn start_microphone_recording(app_handle: AppHandle) -> Result<(), Str
         let support = microphone
             .default_input_config()
             .map_err(|err| error!("Default config not given: {err}"))
-            .unwrap();
+            .expect("Default config not found");
+        let config = support.config();
+        app_handle
+            .state::<MicrophoneDataState>()
+            .lock()
+            .map(|mut data| data.update_from_config(&config))
+            .map_err(|err| error!("Error on getting lock from microphone data: {err}"));
         // SupportedStreamConfig::new(1, SampleRate(16_000), buffer_size, SampleFormat::F32);
         let build = microphone.build_input_stream(
-            &support.config(),
+            &config,
             move |data, _info| {
                 let state = app_handle.state::<MicrophoneDataState>();
                 let mut audio_data = match state.lock() {
@@ -518,7 +520,9 @@ pub async fn start_microphone_recording(app_handle: AppHandle) -> Result<(), Str
 ///
 pub async fn stop_microphone_recording(
     mic_state: State<'_, MicrophoneState>,
+    delay: Option<u32>,
 ) -> Result<(), String> {
+    tokio::time::sleep(delay.map_or(Duration::ZERO, |ms| Duration::from_millis(ms as u64))).await;
     let sender = {
         debug!("Getting mic state lock");
         let mut mic_state = mic_state.lock().map_err(|err| {
@@ -535,7 +539,11 @@ pub async fn stop_microphone_recording(
         let mut count = 0;
         while let Err(e) = stopper.send_timeout((), Duration::from_secs(5)).await {
             count += 1;
-            error!("Run #{count}: {e}");
+            warn!("Run #{count}: {e}");
+            if count >= 100 {
+                error!("Could not send to stopper");
+                break;
+            }
         }
         // stopper.blocking_send(()).map_err(|err| err.to_string())?;
         debug!("Stopper has sent successfully.");
@@ -548,20 +556,141 @@ pub async fn stop_microphone_recording(
 ///
 pub async fn transcribe_current_data(
     app_handle: AppHandle,
+    app_state: State<'_, AppState>,
     transcribe_options: Option<TranscribeOptions>,
     decode_options: Option<AudioProcessingOptions>,
-) -> Result<(), String> {
+) -> Result<(String, f64), String> {
     debug!("Getting data");
     let state = app_handle.state::<MicrophoneDataState>();
-    let data = state.lock().map_err(|err| err.to_string())?;
-    debug!("Data len: {}", data.0.len());
-    Ok(())
+    let audio = {
+        let mut data = state.lock().map_err(|err| err.to_string())?;
+        let audio = std::mem::take(&mut data.0);
+        debug!(
+            "Old Data len: {} -> current audio len: {}",
+            data.0.len(),
+            audio.len()
+        );
+        (audio, data.1, data.2)
+    };
+    let res = {
+        let options = transcribe_options.unwrap_or_default();
+        log::info!("Transcribing with parameters: translate={:?}, use_timestamp={:?}, threads={:?}, prompt={:?}, lang={:?}, fmt={:?}, patience={:?}",
+        options.translate,
+        options.individual_word_timestamps,
+        options.threads,
+        options.initial_prompt,
+        options.language,
+        options.format,
+        options.patience,
+    );
+        info!("Running transcription command");
+        let app_state = app_state.lock().map_err(|err| err.to_string())?;
+        let model = app_state.get_model();
+        info!("Transcribe using {}", app_state.get_model_info());
+        trace!("Creating abort transcription callback");
+        let abort_callback: Option<fn() -> bool> =
+            if options.include_callback.is_some_and(|is_true| is_true) {
+                // TODO: Figure out how to send off via an event from JS side
+                Some(|| {
+                    trace!("Evaluating abort transcription => false");
+                    false
+                })
+            } else {
+                None
+            };
+        let progress_callback = if options.include_callback.is_some_and(|is_true| is_true) {
+            trace!("Creating transcript progress callback");
+            let handle = app_handle.clone();
+            trace!("Cloned app handle");
+            Some(move |precentage| {
+                trace!("Creating transcription progress event");
+                let event = TranscriptionProgressEvent::with_payload(precentage);
+                trace!("Emitting transcription progress event");
+                let _ = event
+                    .emit(&handle)
+                    .map_err(|err| error!("Transcription Progress event error: {err}"));
+            })
+        } else {
+            None
+        };
+        let lossy_segment_callback = if options.include_callback.is_some_and(|is_true| is_true) {
+            let handle = app_handle.clone();
+            Some(move |segment: whisper_rs::SegmentCallbackData| {
+                let _ = new_lossy_transcript_segment_event(segment)
+                    .emit(&handle)
+                    .map_err(|err| error!("Transcription Segment event error: {err}"));
+            })
+        } else {
+            None
+        };
+        let not_lossy_segment_callback = if options.include_callback.is_some_and(|is_true| is_true)
+        {
+            #[allow(
+                clippy::redundant_clone,
+                reason = "May want to use app handle later on"
+            )]
+            let handle = app_handle.clone();
+            Some(move |segment: whisper_rs::SegmentCallbackData| {
+                let _ = new_transcript_segment_event(segment)
+                    .emit(&handle)
+                    .map_err(|err| error!("Transcription Segment event error: {err}"));
+            })
+        } else {
+            None
+        };
+
+        let transcription = crate::mutter::directly_denoise(
+            audio.0,
+            audio.1,
+            audio.2,
+            decode_options.unwrap_or_default(),
+        )
+        .and_then(|processed_audio| {
+            model.transcribe_pcm_s16le(
+                &processed_audio,
+                options.translate.unwrap_or(false),
+                options.individual_word_timestamps.unwrap_or(false),
+                options.initial_prompt.as_deref(),
+                options.language.as_deref(),
+                // Make sure not to pass 0 for CPU thread,
+                // otherwise model crashes
+                match options.threads {
+                    Some(0) => None,
+                    threads => threads,
+                },
+                options.patience,
+                abort_callback,
+                progress_callback,
+                lossy_segment_callback,
+                not_lossy_segment_callback,
+                None,
+            )
+        })
+        .map_err(|err| {
+            log::error!("Transcription Error: {err:?}");
+            match err {
+                ModelError::WhisperError(whisper_error) => whisper_error.to_string(),
+                ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
+            }
+        })?;
+
+        (
+            options
+                .format
+                .unwrap_or_default()
+                .convert_transcript(&transcription),
+            transcription.processing_time.as_secs_f64(),
+        )
+    };
+    debug!("Result of transcription: {res:?}");
+    Ok(res)
 }
 
 #[tauri::command]
 #[specta::specta]
 ///
 pub async fn stop_transcribe_and_process_data(
+    app_state: State<'_, AppState>,
     mic_state: State<'_, MicrophoneState>,
     app_handle: AppHandle,
     transcribe_options: Option<TranscribeOptions>,
@@ -569,14 +698,17 @@ pub async fn stop_transcribe_and_process_data(
     decode_options: Option<AudioProcessingOptions>,
 ) -> Result<String, String> {
     debug!("Running stop first");
-    stop_microphone_recording(mic_state).await?;
+    stop_microphone_recording(mic_state, Some(1500)).await?;
     debug!("Now processing");
     let transcript =
-        transcribe_current_data(app_handle, transcribe_options, decode_options).await?;
-    if let Some(options) = processing_options.into_options() {
-        let x = process_text("TODO".to_string(), Some(options)).await?;
+        transcribe_current_data(app_handle, app_state, transcribe_options, decode_options).await?;
+    let transcript = if let Some(options) = processing_options.into_options() {
+        let processed = process_text(transcript.0, Some(options)).await?;
+        (processed.0, transcript.1, processed.1)
+    } else {
+        (transcript.0, transcript.1, 0.0)
     };
-    Ok("TODO".to_string())
+    Ok(transcript.0)
 }
 
 /// Gets all collected commands for Super Mouse AI application to be used by builder

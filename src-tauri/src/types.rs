@@ -4,7 +4,7 @@ use crate::mutter::Model;
 use log::{debug, warn};
 use mouce::common::MouseButton;
 use rodio::{
-    cpal::{default_host, traits::HostTrait, Host, Stream},
+    cpal::{default_host, traits::HostTrait, Host, Stream, StreamConfig},
     Device,
 };
 use serde::{Deserialize, Serialize};
@@ -146,11 +146,24 @@ pub type MicrophoneState = Mutex<InnerMicrophoneState>;
 
 #[derive(Debug, Clone, Default)]
 /// Data recorded from user's microphone
-pub struct InnerMicrophoneData(pub Vec<f32>);
+pub struct InnerMicrophoneData(pub Vec<f32>, pub u16, pub u32);
 
 impl InnerMicrophoneData {
     pub fn new() -> Self {
-        Self(Vec::new())
+        Self(Vec::new(), 1, 48_000)
+    }
+
+    pub fn new_with_config(audio_config: StreamConfig) -> Self {
+        Self(
+            Vec::new(),
+            audio_config.channels,
+            audio_config.sample_rate.0,
+        )
+    }
+
+    pub fn update_from_config(&mut self, audio_config: &StreamConfig) {
+        self.1 = audio_config.channels;
+        self.2 = audio_config.sample_rate.0;
     }
 }
 pub type MicrophoneDataState = Mutex<InnerMicrophoneData>;
