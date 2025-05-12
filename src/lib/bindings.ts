@@ -120,15 +120,15 @@ async startMicrophoneRecording() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async stopMicrophoneRecording() : Promise<Result<null, string>> {
+async stopMicrophoneRecording(delay: number | null) : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("stop_microphone_recording") };
+    return { status: "ok", data: await TAURI_INVOKE("stop_microphone_recording", { delay }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async transcribeCurrentData(transcribeOptions: TranscribeOptions | null, decodeOptions: AudioProcessingOptions | null) : Promise<Result<null, string>> {
+async transcribeCurrentData(transcribeOptions: TranscribeOptions | null, decodeOptions: AudioProcessingOptions | null) : Promise<Result<[string, number], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("transcribe_current_data", { transcribeOptions, decodeOptions }) };
 } catch (e) {

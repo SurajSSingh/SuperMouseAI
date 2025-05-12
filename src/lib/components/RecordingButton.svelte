@@ -32,7 +32,12 @@
             const res = await commands.stopTranscribeAndProcessData(
                 null,
                 "Skip",
-                null,
+                {
+                    normalize_result: true,
+                    denoise_audio: null,
+                    high_pass_value: null,
+                    low_pass_value: null,
+                },
             );
             if (res.status === "ok") {
                 isProcessing = false;
