@@ -10,11 +10,7 @@ use crate::{
 };
 use log::{debug, error, trace, warn};
 use nnnoiseless::{DenoiseState, RnnModel};
-use rodio::{
-    buffer::SamplesBuffer,
-    source::{from_iter, UniformSourceIterator},
-    Decoder, Source,
-};
+use rodio::{buffer::SamplesBuffer, source::UniformSourceIterator, Decoder, Source};
 use std::io::Cursor;
 use whisper_rs::{
     FullParams, SamplingStrategy, SegmentCallbackData, WhisperContext, WhisperContextParameters,

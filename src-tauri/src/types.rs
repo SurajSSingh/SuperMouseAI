@@ -4,7 +4,7 @@ use crate::mutter::Model;
 use log::{debug, warn};
 use mouce::common::MouseButton;
 use rodio::{
-    cpal::{default_host, traits::HostTrait, Host, Stream, StreamConfig},
+    cpal::{default_host, traits::HostTrait, Host, StreamConfig},
     Device,
 };
 use serde::{Deserialize, Serialize};
@@ -133,7 +133,7 @@ impl InnerMicrophoneState {
     }
 
     /// Check if currently being recorded
-    pub fn is_recording(&self) -> bool {
+    pub const fn is_recording(&self) -> bool {
         self.stream_sender.is_some()
     }
 
@@ -149,18 +149,18 @@ pub type MicrophoneState = Mutex<InnerMicrophoneState>;
 pub struct InnerMicrophoneData(pub Vec<f32>, pub u16, pub u32);
 
 impl InnerMicrophoneData {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self(Vec::new(), 1, 48_000)
     }
 
-    pub fn new_with_config(audio_config: StreamConfig) -> Self {
-        Self(
-            Vec::new(),
-            audio_config.channels,
-            audio_config.sample_rate.0,
-        )
+    /// Replace microphone data with one that follows a specific stream configuration
+    pub fn replace_with_config(&mut self, audio_config: StreamConfig) {
+        self.0.clear();
+        self.1 = audio_config.channels;
+        self.2 = audio_config.sample_rate.0;
     }
 
+    /// Update based on stream configuration
     pub fn update_from_config(&mut self, audio_config: &StreamConfig) {
         self.1 = audio_config.channels;
         self.2 = audio_config.sample_rate.0;
@@ -334,17 +334,17 @@ pub enum TextPostProcessing {
 }
 
 impl TextPostProcessing {
-    /// Create a custom post-processing text with given [`TextProcessOptions`]
-    pub fn with_options(options: TextProcessOptions) -> Self {
-        Self::Custom(options)
-    }
+    // /// Create a custom post-processing text with given [`TextProcessOptions`]
+    // pub fn with_options(options: TextProcessOptions) -> Self {
+    //     Self::Custom(options)
+    // }
 
     /// Transform into options, None if skipped, using [`TextProcessOptions::default()`] for [`Self::Default`] and provided options for [`Self::Custom`]
     pub fn into_options(self) -> Option<TextProcessOptions> {
         match self {
-            TextPostProcessing::Skip => None,
-            TextPostProcessing::Default => Some(TextProcessOptions::default()),
-            TextPostProcessing::Custom(text_process_options) => Some(text_process_options),
+            Self::Skip => None,
+            Self::Default => Some(TextProcessOptions::default()),
+            Self::Custom(text_process_options) => Some(text_process_options),
         }
     }
 }

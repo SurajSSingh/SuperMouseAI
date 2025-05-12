@@ -21,7 +21,10 @@ use crate::{
 use enigo::{Enigo, Keyboard, Settings};
 use log::{debug, error, info, trace, warn};
 use mouce::{common::MouseEvent, Mouse, MouseActions};
-use rodio::{cpal::traits::StreamTrait, Decoder, DeviceTrait, OutputStream, Sink};
+use rodio::{
+    cpal::traits::{HostTrait, StreamTrait},
+    Decoder, DeviceTrait, OutputStream, Sink,
+};
 use std::{fs::File, io::BufReader, time::Duration};
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 use tauri::{AppHandle, Manager, State, Wry};
@@ -417,24 +420,24 @@ pub async fn sentry_crash_reporter_update(enable: bool) -> Result<(), String> {
 #[tauri::command]
 #[specta::specta]
 ///
-pub async fn start_microphone_recording(app_handle: AppHandle) -> Result<(), String> {
+pub async fn start_microphone_recording(app_handle: AppHandle) -> Result<bool, String> {
     let (tx, mut rx) = tauri::async_runtime::channel(1);
     let handle_clone = app_handle.clone();
     let mic_state = handle_clone.state::<MicrophoneState>();
-    mic_state
-        .lock()
-        .map_err(|err| err.to_string())
-        .and_then(|mut mic_state| {
-            debug!("Replacing stream sender");
-            let old_sender = mic_state.stream_sender.replace(tx);
-            if let Some(prev) = old_sender {
-                debug!("Stopping old sender");
-                prev.blocking_send(()).map_err(|err| err.to_string())
-            } else {
+    let is_recording =
+        mic_state
+            .lock()
+            .map_err(|err| err.to_string())
+            .and_then(|mut mic_state| {
+                debug!("Replacing stream sender");
+                let old_sender = mic_state.stream_sender.replace(tx);
+                let close_old_result = old_sender.map_or(Ok(()), |prev| {
+                    debug!("Stopping old sender");
+                    prev.blocking_send(()).map_err(|err| err.to_string())
+                });
                 debug!("Created Sender {:?}", mic_state.stream_sender);
-                Ok(())
-            }
-        })?;
+                close_old_result.map(|_success| mic_state.is_recording())
+            })?;
     tauri::async_runtime::spawn_blocking(move || {
         let handle_clone = app_handle.clone();
         let mic_state = handle_clone.state::<MicrophoneState>();
@@ -458,7 +461,7 @@ pub async fn start_microphone_recording(app_handle: AppHandle) -> Result<(), Str
             .map_err(|err| error!("Default config not given: {err}"))
             .expect("Default config not found");
         let config = support.config();
-        app_handle
+        let _ = app_handle
             .state::<MicrophoneDataState>()
             .lock()
             .map(|mut data| data.update_from_config(&config))
@@ -471,7 +474,7 @@ pub async fn start_microphone_recording(app_handle: AppHandle) -> Result<(), Str
                 let mut audio_data = match state.lock() {
                     Ok(inner_data) => inner_data,
                     Err(err) => {
-                        error!("Could not get Microphone Data State lock: {}", err);
+                        error!("Could not get Microphone Data State lock: {err}");
                         return;
                     }
                 };
@@ -485,18 +488,18 @@ pub async fn start_microphone_recording(app_handle: AppHandle) -> Result<(), Str
         let stream = match build {
             Ok(stream) => stream,
             Err(err) => {
-                error!("Could not build stream: {}", err.to_string());
+                error!("Could not build stream: {err}");
                 return;
             }
         };
         debug!("Stream created");
 
         match stream.play() {
-            Ok(_) => {
+            Ok(()) => {
                 debug!("Playing Microphone Stream");
-                if let Some(_) = rx.blocking_recv() {
+                if rx.blocking_recv().is_some() {
                     stream.pause().unwrap_or_else(|err| {
-                        warn!("Error when pausing stream, will still drop it: {err}")
+                        warn!("Error when pausing stream, will still drop it: {err}");
                     });
                 }
                 debug!("Dropping Microphone Stream");
@@ -512,7 +515,7 @@ pub async fn start_microphone_recording(app_handle: AppHandle) -> Result<(), Str
     });
     debug!("Unlock the mic state mutex from start command");
     drop(mic_state);
-    Ok(())
+    Ok(is_recording)
 }
 
 #[tauri::command]
@@ -711,6 +714,45 @@ pub async fn stop_transcribe_and_process_data(
     Ok(transcript.0)
 }
 
+#[tauri::command]
+#[specta::specta]
+///
+pub async fn set_input_device(
+    mic_state: State<'_, MicrophoneState>,
+    data_state: State<'_, MicrophoneDataState>,
+    index: u8,
+) -> Result<bool, String> {
+    let mut mic_state = mic_state.lock().map_err(|err| err.to_string())?;
+    debug!("Find input device");
+    let mut devices = mic_state
+        .host
+        .input_devices()
+        .map_err(|err| err.to_string())?;
+    let (is_custom, device) = if let Some(custom) = devices.nth(index as usize) {
+        debug!("Set custom device");
+        (true, custom)
+    } else if let Some(default) = mic_state.host.default_input_device() {
+        debug!("Use default device");
+        (false, default)
+    } else {
+        error!("No device at #{index} and no fallback default input.");
+        return Err("Could not select input device.".into());
+    };
+    debug!("Update Microphone Data with new device config, then update device");
+    data_state
+        .lock()
+        .map_err(|err| err.to_string())?
+        .replace_with_config(
+            device
+                .default_input_config()
+                .map_err(|err| err.to_string())?
+                .config(),
+        );
+    mic_state.device.replace(device);
+    drop(mic_state);
+    Ok(is_custom)
+}
+
 /// Gets all collected commands for Super Mouse AI application to be used by builder
 #[must_use]
 pub fn get_collected_commands() -> Commands<Wry> {
@@ -728,6 +770,7 @@ pub fn get_collected_commands() -> Commands<Wry> {
         start_microphone_recording,
         stop_microphone_recording,
         transcribe_current_data,
-        stop_transcribe_and_process_data
+        stop_transcribe_and_process_data,
+        set_input_device
     ]
 }
