@@ -112,7 +112,7 @@ async sentryCrashReporterUpdate(enable: boolean) : Promise<Result<null, string>>
     else return { status: "error", error: e  as any };
 }
 },
-async startMicrophoneRecording() : Promise<Result<null, string>> {
+async startMicrophoneRecording() : Promise<Result<boolean, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("start_microphone_recording") };
 } catch (e) {
@@ -139,6 +139,22 @@ async transcribeCurrentData(transcribeOptions: TranscribeOptions | null, decodeO
 async stopTranscribeAndProcessData(transcribeOptions: TranscribeOptions | null, processingOptions: TextPostProcessing, decodeOptions: AudioProcessingOptions | null) : Promise<Result<string, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("stop_transcribe_and_process_data", { transcribeOptions, processingOptions, decodeOptions }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setInputDevice(index: number) : Promise<Result<boolean, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_input_device", { index }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getInputDevices() : Promise<Result<string[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_input_devices") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
