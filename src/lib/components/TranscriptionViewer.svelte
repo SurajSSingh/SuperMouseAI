@@ -41,7 +41,23 @@
         bind:value={
             () => configStore.currentTranscript,
             (v) => {
-                configStore.editTranscription(v);
+                if (v.length === 0) {
+                    info(
+                        "User attempting to fully delete text, making sure that is what they want.",
+                    );
+                    notifier?.confirmAction(
+                        `You are deleting: ${configStore.currentTranscript.length > 100 ? configStore.currentTranscript.substring(0, 100).trimEnd() + "..." : configStore.currentTranscript}`,
+                        () => {
+                            configStore.removeCurrentTranscription();
+                        },
+                        () => {
+                            notifier?.showToast("Cancelled delete.", "info");
+                        },
+                        "Are you sure you want to delete?",
+                    );
+                } else {
+                    configStore.editTranscription(v);
+                }
             }
         }
         disabled={configStore.isTranscriptsEmpty}
