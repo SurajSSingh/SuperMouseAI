@@ -136,9 +136,17 @@ async transcribeCurrentData(transcribeOptions: TranscribeOptions | null, decodeO
     else return { status: "error", error: e  as any };
 }
 },
-async stopTranscribeAndProcessData(transcribeOptions: TranscribeOptions | null, processingOptions: TextPostProcessing, decodeOptions: AudioProcessingOptions | null) : Promise<Result<string, string>> {
+async transcribeCurrentThenProcess(transcribeOptions: TranscribeOptions | null, processingOptions: TextPostProcessing, decodeOptions: AudioProcessingOptions | null) : Promise<Result<[string, number], string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("stop_transcribe_and_process_data", { transcribeOptions, processingOptions, decodeOptions }) };
+    return { status: "ok", data: await TAURI_INVOKE("transcribe_current_then_process", { transcribeOptions, processingOptions, decodeOptions }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async stopTranscribeAndProcessData(stopMicTime: number | null, transcribeOptions: TranscribeOptions | null, processingOptions: TextPostProcessing, decodeOptions: AudioProcessingOptions | null) : Promise<Result<[string, number], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("stop_transcribe_and_process_data", { stopMicTime, transcribeOptions, processingOptions, decodeOptions }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };

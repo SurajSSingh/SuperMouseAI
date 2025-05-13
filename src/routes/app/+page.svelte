@@ -12,7 +12,6 @@
     import PermissionBar from "$lib/components/PermissionBar.svelte";
     import { configStore } from "$lib/store.svelte";
     import { commands } from "$lib/bindings";
-    import { exit } from "@tauri-apps/plugin-process";
     import { debug, error, info, trace, warn } from "@tauri-apps/plugin-log";
     import { getVersion } from "@tauri-apps/api/app";
     import { emitTo } from "@tauri-apps/api/event";
@@ -29,10 +28,10 @@
     import { appLocalDataDir } from "@tauri-apps/api/path";
     import Loading from "$lib/components/ui/Loading.svelte";
     import RecordingButton from "$lib/components/RecordingButton.svelte";
+    import TranscriptionViewer from "$lib/components/TranscriptionViewer.svelte";
 
     // Component Bindings
-    let micRecorder: MicRecorder = $state() as MicRecorder;
-    let audioTranscriber: AudioTranscriber = $state() as AudioTranscriber;
+    let recordingButton = $state() as RecordingButton;
     // State
     let recordingState: RecordingStates = $state("stopped");
     let hasRecorded = $state(false);
@@ -58,7 +57,8 @@
         // Force a microtask to allow rendering before transcribing,
         // fixes issue with "processing" state not updating during processing
         new Promise((resolve) => requestAnimationFrame(resolve)).finally(() => {
-            audioTranscriber.processData(chunks);
+            // audioTranscriber?.processData(chunks);
+            warn("Transcribe function no longer processes data");
         });
     }
 
@@ -75,6 +75,50 @@
         hasRecorded = true;
         transcribe(chunks);
     }
+
+    async function onRecordingEndToProcess() {
+        recordingState = "processing";
+        emitTo("overlay", "stateUpdate", { state: recordingState });
+        notifier.showNotification("Recording Stopped!", "", "stop");
+        hasRecorded = true;
+        // Replaces `transcribe(chunks);`
+        const result = await commands.transcribeCurrentThenProcess(
+            {
+                threads:
+                    configStore.threads.value > 0
+                        ? configStore.threads.value
+                        : null,
+                initial_prompt: configStore.initialPrompt.value,
+                patience: configStore.patience.value,
+                include_callback: false,
+                individual_word_timestamps: true,
+                translate: false,
+                language: "en",
+                format: "Text",
+            },
+            {
+                Custom: {
+                    removed_words: configStore.ignoredWordsList,
+                    replace_inter_sentence_newlines:
+                        configStore.interNLRemove.value,
+                    decorated_words: null,
+                },
+            },
+            {
+                normalize_result: true,
+                denoise_audio: null,
+                high_pass_value: null,
+                low_pass_value: null,
+            },
+        );
+        if (result.status === "ok") {
+            configStore.addTranscription(result.data[0], result.data[1]);
+            onFinishProcessing();
+        } else {
+            onError?.(`Processing failed: ${result.error}`);
+        }
+    }
+
     function onFinishProcessing() {
         recordingState = "stopped";
         emitTo("overlay", "stateUpdate", { state: recordingState });
@@ -271,7 +315,9 @@
                 <UpdateChecker class="mx-8" />
             </div>
             <PermissionBar
-                setupRecorder={() => micRecorder.setupRecorder()}
+                setupRecorder={async () => {
+                    warn("Setup recorder should no longer be used!");
+                }}
                 {recordingState}
             />
             <div class="flex flex-col place-content-center">
@@ -280,20 +326,18 @@
                         <ModelDropdown class="w-full" />
                     </div>
                 </div>
-                <RecordingButton />
-                <MicRecorder
-                    bind:this={micRecorder}
-                    {recordingState}
-                    {onRecordingStart}
-                    {onRecordingEnd}
-                    {onError}
+                <RecordingButton
+                    bind:this={recordingButton}
                     disabled={isDownloadingModel}
+                    onRecordingEnd={onRecordingEndToProcess}
+                    {onRecordingStart}
+                    {onError}
                 />
                 <CustomShortcut
                     class="w-3/4 mb-2"
                     onToggleShortcutEvent={(e) => {
                         if (e.state === "Pressed") {
-                            micRecorder?.toggleRecording();
+                            recordingButton?.toggleRecording();
                         }
                     }}
                 />
@@ -326,11 +370,7 @@
                         >(📋) Copy to Clipboard</Button
                     >
                 </div>
-                <AudioTranscriber
-                    bind:this={audioTranscriber}
-                    {onFinishProcessing}
-                    {onError}
-                />
+                <TranscriptionViewer />
             </div>
         {:catch error}
             <h2 class="text-6xl text-error">Recieved Error</h2>
