@@ -692,26 +692,49 @@ pub async fn transcribe_current_data(
 #[tauri::command]
 #[specta::specta]
 ///
-pub async fn stop_transcribe_and_process_data(
+pub async fn transcribe_current_then_process(
     app_state: State<'_, AppState>,
-    mic_state: State<'_, MicrophoneState>,
     app_handle: AppHandle,
     transcribe_options: Option<TranscribeOptions>,
     processing_options: TextPostProcessing,
     decode_options: Option<AudioProcessingOptions>,
-) -> Result<String, String> {
-    debug!("Running stop first");
-    stop_microphone_recording(mic_state, Some(1500)).await?;
-    debug!("Now processing");
+) -> Result<(String, f64), String> {
+    debug!("Now transcribing audio data");
     let transcript =
         transcribe_current_data(app_handle, app_state, transcribe_options, decode_options).await?;
-    let transcript = if let Some(options) = processing_options.into_options() {
+    debug!("Finish processing");
+    Ok(if let Some(options) = processing_options.into_options() {
         let processed = process_text(transcript.0, Some(options)).await?;
-        (processed.0, transcript.1, processed.1)
+        (processed.0, transcript.1 + processed.1)
     } else {
-        (transcript.0, transcript.1, 0.0)
+        transcript
+    })
+}
+
+#[tauri::command]
+#[specta::specta]
+///
+pub async fn stop_transcribe_and_process_data(
+    app_state: State<'_, AppState>,
+    mic_state: State<'_, MicrophoneState>,
+    app_handle: AppHandle,
+    stop_mic_time: Option<u32>,
+    transcribe_options: Option<TranscribeOptions>,
+    processing_options: TextPostProcessing,
+    decode_options: Option<AudioProcessingOptions>,
+) -> Result<(String, f64), String> {
+    debug!("Running stop first");
+    if let Some(time) = stop_mic_time {
+        stop_microphone_recording(mic_state, Some(time)).await?
     };
-    Ok(transcript.0)
+    transcribe_current_then_process(
+        app_state,
+        app_handle,
+        transcribe_options,
+        processing_options,
+        decode_options,
+    )
+    .await
 }
 
 #[tauri::command]
@@ -807,6 +830,7 @@ pub fn get_collected_commands() -> Commands<Wry> {
         start_microphone_recording,
         stop_microphone_recording,
         transcribe_current_data,
+        transcribe_current_then_process,
         stop_transcribe_and_process_data,
         set_input_device,
         get_input_devices,
