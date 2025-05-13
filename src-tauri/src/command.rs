@@ -514,8 +514,7 @@ pub async fn start_microphone_recording(app_handle: AppHandle) -> Result<bool, S
         debug!("Dropping reciever");
         drop(rx);
     });
-    debug!("Unlock the mic state mutex from start command");
-    drop(mic_state);
+    debug!("Mic state mutex gaurd moved to new theard");
     Ok(is_recording)
 }
 
