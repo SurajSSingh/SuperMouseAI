@@ -154,7 +154,7 @@ impl InnerMicrophoneData {
     }
 
     /// Replace microphone data with one that follows a specific stream configuration
-    pub fn replace_with_config(&mut self, audio_config: StreamConfig) {
+    pub fn replace_with_config(&mut self, audio_config: &StreamConfig) {
         self.0.clear();
         self.1 = audio_config.channels;
         self.2 = audio_config.sample_rate.0;

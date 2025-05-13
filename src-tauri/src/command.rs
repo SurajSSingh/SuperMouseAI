@@ -25,10 +25,11 @@ use rodio::{
     cpal::traits::{HostTrait, StreamTrait},
     Decoder, DeviceTrait, OutputStream, Sink,
 };
-use std::{fs::File, io::BufReader, ops::Deref, time::Duration};
+use std::{fs::File, io::BufReader, time::Duration};
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 use tauri::{AppHandle, Manager, State, Wry};
 use tauri_specta::{collect_commands, Commands, Event};
+use whisper_rs::SegmentCallbackData;
 
 #[tauri::command]
 #[specta::specta]
@@ -525,7 +526,8 @@ pub async fn stop_microphone_recording(
     mic_state: State<'_, MicrophoneState>,
     delay: Option<u32>,
 ) -> Result<(), String> {
-    tokio::time::sleep(delay.map_or(Duration::ZERO, |ms| Duration::from_millis(ms as u64))).await;
+    tokio::time::sleep(delay.map_or(Duration::ZERO, |ms| Duration::from_millis(u64::from(ms))))
+        .await;
     let sender = {
         debug!("Getting mic state lock");
         let mut mic_state = mic_state.lock().map_err(|err| {
@@ -591,56 +593,6 @@ pub async fn transcribe_current_data(
         let model = app_state.get_model();
         info!("Transcribe using {}", app_state.get_model_info());
         trace!("Creating abort transcription callback");
-        let abort_callback: Option<fn() -> bool> =
-            if options.include_callback.is_some_and(|is_true| is_true) {
-                // TODO: Figure out how to send off via an event from JS side
-                Some(|| {
-                    trace!("Evaluating abort transcription => false");
-                    false
-                })
-            } else {
-                None
-            };
-        let progress_callback = if options.include_callback.is_some_and(|is_true| is_true) {
-            trace!("Creating transcript progress callback");
-            let handle = app_handle.clone();
-            trace!("Cloned app handle");
-            Some(move |precentage| {
-                trace!("Creating transcription progress event");
-                let event = TranscriptionProgressEvent::with_payload(precentage);
-                trace!("Emitting transcription progress event");
-                let _ = event
-                    .emit(&handle)
-                    .map_err(|err| error!("Transcription Progress event error: {err}"));
-            })
-        } else {
-            None
-        };
-        let lossy_segment_callback = if options.include_callback.is_some_and(|is_true| is_true) {
-            let handle = app_handle.clone();
-            Some(move |segment: whisper_rs::SegmentCallbackData| {
-                let _ = new_lossy_transcript_segment_event(segment)
-                    .emit(&handle)
-                    .map_err(|err| error!("Transcription Segment event error: {err}"));
-            })
-        } else {
-            None
-        };
-        let not_lossy_segment_callback = if options.include_callback.is_some_and(|is_true| is_true)
-        {
-            #[allow(
-                clippy::redundant_clone,
-                reason = "May want to use app handle later on"
-            )]
-            let handle = app_handle.clone();
-            Some(move |segment: whisper_rs::SegmentCallbackData| {
-                let _ = new_transcript_segment_event(segment)
-                    .emit(&handle)
-                    .map_err(|err| error!("Transcription Segment event error: {err}"));
-            })
-        } else {
-            None
-        };
 
         let transcription = crate::mutter::directly_denoise(
             audio.0,
@@ -662,10 +614,10 @@ pub async fn transcribe_current_data(
                     threads => threads,
                 },
                 options.patience,
-                abort_callback,
-                progress_callback,
-                lossy_segment_callback,
-                not_lossy_segment_callback,
+                None::<fn() -> bool>,
+                None::<fn(i32)>,
+                None::<fn(SegmentCallbackData)>,
+                None::<fn(SegmentCallbackData)>,
                 None,
             )
         })
@@ -725,7 +677,7 @@ pub async fn stop_transcribe_and_process_data(
 ) -> Result<(String, f64), String> {
     debug!("Running stop first");
     if let Some(time) = stop_mic_time {
-        stop_microphone_recording(mic_state, Some(time)).await?
+        stop_microphone_recording(mic_state, Some(time)).await?;
     };
     transcribe_current_then_process(
         app_state,
@@ -766,7 +718,7 @@ pub async fn set_input_device(
         .lock()
         .map_err(|err| err.to_string())?
         .replace_with_config(
-            device
+            &device
                 .default_input_config()
                 .map_err(|err| err.to_string())?
                 .config(),
