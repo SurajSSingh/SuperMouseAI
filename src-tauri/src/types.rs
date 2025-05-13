@@ -161,7 +161,7 @@ impl InnerMicrophoneData {
     }
 
     /// Update based on stream configuration
-    pub fn update_from_config(&mut self, audio_config: &StreamConfig) {
+    pub const fn update_from_config(&mut self, audio_config: &StreamConfig) {
         self.1 = audio_config.channels;
         self.2 = audio_config.sample_rate.0;
     }

@@ -510,7 +510,7 @@ pub async fn start_microphone_recording(app_handle: AppHandle) -> Result<bool, S
             Err(err) => {
                 error!("Error attempting to play stream: {err}");
             }
-        };
+        }
         debug!("Dropping reciever");
         drop(rx);
     });
@@ -686,7 +686,7 @@ pub async fn stop_transcribe_and_process_data(
     debug!("Running stop first");
     if let Some(time) = stop_mic_time {
         stop_microphone_recording(mic_state, Some(time)).await?;
-    };
+    }
     transcribe_current_then_process(
         app_state,
         app_handle,
