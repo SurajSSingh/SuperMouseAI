@@ -1,78 +1,35 @@
 <script lang="ts">
-    import {
-        NotificationSystem,
-        notifier,
-    } from "$lib/notificationSystem.svelte";
-    import { type RecordingStates } from "$lib/types";
+    import { notifier } from "$lib/notificationSystem.svelte";
     import PermissionButton from "$lib/components/PermissionButton.svelte";
     import { configStore } from "$lib/store.svelte";
     import { debug, trace } from "@tauri-apps/plugin-log";
     import MicrophoneDropdown from "./ui/MicrophoneDropdown.svelte";
 
     interface PermissionsBarProps {
-        setupRecorder: () => Promise<void>;
-        recordingState: RecordingStates;
         showNames?: boolean;
         showIcons?: boolean;
     }
 
-    let {
-        setupRecorder,
-        recordingState,
-        showNames = true,
-        showIcons = true,
-    }: PermissionsBarProps = $props();
-
-    // let explicitMicrophonePermission: PermissionState = $state(
-    //     "denied" as PermissionState,
-    // );
-
-    // const microphonePermission: boolean | null = $derived(
-    //     explicitMicrophonePermission === "prompt"
-    //         ? null
-    //         : explicitMicrophonePermission === "granted",
-    // );
+    let { showNames = true, showIcons = true }: PermissionsBarProps = $props();
 
     $effect(() => {
-        // const queryPermissions = async () => {
-        //     await updateMicrophonePermissions();
-        // };
         debug(`Update permissions for Permission Bar component`);
-        // queryPermissions();
         trace(`Permissions allowed
         - Notifications = ${configStore.useSystemNotification.value}
         - Sound = ${configStore.enabledSound.value}
         `);
     });
-
-    // async function updateMicrophonePermissions() {
-    //     debug(`Update microphone permission`);
-    //     explicitMicrophonePermission =
-    //         // @ts-ignore 'microphone' should be querable for permissions
-    //         (await navigator.permissions.query({ name: "microphone" })).state;
-    // }
-
-    // async function resetPermission() {
-    //     debug(`Resetting microphone permission`);
-    //     let devices = await navigator.mediaDevices.enumerateDevices();
-    //     if (devices.length > 0) {
-    //         await updateMicrophonePermissions();
-    //         return;
-    //     }
-    //     await setupRecorder();
-    //     devices = await navigator.mediaDevices.enumerateDevices();
-    // }
 </script>
 
 <div>
-    <!-- <h2 class="text-center text-xl">Permissions</h2> -->
     <div
-        class="grid grid-cols-1 gap-1 md:gap-2 lg:gap-4 xl:gap-4 sm:grid-cols-3 justify-items-center place-items-center items-stretch"
+        class="grid grid-cols-1 gap-1 lg:gap-2 xl:gap-3 sm:grid-cols-2 justify-items-center place-items-center items-stretch"
     >
         <MicrophoneDropdown
             name="Microphone"
             icon={showIcons ? "🎤" : ""}
             showName={showNames}
+            class="col-span-full"
         />
         <PermissionButton
             name="Sound"
