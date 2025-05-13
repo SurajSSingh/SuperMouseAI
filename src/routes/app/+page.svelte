@@ -341,36 +341,11 @@
                         }
                     }}
                 />
-                <hr />
-                <div class="grid grid-cols-2 my-1">
-                    <Button
-                        color={recordingState === "processing"
-                            ? "neutral"
-                            : "warning"}
-                        size="sm"
-                        class="m-2"
-                        onclick={() => {
-                            notifier.showNotification(
-                                "Re-transcribing data.",
-                                "",
-                                "stop",
-                            );
-                            transcribe();
-                        }}
-                        disabled={!hasRecorded || recordingState !== "stopped"}
-                        >(✏️) Re-transcribe</Button
-                    >
-                    <Button
-                        color="info"
-                        size="sm"
-                        class="m-2"
-                        onclick={copyToClipboard}
-                        disabled={!configStore.currentTranscript ||
-                            recordingState !== "stopped"}
-                        >(📋) Copy to Clipboard</Button
-                    >
-                </div>
-                <TranscriptionViewer />
+                <TranscriptionViewer
+                    onCopyClick={copyToClipboard}
+                    disableCopy={!configStore.currentTranscript ||
+                        recordingState !== "stopped"}
+                />
             </div>
         {:catch error}
             <h2 class="text-6xl text-error">Recieved Error</h2>
