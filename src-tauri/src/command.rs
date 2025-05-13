@@ -760,7 +760,7 @@ pub async fn get_input_devices(
     mic_state: State<'_, MicrophoneState>,
 ) -> Result<Vec<String>, String> {
     let mic_state = mic_state.lock().map_err(|err| err.to_string())?;
-    debug!("Find input device");
+    debug!("Find and get input devices");
     Ok(mic_state
         .host
         .input_devices()
@@ -773,6 +773,21 @@ pub async fn get_input_devices(
             })
         })
         .collect::<Vec<_>>())
+}
+
+#[tauri::command]
+#[specta::specta]
+///
+pub async fn get_current_input_device(
+    mic_state: State<'_, MicrophoneState>,
+) -> Result<Option<String>, String> {
+    let mic_state = mic_state.lock().map_err(|err| err.to_string())?;
+    debug!("Get current input device from mic state");
+    mic_state
+        .device
+        .as_ref()
+        .map(|device| device.name().map_err(|err| err.to_string()))
+        .transpose()
 }
 
 /// Gets all collected commands for Super Mouse AI application to be used by builder
@@ -794,6 +809,7 @@ pub fn get_collected_commands() -> Commands<Wry> {
         transcribe_current_data,
         stop_transcribe_and_process_data,
         set_input_device,
-        get_input_devices
+        get_input_devices,
+        get_current_input_device,
     ]
 }
