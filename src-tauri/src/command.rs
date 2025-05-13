@@ -1,9 +1,9 @@
 //! All things related to Rust of the Super Mouse AI app
 
-#![allow(clippy::used_underscore_binding)]
-// When Specta builds the type bindings, it uses it's own Result,
-// which causes a lint warning. Thus, the aboe lint is disabled
-// for this file
+#![allow(
+    clippy::used_underscore_binding,
+    reason = "Specta builds type bindings with it's own Result, which leads to this false positive."
+)]
 
 // Crate level use (imports)
 use crate::{
@@ -13,19 +13,23 @@ use crate::{
     },
     mutter::ModelError,
     types::{
-        AppState, AudioProcessingOptions, MouseButtonType, SystemInfo, TextProcessOptions,
-        TranscribeOptions,
+        AppState, AudioProcessingOptions, MicrophoneDataState, MicrophoneState, MouseButtonType,
+        SoundMapState, SystemInfo, TextPostProcessing, TextProcessOptions, TranscribeOptions,
     },
     utils::change_send_to_sentry,
 };
 use enigo::{Enigo, Keyboard, Settings};
-use log::{debug, error, info, trace};
+use log::{debug, error, info, trace, warn};
 use mouce::{common::MouseEvent, Mouse, MouseActions};
-use rodio::{Decoder, OutputStream, Sink};
-use std::{fs::File, io::BufReader};
+use rodio::{
+    cpal::traits::{HostTrait, StreamTrait},
+    Decoder, DeviceTrait, OutputStream, Sink,
+};
+use std::{fs::File, io::BufReader, time::Duration};
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
-use tauri::{AppHandle, State, Wry};
+use tauri::{AppHandle, Manager, State, Wry};
 use tauri_specta::{collect_commands, Commands, Event};
+use whisper_rs::SegmentCallbackData;
 
 #[tauri::command]
 #[specta::specta]
@@ -199,7 +203,10 @@ pub async fn transcribe_with_post_process(
 #[tauri::command]
 #[specta::specta]
 /// Play the provided sound given its name that is stored in the app_state
-pub async fn play_sound(app_state: State<'_, AppState>, sound_name: String) -> Result<(), String> {
+pub async fn play_sound(
+    app_state: State<'_, SoundMapState>,
+    sound_name: String,
+) -> Result<(), String> {
     info!("Running play sound command");
     // Get sound source
     let source = app_state
@@ -411,6 +418,361 @@ pub async fn sentry_crash_reporter_update(enable: bool) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+#[specta::specta]
+/// Start recording microphone from backend, creating a new thread to listen for audio data.
+pub async fn start_microphone_recording(app_handle: AppHandle) -> Result<bool, String> {
+    let (tx, mut rx) = tauri::async_runtime::channel(1);
+    let handle_clone = app_handle.clone();
+    let mic_state = handle_clone.state::<MicrophoneState>();
+    let is_recording =
+        mic_state
+            .lock()
+            .map_err(|err| err.to_string())
+            .and_then(|mut mic_state| {
+                debug!("Replacing stream sender");
+                let old_sender = mic_state.stream_sender.replace(tx);
+                let close_old_result = old_sender.map_or(Ok(()), |prev| {
+                    debug!("Stopping old sender");
+                    prev.blocking_send(()).map_err(|err| err.to_string())
+                });
+                debug!("Created Sender {:?}", mic_state.stream_sender);
+                close_old_result.map(|_success| mic_state.is_recording())
+            })?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let handle_clone = app_handle.clone();
+        let mic_state = handle_clone.state::<MicrophoneState>();
+        let mic_state = match mic_state.lock() {
+            Ok(inner) => inner,
+            Err(err) => {
+                error!("Error on getting mic state: {err}");
+                return;
+            }
+        };
+        let Some(ref microphone) = mic_state.device else {
+            error!("No device provide");
+            return;
+        };
+        // let buffer_size = microphone
+        //     .default_input_config()
+        //     .map(|config| config.buffer_size().clone())
+        //     .unwrap_or(SupportedBufferSize::Unknown);
+        let support = microphone
+            .default_input_config()
+            .map_err(|err| error!("Default config not given: {err}"))
+            .expect("Default config not found");
+        let config = support.config();
+        let _ = app_handle
+            .state::<MicrophoneDataState>()
+            .lock()
+            .map(|mut data| data.update_from_config(&config))
+            .map_err(|err| error!("Error on getting lock from microphone data: {err}"));
+        // SupportedStreamConfig::new(1, SampleRate(16_000), buffer_size, SampleFormat::F32);
+        let build = microphone.build_input_stream(
+            &config,
+            move |data, _info| {
+                let state = app_handle.state::<MicrophoneDataState>();
+                let mut audio_data = match state.lock() {
+                    Ok(inner_data) => inner_data,
+                    Err(err) => {
+                        error!("Could not get Microphone Data State lock: {err}");
+                        return;
+                    }
+                };
+                audio_data.0.extend_from_slice(data);
+            },
+            |err| error!("Error on microphone stream: {err}"),
+            None,
+        );
+        debug!("Unlock the mic state mutex from audio thread");
+        drop(mic_state);
+        let stream = match build {
+            Ok(stream) => stream,
+            Err(err) => {
+                error!("Could not build stream: {err}");
+                return;
+            }
+        };
+        debug!("Stream created");
+
+        match stream.play() {
+            Ok(()) => {
+                debug!("Playing Microphone Stream");
+                if rx.blocking_recv().is_some() {
+                    stream.pause().unwrap_or_else(|err| {
+                        warn!("Error when pausing stream, will still drop it: {err}");
+                    });
+                }
+                debug!("Dropping Microphone Stream");
+                rx.close();
+                drop(stream);
+            }
+            Err(err) => {
+                error!("Error attempting to play stream: {err}");
+            }
+        }
+        debug!("Dropping reciever");
+        drop(rx);
+    });
+    debug!("Mic state mutex gaurd moved to new theard");
+    Ok(is_recording)
+}
+
+#[tauri::command]
+#[specta::specta]
+/// Send a stop signal, after an optional delay, to the audio thread to finish recording
+pub async fn stop_microphone_recording(
+    mic_state: State<'_, MicrophoneState>,
+    delay: Option<u32>,
+) -> Result<(), String> {
+    tokio::time::sleep(delay.map_or(Duration::ZERO, |ms| Duration::from_millis(u64::from(ms))))
+        .await;
+    let sender = {
+        debug!("Getting mic state lock");
+        let mut mic_state = mic_state.lock().map_err(|err| {
+            error!("Getting lock issue: {err}");
+            err.to_string()
+        })?;
+        debug!("Calling Sender {:?}", mic_state.stream_sender);
+        mic_state.stream_sender.take()
+    };
+    debug!("Unlock mic state from stop command");
+    // drop(mic_state);
+    if let Some(stopper) = sender {
+        debug!("Sending stop to Microphone Stream");
+        let mut count = 0;
+        while let Err(e) = stopper.send_timeout((), Duration::from_secs(5)).await {
+            count += 1;
+            warn!("Run #{count}: {e}");
+            if count >= 100 {
+                error!("Could not send to stopper");
+                break;
+            }
+        }
+        // stopper.blocking_send(()).map_err(|err| err.to_string())?;
+        debug!("Stopper has sent successfully.");
+    }
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
+/// Transcribe the current data that is in [`MicrophoneDataState`], fully consuming it on read.
+///
+/// ### Returns
+/// (final_text, total_transcribing_time)
+pub async fn transcribe_current_data(
+    app_handle: AppHandle,
+    app_state: State<'_, AppState>,
+    transcribe_options: Option<TranscribeOptions>,
+    decode_options: Option<AudioProcessingOptions>,
+) -> Result<(String, f64), String> {
+    debug!("Getting data");
+    let state = app_handle.state::<MicrophoneDataState>();
+    let audio = {
+        let mut data = state.lock().map_err(|err| err.to_string())?;
+        let audio = std::mem::take(&mut data.0);
+        debug!(
+            "Old Data len: {} -> current audio len: {}",
+            data.0.len(),
+            audio.len()
+        );
+        (audio, data.1, data.2)
+    };
+    let res = {
+        let options = transcribe_options.unwrap_or_default();
+        log::info!("Transcribing with parameters: translate={:?}, use_timestamp={:?}, threads={:?}, prompt={:?}, lang={:?}, fmt={:?}, patience={:?}",
+        options.translate,
+        options.individual_word_timestamps,
+        options.threads,
+        options.initial_prompt,
+        options.language,
+        options.format,
+        options.patience,
+    );
+        info!("Running transcription command");
+        let app_state = app_state.lock().map_err(|err| err.to_string())?;
+        let model = app_state.get_model();
+        info!("Transcribe using {}", app_state.get_model_info());
+        trace!("Creating abort transcription callback");
+
+        let transcription = crate::mutter::directly_denoise(
+            audio.0,
+            audio.1,
+            audio.2,
+            decode_options.unwrap_or_default(),
+        )
+        .and_then(|processed_audio| {
+            model.transcribe_pcm_s16le(
+                &processed_audio,
+                options.translate.unwrap_or(false),
+                options.individual_word_timestamps.unwrap_or(false),
+                options.initial_prompt.as_deref(),
+                options.language.as_deref(),
+                // Make sure not to pass 0 for CPU thread,
+                // otherwise model crashes
+                match options.threads {
+                    Some(0) => None,
+                    threads => threads,
+                },
+                options.patience,
+                None::<fn() -> bool>,
+                None::<fn(i32)>,
+                None::<fn(SegmentCallbackData)>,
+                None::<fn(SegmentCallbackData)>,
+                None,
+            )
+        })
+        .map_err(|err| {
+            log::error!("Transcription Error: {err:?}");
+            match err {
+                ModelError::WhisperError(whisper_error) => whisper_error.to_string(),
+                ModelError::DecodingError(decoder_error) => decoder_error.to_string(),
+            }
+        })?;
+
+        (
+            options
+                .format
+                .unwrap_or_default()
+                .convert_transcript(&transcription),
+            transcription.processing_time.as_secs_f64(),
+        )
+    };
+    debug!("Result of transcription: {res:?}");
+    Ok(res)
+}
+
+#[tauri::command]
+#[specta::specta]
+/// Transcribe the data from [`MicrophoneDataState`], then process the resulting text.
+///
+/// ### Returns
+/// (final_text, total_processing_time)
+pub async fn transcribe_current_then_process(
+    app_state: State<'_, AppState>,
+    app_handle: AppHandle,
+    transcribe_options: Option<TranscribeOptions>,
+    processing_options: TextPostProcessing,
+    decode_options: Option<AudioProcessingOptions>,
+) -> Result<(String, f64), String> {
+    debug!("Now transcribing audio data");
+    let transcript =
+        transcribe_current_data(app_handle, app_state, transcribe_options, decode_options).await?;
+    debug!("Finish processing");
+    Ok(if let Some(options) = processing_options.into_options() {
+        let processed = process_text(transcript.0, Some(options)).await?;
+        (processed.0, transcript.1 + processed.1)
+    } else {
+        transcript
+    })
+}
+
+#[tauri::command]
+#[specta::specta]
+/// Stop the microphone, then transcribe the audio, and finally post-processing the text.
+///
+/// ### Returns
+/// (final_text, total_processing_time)
+pub async fn stop_transcribe_and_process_data(
+    app_state: State<'_, AppState>,
+    mic_state: State<'_, MicrophoneState>,
+    app_handle: AppHandle,
+    stop_mic_time: Option<u32>,
+    transcribe_options: Option<TranscribeOptions>,
+    processing_options: TextPostProcessing,
+    decode_options: Option<AudioProcessingOptions>,
+) -> Result<(String, f64), String> {
+    debug!("Running stop first");
+    if let Some(time) = stop_mic_time {
+        stop_microphone_recording(mic_state, Some(time)).await?;
+    }
+    transcribe_current_then_process(
+        app_state,
+        app_handle,
+        transcribe_options,
+        processing_options,
+        decode_options,
+    )
+    .await
+}
+
+#[tauri::command]
+#[specta::specta]
+/// Set the current input device on user's system from Host
+pub async fn set_input_device(
+    mic_state: State<'_, MicrophoneState>,
+    data_state: State<'_, MicrophoneDataState>,
+    index: u8,
+) -> Result<bool, String> {
+    let mut mic_state = mic_state.lock().map_err(|err| err.to_string())?;
+    debug!("Find input device");
+    let mut devices = mic_state
+        .host
+        .input_devices()
+        .map_err(|err| err.to_string())?;
+    let (is_custom, device) = if let Some(custom) = devices.nth(index as usize) {
+        debug!("Set custom device");
+        (true, custom)
+    } else if let Some(default) = mic_state.host.default_input_device() {
+        debug!("Use default device");
+        (false, default)
+    } else {
+        error!("No device at #{index} and no fallback default input.");
+        return Err("Could not select input device.".into());
+    };
+    debug!("Update Microphone Data with new device config, then update device");
+    data_state
+        .lock()
+        .map_err(|err| err.to_string())?
+        .replace_with_config(
+            &device
+                .default_input_config()
+                .map_err(|err| err.to_string())?
+                .config(),
+        );
+    mic_state.device.replace(device);
+    drop(mic_state);
+    Ok(is_custom)
+}
+
+#[tauri::command]
+#[specta::specta]
+/// Get all possible input devices on user's system.
+pub async fn get_input_devices(
+    mic_state: State<'_, MicrophoneState>,
+) -> Result<Vec<String>, String> {
+    let mic_state = mic_state.lock().map_err(|err| err.to_string())?;
+    debug!("Find and get input devices");
+    Ok(mic_state
+        .host
+        .input_devices()
+        .map_err(|err| err.to_string())?
+        .enumerate()
+        .map(|(i, d)| {
+            d.name().unwrap_or_else(|err| {
+                warn!("Could not get device name, use placeholder: {err}");
+                format!("Unknown Input Device #{}", i + 1)
+            })
+        })
+        .collect::<Vec<_>>())
+}
+
+#[tauri::command]
+#[specta::specta]
+/// Get the currently active input device (the one that will record audio data).
+pub async fn get_current_input_device(
+    mic_state: State<'_, MicrophoneState>,
+) -> Result<Option<String>, String> {
+    let mic_state = mic_state.lock().map_err(|err| err.to_string())?;
+    debug!("Get current input device from mic state");
+    mic_state
+        .device
+        .as_ref()
+        .map(|device| device.name().map_err(|err| err.to_string()))
+        .transpose()
+}
+
 /// Gets all collected commands for Super Mouse AI application to be used by builder
 #[must_use]
 pub fn get_collected_commands() -> Commands<Wry> {
@@ -425,5 +787,13 @@ pub fn get_collected_commands() -> Commands<Wry> {
         update_model,
         get_system_info,
         sentry_crash_reporter_update,
+        start_microphone_recording,
+        stop_microphone_recording,
+        transcribe_current_data,
+        transcribe_current_then_process,
+        stop_transcribe_and_process_data,
+        set_input_device,
+        get_input_devices,
+        get_current_input_device,
     ]
 }

@@ -111,6 +111,70 @@ async sentryCrashReporterUpdate(enable: boolean) : Promise<Result<null, string>>
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async startMicrophoneRecording() : Promise<Result<boolean, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("start_microphone_recording") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async stopMicrophoneRecording(delay: number | null) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("stop_microphone_recording", { delay }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async transcribeCurrentData(transcribeOptions: TranscribeOptions | null, decodeOptions: AudioProcessingOptions | null) : Promise<Result<[string, number], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("transcribe_current_data", { transcribeOptions, decodeOptions }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async transcribeCurrentThenProcess(transcribeOptions: TranscribeOptions | null, processingOptions: TextPostProcessing, decodeOptions: AudioProcessingOptions | null) : Promise<Result<[string, number], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("transcribe_current_then_process", { transcribeOptions, processingOptions, decodeOptions }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async stopTranscribeAndProcessData(stopMicTime: number | null, transcribeOptions: TranscribeOptions | null, processingOptions: TextPostProcessing, decodeOptions: AudioProcessingOptions | null) : Promise<Result<[string, number], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("stop_transcribe_and_process_data", { stopMicTime, transcribeOptions, processingOptions, decodeOptions }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setInputDevice(index: number) : Promise<Result<boolean, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_input_device", { index }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getInputDevices() : Promise<Result<string[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_input_devices") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getCurrentInputDevice() : Promise<Result<string | null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_current_input_device") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -203,6 +267,7 @@ total_vram_gb: number }
  * Ways a text can be decorated
  */
 export type TextDecoration = "Bold" | "Italics" | "Underline" | "Strikethrough" | "Mark"
+export type TextPostProcessing = "Skip" | "Default" | { Custom: TextProcessOptions }
 /**
  * Options for the text post-processing function.
  * 

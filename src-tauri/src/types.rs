@@ -3,9 +3,14 @@
 use crate::mutter::Model;
 use log::{debug, warn};
 use mouce::common::MouseButton;
+use rodio::{
+    cpal::{default_host, traits::HostTrait, Host, StreamConfig},
+    Device,
+};
 use serde::{Deserialize, Serialize};
 use specta::Type;
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf, sync::Mutex};
+use tauri::async_runtime::Sender;
 use whisper_rs::{WhisperContextParameters, WhisperError};
 
 /// A struct to hold both the default and custom model together, enabling for easy switching
@@ -20,11 +25,10 @@ pub struct ModelHolder {
 /// persist throughout the app's runtime.
 pub struct InnerAppState {
     pub(crate) model: ModelHolder,
-    pub(crate) sound_map: HashMap<String, PathBuf>,
 }
 
 impl InnerAppState {
-    pub const fn new(model: Model, sound_map: HashMap<String, PathBuf>) -> Self {
+    pub const fn new(model: Model) -> Self {
         // Load model into memory by evaluating short silence
         // FIXME: Need to do this in another thread, otherwise UI freezes
         // let _ = model.transcribe_pcm_s16le(&[0.0; 20_000], false, false, None, None, None);
@@ -33,17 +37,7 @@ impl InnerAppState {
                 default: model,
                 custom: None,
             },
-            sound_map,
         }
-    }
-
-    /// Get sound by the provided name or by prepending `default_` to the beginning.
-    pub fn get_sound_path(&self, sound_name: &str) -> Option<&PathBuf> {
-        debug!("Getting sound: {sound_name}");
-        self.sound_map.get(sound_name).or_else(|| {
-            warn!("No sound with name '{sound_name}', falling back to 'default_{sound_name}'");
-            self.sound_map.get(&format!("default_{}", &sound_name))
-        })
     }
 
     /// Replace the custom model being used
@@ -86,7 +80,93 @@ impl InnerAppState {
     }
 }
 
-pub type AppState = std::sync::Mutex<InnerAppState>;
+pub type AppState = Mutex<InnerAppState>;
+
+#[derive(Debug, Clone, Default)]
+/// A struct representing a sound bank
+pub struct InnerSoundMapState(HashMap<String, PathBuf>);
+
+impl InnerSoundMapState {
+    pub const fn with_map(map: HashMap<String, PathBuf>) -> Self {
+        Self(map)
+    }
+
+    /// Get sound by the provided name or by prepending `default_` to the beginning.
+    pub fn get_sound_path(&self, sound_name: &str) -> Option<&PathBuf> {
+        debug!("Getting sound: {sound_name}");
+        self.0.get(sound_name).or_else(|| {
+            warn!("No sound with name '{sound_name}', falling back to 'default_{sound_name}'");
+            self.0.get(&format!("default_{}", &sound_name))
+        })
+    }
+}
+
+pub type SoundMapState = Mutex<InnerSoundMapState>;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type)]
+/// Current state of the microphone
+#[non_exhaustive]
+pub enum RecordingState {
+    Stopped,
+    Recording,
+}
+
+/// State of the microphone
+pub struct InnerMicrophoneState {
+    pub host: Host,
+    pub device: Option<Device>,
+    pub stream_sender: Option<Sender<()>>,
+}
+
+impl InnerMicrophoneState {
+    pub fn new() -> Self {
+        Self::with_host(default_host())
+    }
+
+    pub fn with_host(host: Host) -> Self {
+        let device = host.default_input_device();
+        Self {
+            host,
+            device,
+            stream_sender: None,
+        }
+    }
+
+    /// Check if currently being recorded
+    pub const fn is_recording(&self) -> bool {
+        self.stream_sender.is_some()
+    }
+
+    // TODO: Add switching devices
+
+    // TODO: Encapsulate data to allow independent access
+}
+
+pub type MicrophoneState = Mutex<InnerMicrophoneState>;
+
+#[derive(Debug, Clone, Default)]
+/// Data recorded from user's microphone
+pub struct InnerMicrophoneData(pub Vec<f32>, pub u16, pub u32);
+
+impl InnerMicrophoneData {
+    pub const fn new() -> Self {
+        Self(Vec::new(), 1, 48_000)
+    }
+
+    /// Replace microphone data with one that follows a specific stream configuration
+    pub fn replace_with_config(&mut self, audio_config: &StreamConfig) {
+        self.0.clear();
+        self.1 = audio_config.channels;
+        self.2 = audio_config.sample_rate.0;
+    }
+
+    /// Update based on stream configuration
+    pub const fn update_from_config(&mut self, audio_config: &StreamConfig) {
+        self.1 = audio_config.channels;
+        self.2 = audio_config.sample_rate.0;
+    }
+}
+pub type MicrophoneDataState = Mutex<InnerMicrophoneData>;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Type)]
 /// Enum representing mouse button type
@@ -240,4 +320,29 @@ pub struct AudioProcessingOptions {
     pub low_pass_value: Option<u32>,
     /// Value for high pass filter, this represents minimum frequency allowed, default is `200`
     pub high_pass_value: Option<u32>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize, Type)]
+/// The kind of text post-processing to use from [`TextProcessOptions`]
+pub enum TextPostProcessing {
+    Skip,
+    #[default]
+    Default,
+    Custom(TextProcessOptions),
+}
+
+impl TextPostProcessing {
+    // /// Create a custom post-processing text with given [`TextProcessOptions`]
+    // pub fn with_options(options: TextProcessOptions) -> Self {
+    //     Self::Custom(options)
+    // }
+
+    /// Transform into options, None if skipped, using [`TextProcessOptions::default()`] for [`Self::Default`] and provided options for [`Self::Custom`]
+    pub fn into_options(self) -> Option<TextProcessOptions> {
+        match self {
+            Self::Skip => None,
+            Self::Default => Some(TextProcessOptions::default()),
+            Self::Custom(text_process_options) => Some(text_process_options),
+        }
+    }
 }

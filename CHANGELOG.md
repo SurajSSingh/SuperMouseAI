@@ -6,6 +6,52 @@ All notable changes to this project will be documented in this file.
 
 ### 🚀 Features
 
+- :construction: Basic testable backend-only input
+- *(backend)* :sparkles: Basic working backend workflow
+- *(frontend)* :sparkles: Update bindings and add audio processing options
+- *(backend)* :sparkles: Add change input device + minor fixes
+- *(backend)* :sparkles: Add command to get input devices
+- *(frontend)* :sparkles: New microphone selector
+- *(ui)* :sparkles: New recording and transcription viewer components
+- *(backend)* :sparkles: Add command to get current input device
+- *(backend)* :sparkles: Add transcribe then process command
+- *(frontend)* :sparkles: Delete Transcript by clearing textarea
+
+### 🐛 Bug Fixes
+
+- *(ui)* :bug: Fix bug of default microphone not showing on startup
+- *(frontend)* :coffin: Remove unused props from app page
+
+### 🚜 Refactor
+
+- *(backend)* :recycle: Split Model and Sound Map from AppState
+- *(ui)* :recycle: Small modification to Recording Button component
+- *(frontend)* :recycle: Replace app page with new components
+- *(ui)* :recycle: Move Copy button inside transcript viewer
+- *(ui)* :recycle: Refactor permission bar
+- *(frontend)* :fire: Simplify UI for transcription area
+- *(backend)* :recycle: Remove explicit mic state drop
+
+### 📚 Documentation
+
+- *(backend)* :memo: Update empty documentation
+
+### 🎨 Styling
+
+- *(backend)* :rotating_light: Quick fix non-doc clippy lints
+
+### ⚙️ Miscellaneous Tasks
+
+- Updater now uses v0.8.7
+- *(backend)* Update Cargo dependencies
+- *(frontend)* Update Deno dependencies
+- *(backend)* :triangular_flag_on_post: Remove nnnoiseless default feature flags
+- *(backend)* :construction: Basic outline of new backend
+
+## [0.8.7] - 2025-05-08
+
+### 🚀 Features
+
 - *(backend)* :chart_with_upwards_trend: Make sure PII is disabled
 - *(frontend)* :building_construction: Optional telemetry crash report
 - *(frontend)* :sparkles: Connect crash report updater function
@@ -32,6 +78,8 @@ All notable changes to this project will be documented in this file.
 
 - Updater now goes to v0.8.6
 - :bookmark: Bump to v0.8.7
+- :memo: Update README
+- *(backend)* :rotating_light: Fix clippy lint issues in lib.rs
 
 ## [0.8.6] - 2025-05-02
 
