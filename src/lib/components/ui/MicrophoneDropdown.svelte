@@ -6,7 +6,7 @@ Component to check microphone from backend
     import { commands } from "$lib/bindings";
     import { notifier } from "$lib/notificationSystem.svelte";
     import { configStore } from "$lib/store.svelte";
-    import { error, info, warn } from "@tauri-apps/plugin-log";
+    import { debug, error, info, warn } from "@tauri-apps/plugin-log";
     import Status from "./Status.svelte";
 
     interface ThemeSwitcherProps {
@@ -45,8 +45,22 @@ Component to check microphone from backend
         if (result.status === "error") {
             error(`Error getting devices: ${result.error}`);
             notifier.showToast("Could not get input audio devices.", "error");
-        } else {
-            inputDevices = result.data;
+            return;
+        }
+        inputDevices = result.data;
+        const default_mic_res = await commands.getCurrentInputDevice();
+        if (default_mic_res.status === "error") {
+            warn(
+                `Error getting default input device: ${default_mic_res.error}`,
+            );
+            notifier.showToast("Could not get default microphone.", "warn");
+            return;
+        }
+        if (default_mic_res.data) {
+            debug("Find name in input devices and assign it.");
+            selectedDevice = inputDevices.findIndex(
+                (name) => name === default_mic_res.data,
+            );
         }
     }
 
