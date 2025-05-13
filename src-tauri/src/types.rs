@@ -323,9 +323,7 @@ pub struct AudioProcessingOptions {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize, Type)]
-///
-///
-///
+/// The kind of text post-processing to use from [`TextProcessOptions`]
 pub enum TextPostProcessing {
     Skip,
     #[default]

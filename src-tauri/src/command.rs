@@ -1,9 +1,9 @@
 //! All things related to Rust of the Super Mouse AI app
 
-#![allow(clippy::used_underscore_binding)]
-// When Specta builds the type bindings, it uses it's own Result,
-// which causes a lint warning. Thus, the aboe lint is disabled
-// for this file
+#![allow(
+    clippy::used_underscore_binding,
+    reason = "Specta builds type bindings with it's own Result, which leads to this false positive."
+)]
 
 // Crate level use (imports)
 use crate::{
@@ -420,7 +420,7 @@ pub async fn sentry_crash_reporter_update(enable: bool) -> Result<(), String> {
 
 #[tauri::command]
 #[specta::specta]
-///
+/// Start recording microphone from backend, creating a new thread to listen for audio data.
 pub async fn start_microphone_recording(app_handle: AppHandle) -> Result<bool, String> {
     let (tx, mut rx) = tauri::async_runtime::channel(1);
     let handle_clone = app_handle.clone();
@@ -520,7 +520,7 @@ pub async fn start_microphone_recording(app_handle: AppHandle) -> Result<bool, S
 
 #[tauri::command]
 #[specta::specta]
-///
+/// Send a stop signal, after an optional delay, to the audio thread to finish recording
 pub async fn stop_microphone_recording(
     mic_state: State<'_, MicrophoneState>,
     delay: Option<u32>,
@@ -557,7 +557,10 @@ pub async fn stop_microphone_recording(
 
 #[tauri::command]
 #[specta::specta]
+/// Transcribe the current data that is in [`MicrophoneDataState`], fully consuming it on read.
 ///
+/// ### Returns
+/// (final_text, total_transcribing_time)
 pub async fn transcribe_current_data(
     app_handle: AppHandle,
     app_state: State<'_, AppState>,
@@ -642,7 +645,10 @@ pub async fn transcribe_current_data(
 
 #[tauri::command]
 #[specta::specta]
+/// Transcribe the data from [`MicrophoneDataState`], then process the resulting text.
 ///
+/// ### Returns
+/// (final_text, total_processing_time)
 pub async fn transcribe_current_then_process(
     app_state: State<'_, AppState>,
     app_handle: AppHandle,
@@ -664,7 +670,10 @@ pub async fn transcribe_current_then_process(
 
 #[tauri::command]
 #[specta::specta]
+/// Stop the microphone, then transcribe the audio, and finally post-processing the text.
 ///
+/// ### Returns
+/// (final_text, total_processing_time)
 pub async fn stop_transcribe_and_process_data(
     app_state: State<'_, AppState>,
     mic_state: State<'_, MicrophoneState>,
@@ -690,7 +699,7 @@ pub async fn stop_transcribe_and_process_data(
 
 #[tauri::command]
 #[specta::specta]
-///
+/// Set the current input device on user's system from Host
 pub async fn set_input_device(
     mic_state: State<'_, MicrophoneState>,
     data_state: State<'_, MicrophoneDataState>,
@@ -729,7 +738,7 @@ pub async fn set_input_device(
 
 #[tauri::command]
 #[specta::specta]
-///
+/// Get all possible input devices on user's system.
 pub async fn get_input_devices(
     mic_state: State<'_, MicrophoneState>,
 ) -> Result<Vec<String>, String> {
@@ -751,7 +760,7 @@ pub async fn get_input_devices(
 
 #[tauri::command]
 #[specta::specta]
-///
+/// Get the currently active input device (the one that will record audio data).
 pub async fn get_current_input_device(
     mic_state: State<'_, MicrophoneState>,
 ) -> Result<Option<String>, String> {
