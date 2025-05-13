@@ -3,11 +3,26 @@
     import Button from "$lib/components/ui/button/button.svelte";
     import { configStore } from "$lib/store.svelte";
     import { notifier } from "$lib/notificationSystem.svelte";
+    import { info } from "@tauri-apps/plugin-log";
+
+    interface Props {
+        onCopyClick?: () => void;
+        disableCopy?: boolean;
+    }
+
+    let { onCopyClick, disableCopy = false }: Props = $props();
 </script>
 
 <fieldset class="fieldset my-4 relative">
     <legend class="fieldset-legend">Transcription Output</legend>
     <div class="sm:absolute sm:-top-10 sm:right-0">
+        <Button
+            color="info"
+            size="sm"
+            class="m-2 text-xs"
+            onclick={() => onCopyClick?.()}
+            disabled={disableCopy}>(📋) Copy to Clipboard</Button
+        >
         <Button
             width="default"
             color="secondary"
