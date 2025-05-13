@@ -46,23 +46,15 @@
             debug("Switch to processing mode.");
             isRecording = false;
             isProcessing = true;
-            const stopped = await commands.stopMicrophoneRecording(1000);
+            debug(
+                "Wait half a second for audio data to settle before stopping.",
+            );
+            const stopped = await commands.stopMicrophoneRecording(300);
             if (stopped.status === "error") {
                 onError?.(`Stopping microphone failed: ${stopped.error}`);
                 return;
             }
             await onRecordingEnd?.();
-            // const res = await commands.transcribeCurrentData(null, {
-            //     normalize_result: true,
-            //     denoise_audio: null,
-            //     high_pass_value: null,
-            //     low_pass_value: null,
-            // });
-            // if (res.status === "ok") {
-            //     notifier.showToast(res.data, "success");
-            // } else {
-            //     onError?.(`Processing failed: ${res.error}`);
-            // }
             isProcessing = false;
         } else {
             const res = await commands.startMicrophoneRecording();
