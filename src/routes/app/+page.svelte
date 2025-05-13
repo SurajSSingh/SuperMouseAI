@@ -314,12 +314,7 @@
             <div class="flex flex-col place-content-center p-1">
                 <UpdateChecker class="mx-8" />
             </div>
-            <PermissionBar
-                setupRecorder={async () => {
-                    warn("Setup recorder should no longer be used!");
-                }}
-                {recordingState}
-            />
+            <PermissionBar />
             <div class="flex flex-col place-content-center">
                 <div class="place-self-stretch">
                     <div class="mx-2 sm:mx-16">
