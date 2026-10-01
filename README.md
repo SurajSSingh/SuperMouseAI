@@ -31,19 +31,9 @@ A way to trascribe your voice using Whisper from the click of your mouse.
 
 ## License
 
+`MIT OR Apache-2.0`:
+
 This project is licensed under either of
 
-- Functional Source License, Version 1.1, ALv2 Future License
-  ([FSL-1.1-APACHE-2.0](LICENSE-FSL-1.1-ALv2.md) or
-  <https://github.com/getsentry/fsl.software/blob/main/FSL-1.1-ALv2.template.md>)
-- Functional Source License, Version 1.1, MIT Future License
-  ([FSL-1.1-MIT](LICENSE-FSL-1.1-MIT.md) or
-  <https://github.com/getsentry/fsl.software/blob/main/FSL-1.1-MIT.template.md>)
-
-at your option.
-
-For each version of the software, after 2 years from that release, project
-commits up to that point will be made available under `MIT OR Apache-2.0`
-licenses. Prior to the 2 years, you may not sell the software without explicit
-grant from the author. For any non-commerical/private uses, you may treat the
-repository as if it were made available under the `MIT OR Apache-2.0` licenses.
+- [Apache 2.0](LICENSE-ALv2.md)
+- [MIT](LICENSE-MIT.md)
